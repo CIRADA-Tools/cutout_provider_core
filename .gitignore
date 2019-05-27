@@ -1,0 +1,9 @@
+*.swp
+*.pyc
+*.pkl
+*.fits
+*.gz
+.DS_Store
+data
+*.jnk
+*.tmp
