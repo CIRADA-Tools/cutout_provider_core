@@ -19,15 +19,15 @@ root:
    remote: vos:cirada/continuum/dps_repo/survey_data/
    local:  escritoire/downloads/
    dps:    dps/
-   calaran: 
+   calaran: SourceID/data
 catalogues:
    remote: catalogues/
    local:  data/catalogues/
    dps:    data/
 cutouts:
-   remote: cutouts/fits/
-   local:  data/fits/
-   claran: data/fits/
+   remote: cutouts/claran/
+   local:  data/cutouts/
+   claran: cutouts/
 hierarchy:
    radio:
       first:
