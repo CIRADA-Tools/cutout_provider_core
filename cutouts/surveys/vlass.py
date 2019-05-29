@@ -32,7 +32,7 @@ def load_subtile_csv():
 
     script_location = Path(__file__).absolute().parent
 
-    with open(script_location/'vlass_subtiles.csv', 'r') as infile:
+    with open(script_location/'VLASS_subtiles.csv', 'r') as infile:
         reader = csv.DictReader(infile)
 
         extracted = ((tile['ra_centre'], tile['dec_centre'], tile['file']) for tile in reader)
