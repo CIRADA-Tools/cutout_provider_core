@@ -1,0 +1,14 @@
+RE: http://www.canfar.net/en/docs/storage/
+
+Once anaconda is installed do,
+
+    pip install --user -U vos
+
+and then add ~/.local/bin to $PATH.
+
+Then to initialize, run
+
+    getCert
+
+and enter your username a password.
+
