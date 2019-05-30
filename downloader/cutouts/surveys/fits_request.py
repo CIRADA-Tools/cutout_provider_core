@@ -31,10 +31,23 @@ def send_request(url, payload=None):
         except ConnectionResetError:
             pass
         else:
-            response_data = bytearray(response.read())
-            return response_data
+            try:
+                response_data = bytearray(response.read())
+                return response_data
+            except:
+                # E.g., One noted error was 'IncompleteRead'...
+                #
+                # Note: this apperently cause an FITSFixedWarning, e.g.,
+                #
+                #    WARNING: FITSFixedWarning: 'datfix' made the change 'Changed '' to '2013-05-16T18:02:48.842''. [astropy.wcs.wcs]
+                #
+                # in astropy.wcs (cf., http://docs.astropy.org/en/stable/wcs/); hence this try..except wrapping.
+                #
+                pass
 
         potential_retries -= 1
+
+    print(f"WARNING: Bailed on fetch '{url}'")
 
 
 # tries to create a fits file from bytes.

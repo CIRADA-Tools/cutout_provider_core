@@ -1,3 +1,5 @@
+import os
+
 # An example of how to use the survey cutout code
 import csv
 import sys
@@ -67,15 +69,22 @@ def csv_to_dict(filename):
 def get_target_list():
 
     # initial list of 17 galaxies
-    list1 = csv_to_dict('BH12_multicomponent_zlt0p05_targetlist2.csv')
-    list2 = csv_to_dict('BH12_120RA180_minus4DEC16_RC4_targetlist.csv')
+    #list1 = csv_to_dict('BH12_multicomponent_zlt0p05_targetlist2.csv')
+    #list2 = csv_to_dict('BH12_120RA180_minus4DEC16_RC4_targetlist.csv')
+    #sources = list1+list2
 
+    sources =  csv_to_dict('targs_for_michelle.csv')
+
+    # make all keys lower case to effectively reference case-variants of RA and Dec.
+    sources = [{k.lower(): v for k,v in s.items()} for s in sources]
+
+    # extract position information
     targets = [
         {
-            'coord': SkyCoord(x['RA'], x['Dec'], unit=(u.deg, u.deg)),
+            'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
             'size': 5*u.arcmin
         }
-        for x in list1+list2]
+        for x in sources]
 
     return targets
 
@@ -98,6 +107,14 @@ def save_cutout(target):
 
 def batch_process():
 
+    out_dir = "data/out"
+    try:
+        os.makedirs(out_dir)
+    except FileExistsError:
+        print(f"Using FITS output dir: {out_dir}")
+    else:
+        print(f"Created FITS output dir: {out_dir}")
+
     grabbers = 10
     savers = 1
 
@@ -116,14 +133,16 @@ def batch_process():
 
     # toss all the targets into the queue, including for all surveys
     # i.e some position in both NVSS and VLASS and SDSS, etc.
-    for idx, target in enumerate(get_target_list()):
+    targets = get_target_list()
+    zero_padding = len(f"{len(targets)}")
+    for idx, target in enumerate(targets):
 
         for s in all_surveys:
 
             t = dict(target)
 
             t['survey'] = s
-            t['filename'] = "data/out/{1}_{0}.fits".format(t['survey'].__name__, idx)
+            t['filename'] = f"{out_dir}/{idx:0{zero_padding}}_{t['survey'].__name__}.fits"
 
             in_q.put(t)
 
