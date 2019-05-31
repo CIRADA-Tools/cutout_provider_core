@@ -1,0 +1,2 @@
+The cutout_grabbing_processing.zip file contains image_trim_regrid_for_ClaRAN_v1a.py and targs_for_michelle.csv, which have been upack here, also well as sample fits files, etc., which have not been upacked. This can be upack into a data dir, which will be ignored by git (cf., root-level .gitignore).
+
