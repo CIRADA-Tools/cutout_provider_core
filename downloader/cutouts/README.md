@@ -18,7 +18,7 @@ Grabbing cutouts from various surveys
 
 | Survey | Band| 
 |---|---|
-|LoTSS|Radio|
+|LOTSS|Radio|
 |AKARI|Infrared|
 |WISE|Infrared|
 |BOSS|Optical|
