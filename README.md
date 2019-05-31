@@ -38,7 +38,7 @@ This installation is trick, so here's the Coles Notes:
  * Move the `Montage_v5.0` to `~/.montage/Montage_v5.0`, say, and add `~/.montage/Montage_v5.0/bin` to `$PATH`.
  * To test, run `mAdd` and you should see something like,<br>```[struct stat="ERROR", msg="Usage: mAdd [-d level] [-p imgdir] [-n(o-areas)] [-a mean|median|count] [-e(xact-size)] [-s statusfile] images.tbl template.hdr out.fits"]```<br>indicating it is installed correctly.
 
-### Pyhton Packages:
+### Python Packages:
 
 Also lot of the sandard astronomy pakacges are used, but here's the hightlights:
 
