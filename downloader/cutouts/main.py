@@ -143,10 +143,8 @@ def batch_process():
             t = dict(target)
 
             t['survey'] = s
-            sexadecimal = "%02d%02d%f" % t['coord'].ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%f" % t['coord'].dec.signed_dms)
+            sexadecimal = "%02d%02d%02.1f" % t['coord'].ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % t['coord'].dec.signed_dms)
             size = re.sub(r"\.?0+$","","%f" % t['size'].value)
-            #t['filename'] = f"{out_dir}/{idx:0{zero_padding}}_{t['survey'].__name__}.fits"
-            #t['filename'] = f"{out_dir}/{t['survey'].__name__}_J{sexadecimal}.fits"
             t['filename'] = f"{out_dir}/J{sexadecimal}_s{size}_{t['survey'].__name__}.fits"
 
             in_q.put(t)
