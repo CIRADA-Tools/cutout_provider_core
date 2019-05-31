@@ -37,7 +37,7 @@ def send_request(url, payload=None):
             except:
                 # E.g., One noted error was 'IncompleteRead'...
                 #
-                # Note: this apperently cause an FITSFixedWarning, e.g.,
+                # Note: this apperently caused an FITSFixedWarning, e.g.,
                 #
                 #    WARNING: FITSFixedWarning: 'datfix' made the change 'Changed '' to '2013-05-16T18:02:48.842''. [astropy.wcs.wcs]
                 #
