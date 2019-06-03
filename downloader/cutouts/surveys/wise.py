@@ -1,3 +1,5 @@
+import re
+
 from astropy import units as u
 from astropy.table import Table
 
@@ -35,6 +37,7 @@ class WISE(Survey):
         return urls
 
     def get_cutout(self,position, size):
+        status = list()
 
         wise = IbeClass()
 
@@ -44,18 +47,35 @@ class WISE(Survey):
             mission    = 'wise',
             dataset    = 'allwise',
             table      = self.metadata_root,
+            columns    = 'band,coadd_id',
             width      = edge,
             height     = edge,
-            intersect  = 'COVERS',
-            most_centered = True
+            intersect  = 'COVERS'
         )
+
+        if len(metadata)==0:
+            metadata = wise.query_region(
+                coordinate = position,
+                mission    = 'wise',
+                dataset    = 'allwise',
+                table      = self.metadata_root,
+                columns    = 'band,coadd_id',
+                width      = edge,
+                height     = edge,
+                intersect  = 'OVERLAPS'
+            )
+            status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
+            #status.append(f"{metadata[metadata['band']==1]}")
+        else:
+            status.append("> WISE: ...")
 
         coadd_ids = self.__get_coadd_ids(metadata)
         fits_urls = self.__get_fits_urls(coadd_ids)
         for i in fits_urls:
-            print(f"> {i}")
-        #if len(fits_urls)==0:
-        #    print("> https://WHOOPS!")
+            status.append(f"> {i}")
+        print("{0}".format('\n'.join(status)))
+        if len(fits_urls)==0:
+            print("> https://WHOOPS!")
         #    print(metadata)
         #    print(position)
 

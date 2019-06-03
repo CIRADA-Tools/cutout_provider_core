@@ -121,14 +121,12 @@ def batch_process():
     savers = 1
 
     all_surveys = (
-
-        WISE(),
-        NVSS(),
         FIRST(),
-        SDSS(),
+        NVSS(),
         VLASS(),
+        WISE(),
         PanSTARRS(),
-
+        SDSS(),
     )
 
     in_q = queue.Queue()
