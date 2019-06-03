@@ -6,8 +6,7 @@ from .fits_request import get_fits
 
 class FIRST(Survey):
 
-    @staticmethod
-    def get_cutout(position, size):
+    def get_cutout(self,position, size):
 
         url = 'https://third.ucllnl.org/cgi-bin/firstimage'
 

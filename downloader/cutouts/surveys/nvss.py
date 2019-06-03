@@ -6,8 +6,7 @@ from .fits_request import get_fits
 
 class NVSS(Survey):
 
-    @staticmethod
-    def get_cutout(position, size):
+    def get_cutout(self,position, size):
 
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
 

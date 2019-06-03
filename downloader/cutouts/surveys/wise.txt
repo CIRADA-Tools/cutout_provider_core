@@ -2,7 +2,7 @@ Astroquery Note:
 Eric: astroquery.ibe (https://astroquery.readthedocs.io/en/latest/ibe/ibe.html) NB => ibeClass()
 Cutout Server Extraction Examples: https://irsa.ipac.caltech.edu/docs/irsa_image_server.html,
 
-So for ibe lib we'd use query_region (where wise = ibeClass()):
+So for ibe lib we'd use query_region (where wise = IbeClass()):
 
 > In [70]: wise.query_region?                                                                                                                                                                                               
 > Signature:
@@ -104,7 +104,7 @@ Extracting WISE Meta Data:
    
    In [68]: 
 
-re., meta table='p3am_cdd' documentation https://irsa.ipac.caltech.edu/ibe/docs/wise/allwise/p3am_cdd/, we find the files here are  https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/p3am_cdd/16/1618/1618p000_ac51/. So, for example, to grab w1 cutouts, we'd use,
+re., meta table='p3am_cdd' documentation https://irsa.ipac.caltech.edu/ibe/docs/wise/allwise/p3am_cdd/, we find the files here are https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/p3am_cdd/16/1618/1618p000_ac51/. So, for example, to grab w1 cutouts, we'd use,
 
 wget https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/p3am_cdd/16/1618/1618p000_ac51/1618p000_ac51-w1-int-3.fits
 

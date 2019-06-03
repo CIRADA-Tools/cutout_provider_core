@@ -14,6 +14,7 @@ from astropy import units as u
 
 from surveys.nvss import NVSS
 from surveys.first import FIRST
+from surveys.wise import WISE
 from surveys.sdss import SDSS
 from surveys.vlass import VLASS
 from surveys.panstarrs import PanSTARRS
@@ -103,7 +104,7 @@ def save_cutout(target):
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
     else:
-        print("{0} cutout at {1} returned None".format(target['survey'].__name__, target['coord']), sys.stderr)
+        print("{0} cutout at {1} returned None".format(type(target['survey']).__name__, target['coord']), sys.stderr)
 
 
 def batch_process():
@@ -121,11 +122,12 @@ def batch_process():
 
     all_surveys = (
 
-        NVSS,
-        FIRST,
-        SDSS,
-        VLASS,
-        PanSTARRS
+        WISE(),
+        NVSS(),
+        FIRST(),
+        SDSS(),
+        VLASS(),
+        PanSTARRS(),
 
     )
 
@@ -145,7 +147,7 @@ def batch_process():
             t['survey'] = s
             sexadecimal = "%02d%02d%02.1f" % t['coord'].ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % t['coord'].dec.signed_dms)
             size = re.sub(r"\.?0+$","","%f" % t['size'].value)
-            t['filename'] = f"{out_dir}/J{sexadecimal}_s{size}_{t['survey'].__name__}.fits"
+            t['filename'] = f"{out_dir}/J{sexadecimal}_s{size}_{type(t['survey']).__name__}.fits"
 
             in_q.put(t)
 

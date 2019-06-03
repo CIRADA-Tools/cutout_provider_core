@@ -7,8 +7,7 @@ from .fits_request import get_fits
 
 class SDSS(Survey):
 
-    @staticmethod
-    def get_cutout(position, size):
+    def get_cutout(self,position,size):
 
         pix_scale = 0.262 * (u.arcsec/u.pix)
         pixels = (size / pix_scale).to(u.pix)

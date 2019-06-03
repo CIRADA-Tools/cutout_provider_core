@@ -13,8 +13,7 @@ from .fits_request import get_fits
 
 class PanSTARRS(Survey):
 
-    @staticmethod
-    def get_cutout(position, size, filters='gri'):
+    def get_cutout(self,position, size, filters='gri'):
 
         pix_scale = 0.25 * (u.arcsec/u.pix)
         pixels = (size / pix_scale).to(u.pix)
@@ -23,16 +22,15 @@ class PanSTARRS(Survey):
         dec = position.dec.to(u.deg).value
         pixels = int((size / pix_scale).to(u.pix).value)
 
-        url = PanSTARRS.geturl(ra=ra, dec=dec, size=pixels, filters=filters, format='fits')
+        url = self.geturl(ra=ra, dec=dec, size=pixels, filters=filters, format='fits')
 
         if url:
             bands = [y for y in [get_fits(x) for x in url] if y]
-            return PanSTARRS.combine_bands(bands)
+            return self.combine_bands(bands)
         else:
             return None
 
-    @staticmethod
-    def combine_bands(bands):
+    def combine_bands(self,bands):
 
         hdus = [b[0] for b in bands]
         wcs = WCS(hdus[0].header)
@@ -47,8 +45,7 @@ class PanSTARRS(Survey):
     # The following two helper functions were taken essentially in full from:
     # https://ps1images.stsci.edu/ps1image.html
 
-    @staticmethod
-    def getimages(ra, dec, size=240, filters="grizy"):
+    def getimages(self,ra, dec, size=240, filters="grizy"):
 
         """Query ps1filenames.py service to get a list of images
 
@@ -65,8 +62,7 @@ class PanSTARRS(Survey):
         table = Table.read(url, format='ascii')
         return table
 
-    @staticmethod
-    def geturl(ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
+    def geturl(self,ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
 
         """Get URL for images in the table
 
@@ -85,7 +81,7 @@ class PanSTARRS(Survey):
             raise ValueError("color images are available only for jpg or png formats")
         if format not in ("jpg", "png", "fits"):
             raise ValueError("format must be one of jpg, png, fits")
-        table = PanSTARRS.getimages(ra, dec, size=size, filters=filters)
+        table = self.getimages(ra, dec, size=size, filters=filters)
         url = ("https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?"
                "ra={ra}&dec={dec}&size={size}&format={format}").format(**locals())
         if output_size:

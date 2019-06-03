@@ -173,8 +173,7 @@ def get_query_url(tilename, position, size):
 
 class VLASS(Survey):
 
-    @staticmethod
-    def get_cutout(position, size):
+    def get_cutout(self,position, size):
 
         if position.dec.value > 89:
             print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
