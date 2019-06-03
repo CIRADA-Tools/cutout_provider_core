@@ -38,15 +38,16 @@ class WISE(Survey):
 
         wise = IbeClass()
 
-        radius = size.to(u.deg)
+        edge = size.to(u.deg)
         metadata = wise.query_region(
             coordinate = position,
             mission    = 'wise',
             dataset    = 'allwise',
             table      = self.metadata_root,
-            width      = radius,
-            height     = radius,
-            intersect  = 'COVERS'
+            width      = edge,
+            height     = edge,
+            intersect  = 'COVERS',
+            most_centered = True
         )
 
         coadd_ids = self.__get_coadd_ids(metadata)
