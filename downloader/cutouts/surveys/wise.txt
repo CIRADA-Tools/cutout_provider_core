@@ -1,0 +1,111 @@
+Astroquery Note:
+Eric: astroquery.ibe (https://astroquery.readthedocs.io/en/latest/ibe/ibe.html) NB => ibeClass()
+Cutout Server Extraction Examples: https://irsa.ipac.caltech.edu/docs/irsa_image_server.html,
+
+So for ibe lib we'd use query_region (where wise = ibeClass()):
+
+> In [70]: wise.query_region?                                                                                                                                                                                               
+> Signature:
+> wise.query_region(
+>     ['coordinate=None', 'where=None', 'mission=None', 'dataset=None', 'table=None', 'columns=None', 'width=None', 'height=None', "intersect='OVERLAPS'", 'most_centered=False'],
+> )
+> Docstring:
+> For certain missions, this function can be used to search for image and
+> catalog files based on a point, a box (bounded by great circles) and/or
+> an SQL-like ``where`` clause.
+> 
+> If ``coordinates`` is specified, then the optional ``width`` and
+> ``height`` arguments control the width and height of the search
+> box. If neither ``width`` nor ``height`` are provided, then the
+> search area is a point. If only one of ``width`` or ``height`` are
+> specified, then the search area is a square with that side length
+> centered at the coordinate.
+> 
+> Parameters
+> ----------
+> coordinate : str, `astropy.coordinates` object
+>     Gives the position of the center of the box if performing a box
+>     search. If it is a string, then it must be a valid argument to
+>     `~astropy.coordinates.SkyCoord`. Required if ``where`` is absent.
+> where : str
+>     SQL-like query string. Required if ``coordinates`` is absent.
+> mission : str
+>     The mission to be used (if not the default mission).
+> dataset : str
+>     The dataset to be used (if not the default dataset).
+> table : str
+>     The table to be queried (if not the default table).
+> columns : str, list
+>     A space-separated string or a list of strings of the names of the
+>     columns to return.
+> width : str or `~astropy.units.Quantity` object
+>     Width of the search box if ``coordinates`` is present.
+> 
+>     The string must be parsable by `~astropy.coordinates.Angle`. The
+>     appropriate `~astropy.units.Quantity` object from `astropy.units`
+>     may also be used.
+> height : str, `~astropy.units.Quantity` object
+>     Height of the search box if ``coordinates`` is present.
+> 
+>     The string must be parsable by `~astropy.coordinates.Angle`. The
+>     appropriate `~astropy.units.Quantity` object from `astropy.units`
+>     may also be used.
+> intersect : ``'COVERS'``, ``'ENCLOSED'``, ``'CENTER'``, ``'OVERLAPS'``
+>     Spatial relationship between search box and image footprint.
+> 
+>     ``'COVERS'``: X must completely contain S. Equivalent to
+>     ``'CENTER'`` and ``'OVERLAPS'`` if S is a point.
+> 
+>     ``'ENCLOSED'``: S must completely contain X. If S is a point, the
+>     query will always return an empty image table.
+> 
+>     ``'CENTER'``: X must contain the center of S. If S is a point, this
+>     is equivalent to ``'COVERS'`` and ``'OVERLAPS'``.
+> 
+>     ``'OVERLAPS'``: The intersection of S and X is non-empty. If S is a
+>     point, this is equivalent to ``'CENTER'`` and ``'COVERS'``.
+> most_centered : bool
+>     If True, then only the most centered image is returned.
+> 
+> Returns
+> -------
+> table : `~astropy.table.Table`
+>     A table containing the results of the query
+> File:      /anaconda3/envs/py3/lib/python3.6/site-packages/astroquery/ibe/core.py
+> Type:      method
+> 
+> In [71]:
+
+
+Extracting WISE Meta Data:
+
+   In [64]: coord                                                                                                                                                                                                            
+   Out[64]: 
+   <SkyCoord (ICRS): (ra, dec) in deg
+       (162.33807373, -0.66805941)>
+   
+   In [65]: size                                                                                                                                                                                                             
+   Out[65]: <Quantity 0.08333333 deg>
+   
+   In [66]: results_table=wise.query_region(coordinate=coord,mission='wise',dataset='allwise',table='p3am_cdd',width=size,height=size,intersect='COVERS')                                                                    
+   WARNING: AstropyDeprecationWarning: The truth value of a Quantity is ambiguous. In the future this will raise a ValueError. [astropy.units.quantity]
+   
+   In [67]: results_table                                                                                                                                                                                                    
+   Out[67]: 
+   <Table length=4>
+   in_row_id    in_ra          in_dec      band   crval1    crval2       ra1              dec1      ... magzpunc    coadd_id          date_obs1                mid_obs                date_obs2        numfrms qa_status
+                                                   deg       deg         deg              deg       ...   mag                         datetimeZ               datetimeZ               datetimeZ                         
+     int64     float64        float64     int64  float64   float64     float64          float64     ... float64      str13              str23                   str23                   str23           int64     str6  
+   --------- ------------ --------------- ----- ---------- ------- ---------------- --------------- ... -------- ------------- ----------------------- ----------------------- ----------------------- ------- ---------
+           1 162.33807373 -0.668059408665     4 161.849351     0.0 162.631861471071 -0.782437502732 ...    0.012 1618p000_ac51 2010-05-28 18:29:12.390 2010-05-30 08:34:51.981 2010-05-31 21:06:05.613     132    Prelim
+           1 162.33807373 -0.668059408665     2 161.849351     0.0 162.631861471071 -0.782437502732 ...    0.007 1618p000_ac51 2010-05-28 18:29:12.390 2010-05-31 14:44:52.504 2010-12-07 16:09:02.199     252    Prelim
+           1 162.33807373 -0.668059408665     3 161.849351     0.0 162.631861471071 -0.782437502732 ...    0.012 1618p000_ac51 2010-05-28 18:29:12.390 2010-05-30 08:34:51.981 2010-05-31 21:06:05.613     132    Prelim
+           1 162.33807373 -0.668059408665     1 161.849351     0.0 162.631861471071 -0.782437502732 ...    0.006 1618p000_ac51 2010-05-28 18:29:12.390 2010-05-31 14:44:52.504 2010-12-07 16:09:02.199     252    Prelim
+   
+   In [68]: 
+
+re., meta table='p3am_cdd' documentation https://irsa.ipac.caltech.edu/ibe/docs/wise/allwise/p3am_cdd/, we find the files here are  https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/p3am_cdd/16/1618/1618p000_ac51/. So, for example, to grab w1 cutouts, we'd use,
+
+wget https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/p3am_cdd/16/1618/1618p000_ac51/1618p000_ac51-w1-int-3.fits
+
+
