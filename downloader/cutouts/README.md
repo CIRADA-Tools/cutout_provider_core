@@ -11,7 +11,7 @@ Grabbing cutouts from various surveys
 | FIRST | Radio |
 | NVSS | Radio|
 | VLASS| Radio|
-|AKARI|Infrared|
+|WISE|Infrared|
 | SDSS| Optical|
 | PanSTARRS| Optical|
 
@@ -20,7 +20,7 @@ Grabbing cutouts from various surveys
 | Survey | Band|
 |---|---|
 |LOTSS|Radio|
-|WISE|Infrared|
+|Akari|Infrared|
 |BOSS|Optical|
 |GALEX|Ultraviolet|
 |3XMMRLQSO|X-Ray|
