@@ -54,30 +54,33 @@ class WISE(Survey):
         )
 
         if len(metadata)==0:
-            metadata = wise.query_region(
-                coordinate = position,
-                mission    = 'wise',
-                dataset    = 'allwise',
-                table      = self.metadata_root,
-                columns    = 'band,coadd_id',
-                width      = edge,
-                height     = edge,
-                intersect  = 'OVERLAPS'
-            )
-            status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
-            #status.append(f"{metadata[metadata['band']==1]}")
+            # TODO: handle later
+            #metadata = wise.query_region(
+            #    coordinate = position,
+            #    mission    = 'wise',
+            #    dataset    = 'allwise',
+            #    table      = self.metadata_root,
+            #    columns    = 'band,coadd_id',
+            #    width      = edge,
+            #    height     = edge,
+            #    intersect  = 'OVERLAPS'
+            #)
+            #status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
+            ##status.append(f"{metadata[metadata['band']==1]}")
+            status.append(f"> WISE: Position ({position.ra}, {position.dec}) has overlapping tiles.")
         else:
             status.append("> WISE: ...")
 
         coadd_ids = self.__get_coadd_ids(metadata)
         fits_urls = self.__get_fits_urls(coadd_ids)
-        for i in fits_urls:
-            status.append(f"> {i}")
-        print("{0}".format('\n'.join(status)))
+
+        # temp prints
         if len(fits_urls)==0:
-            print("> https://WHOOPS!")
-        #    print(metadata)
-        #    print(position)
+            status.append("> https://WHOOPS!")
+        else:
+            for fits_url in fits_urls:
+                status.append(f"> {fits_url}")
+        print("{0}".format('\n'.join(status)))
 
         return get_fits(fits_urls[0]) if len(fits_urls) > 0 else None
 
