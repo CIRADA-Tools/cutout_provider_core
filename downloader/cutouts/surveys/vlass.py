@@ -114,41 +114,41 @@ def cutout(hdu, position, size):
     return mem_file.getvalue()
 
 
-# make the directory structure if it doesn't exist
-def make_dir(dirname):
+## make the directory structure if it doesn't exist
+#def make_dir(dirname):
+#
+#    try:
+#        os.makedirs(dirname)
+#    except OSError as e:
+#        if e.errno != errno.EEXIST:
+#            raise
 
-    try:
-        os.makedirs(dirname)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
 
-
-def mosaic(cutouts):
-
-    td = tempfile.mkdtemp()
-    input_dir = '{directory}/input'.format(directory=td)
-    output_dir = '{directory}/output'.format(directory=td)
-    make_dir(input_dir)
-
-    try:
-        for i, c in enumerate(cutouts):
-
-            with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
-                tmp.write(bytes(c))
-        os.listdir(td)
-        montage_wrapper.mosaic(input_dir, output_dir)
-
-        with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
-
-            merged = f.read()
-
-    finally:
-        shutil.rmtree(output_dir)
-        shutil.rmtree(input_dir)
-        shutil.rmtree(td)
-
-    return merged
+#def mosaic(cutouts):
+#
+#    td = tempfile.mkdtemp()
+#    input_dir = '{directory}/input'.format(directory=td)
+#    output_dir = '{directory}/output'.format(directory=td)
+#    make_dir(input_dir)
+#
+#    try:
+#        for i, c in enumerate(cutouts):
+#
+#            with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
+#                tmp.write(bytes(c))
+#        os.listdir(td)
+#        montage_wrapper.mosaic(input_dir, output_dir)
+#
+#        with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
+#
+#            merged = f.read()
+#
+#    finally:
+#        shutil.rmtree(output_dir)
+#        shutil.rmtree(input_dir)
+#        shutil.rmtree(td)
+#
+#    return merged
 
 
 def get_query_url(tilename, position, size):
@@ -199,7 +199,7 @@ class VLASS(Survey):
 
         if len(cutouts) > 1:
             try:
-                c = mosaic(cutouts)
+                c = self.mosaic(cutouts)
             except montage_wrapper.status.MontageError as e:
                 print(e, file=sys.stderr)
                 return None

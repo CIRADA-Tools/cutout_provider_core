@@ -160,7 +160,6 @@ def batch_process():
     # testing out 1 save to file threads (absolutely not necessary)
     for _ in range(savers):
         WorkerThread(save_cutout, out_q).start()
-
     in_q.join()
 
     for _ in range(savers):
