@@ -9,6 +9,8 @@ from astropy.table import Table
 
 from .survey import Survey
 class PanSTARRS(Survey):
+    def __init__(self):
+        super().__init__()
 
     def get_cutout(self,position, size, filters='gri'):
 

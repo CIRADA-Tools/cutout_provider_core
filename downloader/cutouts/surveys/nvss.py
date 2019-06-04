@@ -2,6 +2,8 @@ from astropy import units as u
 
 from .survey import Survey
 class NVSS(Survey):
+    def __init__(self):
+        super().__init__()
 
     def get_cutout(self,position, size):
 

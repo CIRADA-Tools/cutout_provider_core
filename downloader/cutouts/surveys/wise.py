@@ -18,6 +18,7 @@ class WISE(Survey):
         self.filter = filter
         self.metadata_root = 'p3am_cdd'
         self.url_root = f"https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/{self.metadata_root}"
+        super().__init__()
 
     def __get_coadd_ids(self,metadata):
         if len(metadata) > 0:

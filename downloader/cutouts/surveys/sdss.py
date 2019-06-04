@@ -3,6 +3,8 @@ import urllib
 
 from .survey import Survey
 class SDSS(Survey):
+    def __init__(self):
+        super().__init__()
 
     def get_cutout(self,position,size):
 

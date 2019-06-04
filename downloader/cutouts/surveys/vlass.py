@@ -133,6 +133,8 @@ def get_query_url(tilename, position, size):
 
 from .survey import Survey
 class VLASS(Survey):
+    def __init__(self):
+        super().__init__()
 
     def get_cutout(self,position, size):
 
