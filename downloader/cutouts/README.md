@@ -6,20 +6,20 @@ Grabbing cutouts from various surveys
 
 ### Currently included surveys:
 
-| Survey | Band | 
+| Survey | Band |
 |---|---|
 | FIRST | Radio |
-| NVSS | Radio|  
-| VLASS| Radio| 
-| SDSS| Optical| 
-| PanSTARRS| Optical| 
+| NVSS | Radio|
+| VLASS| Radio|
+|AKARI|Infrared|
+| SDSS| Optical|
+| PanSTARRS| Optical|
 
 ### Surveys to include:
 
-| Survey | Band| 
+| Survey | Band|
 |---|---|
 |LOTSS|Radio|
-|AKARI|Infrared|
 |WISE|Infrared|
 |BOSS|Optical|
 |GALEX|Ultraviolet|
