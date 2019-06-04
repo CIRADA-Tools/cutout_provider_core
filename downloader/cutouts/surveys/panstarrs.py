@@ -12,7 +12,7 @@ class PanSTARRS(Survey):
     def __init__(self):
         super().__init__()
 
-    def get_cutout(self,position, size, filters='gri'):
+    def get_cutout(self,position, size, filters='i'):
 
         pix_scale = 0.25 * (u.arcsec/u.pix)
         pixels = (size / pix_scale).to(u.pix)
