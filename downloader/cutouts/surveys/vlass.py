@@ -21,11 +21,8 @@ from astropy.wcs import WCS
 from astropy.nddata.utils import Cutout2D
 from astropy.nddata.utils import NoOverlapError
 
+# TODO: factor out
 import montage_wrapper
-
-from .survey import Survey
-from .fits_request import get_fits
-from .fits_request import create_fits
 
 
 def load_subtile_csv():
@@ -114,43 +111,6 @@ def cutout(hdu, position, size):
     return mem_file.getvalue()
 
 
-## make the directory structure if it doesn't exist
-#def make_dir(dirname):
-#
-#    try:
-#        os.makedirs(dirname)
-#    except OSError as e:
-#        if e.errno != errno.EEXIST:
-#            raise
-
-
-#def mosaic(cutouts):
-#
-#    td = tempfile.mkdtemp()
-#    input_dir = '{directory}/input'.format(directory=td)
-#    output_dir = '{directory}/output'.format(directory=td)
-#    make_dir(input_dir)
-#
-#    try:
-#        for i, c in enumerate(cutouts):
-#
-#            with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
-#                tmp.write(bytes(c))
-#        os.listdir(td)
-#        montage_wrapper.mosaic(input_dir, output_dir)
-#
-#        with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
-#
-#            merged = f.read()
-#
-#    finally:
-#        shutil.rmtree(output_dir)
-#        shutil.rmtree(input_dir)
-#        shutil.rmtree(td)
-#
-#    return merged
-
-
 def get_query_url(tilename, position, size):
 
     url = 'http://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout'
@@ -171,6 +131,7 @@ def get_query_url(tilename, position, size):
     return "{url}?{query_string}".format(url=url, query_string=query)
 
 
+from .survey import Survey
 class VLASS(Survey):
 
     def get_cutout(self,position, size):
@@ -183,7 +144,7 @@ class VLASS(Survey):
         urls = [get_query_url(tile, position, size) for tile in tiles]
 
         if tiles:
-            hdu_lists = [h for h in [get_fits(url) for url in urls] if h]
+            hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
         else:
             print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
             return None
@@ -209,5 +170,5 @@ class VLASS(Survey):
             except IndexError:
                 return None
 
-        return create_fits(c)
+        return self.create_fits(c)
 

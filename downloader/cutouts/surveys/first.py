@@ -1,9 +1,6 @@
 from astropy import units as u
 
 from .survey import Survey
-from .fits_request import get_fits
-
-
 class FIRST(Survey):
 
     def get_cutout(self,position, size):
@@ -21,4 +18,4 @@ class FIRST(Survey):
             'FITS': 1
         }
 
-        return get_fits(url, post_values)
+        return self.get_fits(url, post_values)

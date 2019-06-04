@@ -5,9 +5,6 @@ from astropy.table import Table
 
 from astroquery.ibe import IbeClass
 
-from .survey import Survey
-from .fits_request import get_fits
-
 from enum import Enum
 class wiseFilters(Enum):
     w1 = 1
@@ -15,6 +12,7 @@ class wiseFilters(Enum):
     w3 = 3
     w4 = 4
 
+from .survey import Survey
 class WISE(Survey):
     def __init__(self,filter=wiseFilters.w1):
         self.filter = filter
@@ -82,6 +80,6 @@ class WISE(Survey):
                 status.append(f"> {fits_url}")
         print("{0}".format('\n'.join(status)))
 
-        return get_fits(fits_urls[0]) if len(fits_urls) > 0 else None
+        return self.get_fits(fits_urls[0]) if len(fits_urls) > 0 else None
 
 

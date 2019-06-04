@@ -1,9 +1,6 @@
 from astropy import units as u
 
 from .survey import Survey
-from .fits_request import get_fits
-
-
 class NVSS(Survey):
 
     def get_cutout(self,position, size):
@@ -37,6 +34,4 @@ class NVSS(Survey):
             'Type': 'application/octet-stream'
         }
 
-        return get_fits(url, post_values)
-
-
+        return self.get_fits(url, post_values)

@@ -2,9 +2,6 @@ from astropy import units as u
 import urllib
 
 from .survey import Survey
-from .fits_request import get_fits
-
-
 class SDSS(Survey):
 
     def get_cutout(self,position,size):
@@ -25,4 +22,4 @@ class SDSS(Survey):
 
         url = "http://legacysurvey.org/viewer/fits-cutout?{query}".format(query=query_string)
 
-        return get_fits(url)
+        return self.get_fits(url)

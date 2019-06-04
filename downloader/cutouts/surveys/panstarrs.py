@@ -8,9 +8,6 @@ import numpy
 from astropy.table import Table
 
 from .survey import Survey
-from .fits_request import get_fits
-
-
 class PanSTARRS(Survey):
 
     def get_cutout(self,position, size, filters='gri'):
@@ -25,7 +22,7 @@ class PanSTARRS(Survey):
         url = self.geturl(ra=ra, dec=dec, size=pixels, filters=filters, format='fits')
 
         if url:
-            bands = [y for y in [get_fits(x) for x in url] if y]
+            bands = [y for y in [self.get_fits(x) for x in url] if y]
             return self.combine_bands(bands)
         else:
             return None
