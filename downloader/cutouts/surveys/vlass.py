@@ -17,8 +17,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import Angle
 from astropy.io import fits
-from astropy.wcs import WCS
-from astropy.nddata.utils import Cutout2D
+
 from astropy.nddata.utils import NoOverlapError
 
 from astroquery.cadc import Cadc
@@ -168,40 +167,6 @@ class VLASS(Survey):
         return urls
 
 
-    def __squeeze(self,hdu):
-
-        w = WCS(hdu.header)
-
-        # trim to 2d from 4d
-        w = w.dropaxis(2).dropaxis(2)
-        img_data = np.squeeze(hdu.data)
-
-        img = fits.PrimaryHDU(img_data, header=hdu.header)
-
-        # writing to a pretend file in memory
-        mem_file = io.BytesIO()
-        img.writeto(mem_file)
-        return mem_file.getvalue()
-
-
-    def __cutout(self, hdu, position, size):
-    
-        w = WCS(hdu.header)
-    
-        # trim to 2d from 4d
-        w = w.dropaxis(2).dropaxis(2)
-        img_data = np.squeeze(hdu.data)
-    
-        stamp = Cutout2D(img_data, position, size, wcs=w, mode='partial', copy=True)
-        header = stamp.wcs.to_header()
-        img = fits.PrimaryHDU(stamp.data, header=header)
-    
-        # writing to a pretend file in memory
-        mem_file = io.BytesIO()
-        img.writeto(mem_file)
-        return mem_file.getvalue()
-
-
     def get_tile_cutouts(self, position, size):
         if position.dec.value > 89:
             print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
@@ -212,7 +177,7 @@ class VLASS(Survey):
         cutouts = list()
         for hdu_list in hdu_lists:
             try:
-                img = self.__squeeze(hdu_list[0]) if self.is_cutout_server else self.__cutout(hdu_list[0], position, size)
+                img = self.squeeze(hdu_list[0]) if self.is_cutout_server else self.cutout(hdu_list[0], position, size)
                 cutouts.append(img)
             except NoOverlapError as e:
                 if self.is_cutout_server:
@@ -223,7 +188,7 @@ class VLASS(Survey):
                     # TODO: The original script produces a this error, but ignores it... prelminary exploration 
                     #       seems to indicate it's because the cutouts overlap with no excess... so perhaps its
                     #       OK, to trim the cutouts servers stuff to taste using cutout(hdu_list[0], position, size), 
-                    #       instead of self.__squeeze(hdu_list[0]) on self.is_cutout_server == True; effectly it would
+                    #       instead of self.squeeze(hdu_list[0]) on self.is_cutout_server == True; effectly it would
                     #       trim fat caused by the mapping size -> radius = size/sqrt(2).
                     #
                     #       Need to consult with Michael Ramsay (original author).

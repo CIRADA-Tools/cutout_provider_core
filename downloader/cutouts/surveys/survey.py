@@ -4,13 +4,17 @@ import sys
 import tempfile
 import shutil
 
-import montage_wrapper
 
 import urllib.request
 import urllib.parse
 import urllib.error
 
+import numpy as np
+from astropy.wcs import WCS
 from astropy.io import fits
+
+import montage_wrapper
+from astropy.nddata.utils import Cutout2D
 
 # abstract class for a survey
 from abc import ABC, abstractmethod
@@ -91,6 +95,24 @@ class Survey(ABC):
         return merged
 
 
+    # TODO: Need to incorporate this somehow into creat_fits(...); right now, 
+    #       it's VLASS specific.
+    def squeeze(self,hdu):
+
+        w = WCS(hdu.header)
+
+        # trim to 2d from 4d
+        w = w.dropaxis(2).dropaxis(2)
+        img_data = np.squeeze(hdu.data)
+
+        img = fits.PrimaryHDU(img_data, header=hdu.header)
+
+        # writing to a pretend file in memory
+        mem_file = io.BytesIO()
+        img.writeto(mem_file)
+        return mem_file.getvalue()
+
+
     # tries to create a fits file from bytes.
     # on fail it returns None
     def create_fits(self, data):
@@ -122,6 +144,24 @@ class Survey(ABC):
         response = self.__send_request(url, payload)
         # note that it returns None if the response isn't a valid fits
         return self.create_fits(response)
+
+
+    def cutout(self, hdu, position, size):
+    
+        w = WCS(hdu.header)
+    
+        # trim to 2d from 4d
+        w = w.dropaxis(2).dropaxis(2)
+        img_data = np.squeeze(hdu.data)
+    
+        stamp = Cutout2D(img_data, position, size, wcs=w, mode='partial', copy=True)
+        header = stamp.wcs.to_header()
+        img = fits.PrimaryHDU(stamp.data, header=header)
+    
+        # writing to a pretend file in memory
+        mem_file = io.BytesIO()
+        img.writeto(mem_file)
+        return mem_file.getvalue()
 
 
     # grab a cutout of size <size> centered on <position>
