@@ -26,41 +26,46 @@ from astroquery.cadc import Cadc
 # TODO: factor out
 import montage_wrapper
 
-def get_subtiles():
-    def load_subtile_csv():
+
+# tile_query() static function contructor...
+def tile_query():
+    # get vlass quick-look image info list
+    def get_subtiles():
         script_location = Path(__file__).absolute().parent
-        with open(script_location/'VLASS_subtiles.csv', 'r') as infile:
-            reader = csv.DictReader(infile)
-            extracted = ((tile['ra_centre'], tile['dec_centre'], tile['file']) for tile in reader)
-            ra, dec, file = zip(*extracted)
-            ra = Angle(list(ra), unit=u.hourangle)
-            dec = Angle(list(dec), unit=u.deg)
-            coords = SkyCoord(ra=ra, dec=dec)
-            subtiles = {
-                'files': file,
-                'catalog': coords
-            }
-            return subtiles
+        try:
+            # load the pickle quick-look image info
+            with open(script_location/'vlass_tiles.pkl','rb') as infile:
+                tile_list = pickle.load(infile)
+        except IOError as e:
+            # whoops!
+            if e.errno == errno.ENOENT:
+                # csv info loader
+                def load_subtile_csv():
+                    script_location = Path(__file__).absolute().parent
+                    with open(script_location/'VLASS_subtiles.csv', 'r') as infile:
+                        reader = csv.DictReader(infile)
+                        extracted = ((tile['ra_centre'], tile['dec_centre'], tile['file']) for tile in reader)
+                        ra, dec, file = zip(*extracted)
+                        ra = Angle(list(ra), unit=u.hourangle)
+                        dec = Angle(list(dec), unit=u.deg)
+                        coords = SkyCoord(ra=ra, dec=dec)
+                        subtiles = {
+                            'files': file,
+                            'catalog': coords
+                        }
+                        return subtiles
+                # create the pickle from the vlass csv quick-look image info file
+                print("No sky coordinates")
+                print("Generating sky coordinates (should only need to do this once)")
+                tile_list = load_subtile_csv()
+                print("Saving sky coordinates")
+                with open(script_location/'vlass_tiles.pkl', 'wb+') as outfile:
+                    pickle.dump(tile_list, outfile)
+            else:
+                raise
+        return tile_list
 
-    script_location = Path(__file__).absolute().parent
-    try:
-        with open(script_location/'vlass_tiles.pkl', 'rb') as infile:
-            tile_list = pickle.load(infile)
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            print("No sky coordinates")
-            print("Generating sky coordinates (should only need to do this once)")
-            tile_list = load_subtile_csv()
-            print("Saving sky coordinates")
-            with open(script_location/'vlass_tiles.pkl', 'wb+') as outfile:
-                pickle.dump(tile_list, outfile)
-        else:
-            raise
-
-    return tile_list
-
-
-def tile_query(tile_list):
+    # define closest_tiles file function
     def closest_tiles(coord, tile_list, coord_size=5*u.arcmin, max_results=None):
         mask = coord.separation(tile_list['catalog']) < 0.5*u.deg + coord_size
         indices = (i for i, m in enumerate(mask) if m)
@@ -75,13 +80,15 @@ def tile_query(tile_list):
              print(f"VLASS: Not tiles found for ({coord.ra.to(u.hms)}, {coord.dec})")
         return results
 
+    # return a closer of tite_query() with loaded vlass title information
     def query(coord, *args, **kwargs):
-        return closest_tiles(coord, tile_list, *args, **kwargs)
+        return closest_tiles(coord, get_subtiles(), *args, **kwargs)
 
     return query
 
-
-intersecting_tiles = tile_query(get_subtiles())
+# TODO: No longer thread safe -- fix!
+# instatiate the title_query() function
+intersecting_tiles = tile_query()
 
 
 from .survey import Survey
@@ -90,6 +97,7 @@ class VLASS(Survey):
         super().__init__()
 
         self.is_cutout_server = is_cutout_server
+        self.intersecting_tiles = intersecting_tiles
 
         if self.is_cutout_server:
             print("=> Using CADC cutout server!")
@@ -142,7 +150,7 @@ class VLASS(Survey):
             query = urllib.parse.urlencode(query_dict)
             return "{url}?{query_string}".format(url=url, query_string=query)
 
-        tiles = intersecting_tiles(position, size)  # the actual file names
+        tiles = self.intersecting_tiles(position, size)  # the actual file names
         if len(tiles)==0:
             print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
             return list()
