@@ -68,7 +68,7 @@ def csv_to_dict(filename):
     return entries
 
 
-def get_target_list():
+def get_target_list(size=5*u.arcmin):
 
     # initial list of 17 galaxies
     #list1 = csv_to_dict('BH12_multicomponent_zlt0p05_targetlist2.csv')
@@ -84,8 +84,7 @@ def get_target_list():
     targets = [
         {
             'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
-            'size': 5*u.arcmin
-            #'size': 7*u.arcmin
+            'size': size
         }
         for x in sources]
 
@@ -135,7 +134,9 @@ def batch_process():
 
     # toss all the targets into the queue, including for all surveys
     # i.e some position in both NVSS and VLASS and SDSS, etc.
-    targets = get_target_list()
+    targets = get_target_list(3*u.arcmin)
+    #targets = get_target_list() # debug
+    #targets = get_target_list(7*u.arcmin) # debug
     zero_padding = len(f"{len(targets)}")
     for idx, target in enumerate(targets):
 
