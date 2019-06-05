@@ -71,7 +71,7 @@ class Survey(ABC):
         td = tempfile.mkdtemp()
         input_dir = '{directory}/input'.format(directory=td)
         output_dir = '{directory}/output'.format(directory=td)
-        self.make_dir(input_dir)
+        self.__make_dir(input_dir)
 
         try:
             for i, c in enumerate(cutouts):
@@ -118,6 +118,7 @@ class Survey(ABC):
 
 
     def get_fits(self, url, payload=None):
+        print(f"Fetching: {url}")
         response = self.__send_request(url, payload)
         # note that it returns None if the response isn't a valid fits
         return self.create_fits(response)
