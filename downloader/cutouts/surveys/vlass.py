@@ -21,6 +21,8 @@ from astropy.wcs import WCS
 from astropy.nddata.utils import Cutout2D
 from astropy.nddata.utils import NoOverlapError
 
+from astroquery.cadc import Cadc
+
 # TODO: factor out
 import montage_wrapper
 
@@ -101,22 +103,21 @@ def tile_query(tile_list):
 
 intersecting_tiles = tile_query(get_subtiles())
 
-# Greg Sivalkoff patach...
-from astroquery.cadc import Cadc
-def construct_cadc_url(baseurl, position, radius):
-    ICRS_position = position.transform_to('icrs')
-    basefile = baseurl.split('pub/')[1].split('?')[0]
-    if (basefile[-10:] == 'subim.fits' and basefile[:6] == 'VLASS/'):
-        url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:' 
-               + urllib.parse.quote(basefile) 
-               + ('&cutout=Circle+ICRS+{}+{}+{}').format(ICRS_position.ra.degree,
-                                                         ICRS_position.dec.degree,
-                                                         radius.to(u.degree).value))
-        return url
-    else:
-        print('CADC URL appears to be incorrect: {}'.format(basefile))
-        return None
+# Greg Sivalkoff patch...
 def get_tile_urls(position,size):
+    def construct_cadc_url(baseurl, position, radius):
+        ICRS_position = position.transform_to('icrs')
+        basefile = baseurl.split('pub/')[1].split('?')[0]
+        if (basefile[-10:] == 'subim.fits' and basefile[:6] == 'VLASS/'):
+            url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:' 
+                   + urllib.parse.quote(basefile) 
+                   + ('&cutout=Circle+ICRS+{}+{}+{}').format(ICRS_position.ra.degree,
+                                                             ICRS_position.dec.degree,
+                                                             radius.to(u.degree).value))
+            return url
+        else:
+            print('CADC URL appears to be incorrect: {}'.format(basefile))
+            return None
     cadc = Cadc()
     radius = size/np.sqrt(2.0)
     metadata = cadc.query_region(
@@ -128,7 +129,6 @@ def get_tile_urls(position,size):
         return list()
     base_urls = cadc.get_data_urls(metadata)
     urls = [construct_cadc_url(base_url, position, radius) for base_url in base_urls]
-    #urls = [construct_cadc_url(base_url, position, 0.5*u.deg+radius) for base_url in base_urls]
     return urls
 
 
@@ -187,26 +187,28 @@ def get_query_url(tilename, position, size):
 
 from .survey import Survey
 class VLASS(Survey):
-    def __init__(self,is_cutout_server=False):
-        self.is_cutout_server = is_cutout_server
+    def __init__(self,is_cutout_server=True):
         super().__init__()
+        self.is_cutout_server = is_cutout_server
+
+        if self.is_cutout_server:
+            print("=> Using CADC cutout server!")
+        else:
+            print("=> Using VLASS quick-look images!")
+
 
     def get_tile_cutouts(self, position, size):
         if position.dec.value > 89:
             print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
 
         if self.is_cutout_server:
-            print("=> Using the cutout server!")
             urls = get_tile_urls(position,size)
-            print(f"VLASS Tiles: {len(urls)}")
             if len(urls)>0:
                 hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
-                print(f"len(hdu_lists): {len(hdu_lists)}")
             else:
                 print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
                 return list() 
         else:
-            print("=> Using quick look images!")
             tiles = intersecting_tiles(position, size)  # the actual file names
             urls = [get_query_url(tile, position, size) for tile in tiles]
             if tiles:
@@ -222,61 +224,26 @@ class VLASS(Survey):
                 cutouts.append(img)
             except NoOverlapError as e:
                 if self.is_cutout_server:
-                import re
-                sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-                print(f"Overlap Error: {sexadecimal} => {urls}")
+                    import re
+                    sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+                    print(f"Overlap Error: {sexadecimal} => {urls}")
                 else:
-                   # TODO: The original script produces a this error, but ignores it... prelminary exploration 
-                   #       seems to indicate it's because the cutouts overlap with no excess... so perhaps its
-                   #       OK, to trim the cutouts servers stuff to taste using cutout(hdu_list[0], position, size), 
-                   #       instead of squeeze(hdu_list[0]) on self.is_cutout_server == True; effectly it would trim
-                   #       fat caused by the mapping size -> radius = size/sqrt(2).
-                   pass
+                    # TODO: The original script produces a this error, but ignores it... prelminary exploration 
+                    #       seems to indicate it's because the cutouts overlap with no excess... so perhaps its
+                    #       OK, to trim the cutouts servers stuff to taste using cutout(hdu_list[0], position, size), 
+                    #       instead of squeeze(hdu_list[0]) on self.is_cutout_server == True; effectly it would trim
+                    #       fat caused by the mapping size -> radius = size/sqrt(2).
+                    pass
 
         return cutouts
 
 
     def get_cutout(self,position, size):
-
-        #if position.dec.value > 89:
-        #    print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
-
-        ##tiles = intersecting_tiles(position, size)  # the actual file names
-        ##
-        ##urls = [get_query_url(tile, position, size) for tile in tiles]
-        ## 
-        ##if tiles:
-        ##    hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
-        ##else:
-        ##    print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
-        ##    return None
-
-        #urls = get_tile_urls(position,size)
-        #print(f"VLASS Tiles: {len(urls)}")
-        #if len(urls)>0:
-        #    hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
-        #    print(f"len(hdu_lists): {len(hdu_lists)}")
-        #else:
-        #    print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
-        #    return None
-
-        #cutouts = list()
-        #for hdu_list in hdu_lists:
-        #    try:
-        #        #img = cutout(hdu_list[0], position, size)
-        #        img = squeeze(hdu_list[0])
-        #        cutouts.append(img)
-        #    except NoOverlapError as e:
-        #        import re
-        #        sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-        #        print(f"Overlap Error: {sexadecimal} => {urls}")
-        #        pass
         cutouts = self.get_tile_cutouts(position,size)
 
         if len(cutouts)==0:
             return None
 
-        print(f"len(cutouts): {len(cutouts)}")
         if len(cutouts) > 1:
             try:
                 c = self.mosaic(cutouts)
