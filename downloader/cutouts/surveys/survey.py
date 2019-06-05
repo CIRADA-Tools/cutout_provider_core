@@ -164,6 +164,24 @@ class Survey(ABC):
         return mem_file.getvalue()
 
 
+    def trim_tile(self, hdu, position, size):
+    
+        w = WCS(hdu.header)
+    
+        # trim to 2d from 4d
+        w = w.dropaxis(2).dropaxis(2)
+        img_data = np.squeeze(hdu.data)
+    
+        stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
+        header = stamp.wcs.to_header()
+        img = fits.PrimaryHDU(stamp.data, header=header)
+    
+        # writing to a pretend file in memory
+        mem_file = io.BytesIO()
+        img.writeto(mem_file)
+        return mem_file.getvalue()
+
+
     # grab a cutout of size <size> centered on <position>
     @abstractmethod
     def get_cutout(self, position, size):

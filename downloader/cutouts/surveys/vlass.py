@@ -167,12 +167,34 @@ class VLASS(Survey):
         return urls
 
 
+    def get_tiles(self,position,size):
+        urls = self.get_tile_urls(position,size)
+        hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
+        return hdu_lists
+
+    def paste_tiles(self,hdu_tiles,position,size):
+        img = None
+        if len(hdu_tiles) > 1:
+            try:
+                imgs = [img for img in [self.squeeze(tile) for tile in hdu_tiles]]
+                img = self.mosaic(imgs)
+            except montage_wrapper.status.MontageError as e:
+                #print(e, file=sys.stderr)
+                print(f"Mosaicing Failed: {e}: file={sys.stderr}")
+        elif len(hdu_tiles) == 1:
+                img = hdu_tiles
+        if img:
+            try:
+                img = self.cutout(img,position,size)
+            except Exception as e:
+                print(f"Trim Failed: {e}")
+        return img
+
     def get_tile_cutouts(self, position, size):
         if position.dec.value > 89:
             print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
 
-        urls = self.get_tile_urls(position,size)
-        hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
+        hdu_lists = self.get_tiles(position,size)
 
         cutouts = list()
         for hdu_list in hdu_lists:
@@ -192,17 +214,18 @@ class VLASS(Survey):
                     #       trim fat caused by the mapping size -> radius = size/sqrt(2).
                     #
                     #       Need to consult with Michael Ramsay (original author).
+                    #
+                    #       Update: See (*) TODO. (In consultaion with M Ramsay Jun 5, 19.)
                     pass
 
         return cutouts
 
-
     def get_cutout(self,position, size):
         cutouts = self.get_tile_cutouts(position,size)
-
+    
         if len(cutouts)==0:
             return None
-
+    
         if len(cutouts) > 1:
             try:
                 c = self.mosaic(cutouts)
@@ -214,6 +237,9 @@ class VLASS(Survey):
                 c = cutouts[0]
             except IndexError:
                 return None
-
+    
         return self.create_fits(c)
+    # (*) TODO: replacement process... that is, first mosiac then cut...
+    #def get_cutout(self,position, size):
+    #    return self.paste_tiles(self.get_tiles(position,size),position,size)
 
