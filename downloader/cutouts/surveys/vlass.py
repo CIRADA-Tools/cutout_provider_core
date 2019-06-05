@@ -189,6 +189,7 @@ from .survey import Survey
 class VLASS(Survey):
     def __init__(self,is_cutout_server=True):
         super().__init__()
+
         self.is_cutout_server = is_cutout_server
 
         if self.is_cutout_server:
@@ -233,6 +234,8 @@ class VLASS(Survey):
                     #       OK, to trim the cutouts servers stuff to taste using cutout(hdu_list[0], position, size), 
                     #       instead of squeeze(hdu_list[0]) on self.is_cutout_server == True; effectly it would trim
                     #       fat caused by the mapping size -> radius = size/sqrt(2).
+                    #
+                    #       Need to consult with Michael Ramsay (original author).
                     pass
 
         return cutouts
