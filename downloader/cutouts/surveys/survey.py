@@ -141,22 +141,23 @@ class Survey(ABC):
         return self.create_fits(response)
 
 
-    def cutout(self, hdu, position, size):
-    
-        w = WCS(hdu.header)
-    
-        # trim to 2d from 4d
-        w = w.dropaxis(2).dropaxis(2)
-        img_data = np.squeeze(hdu.data)
-    
-        stamp = Cutout2D(img_data, position, size, wcs=w, mode='partial', copy=True)
-        header = stamp.wcs.to_header()
-        img = fits.PrimaryHDU(stamp.data, header=header)
-    
-        # writing to a pretend file in memory
-        mem_file = io.BytesIO()
-        img.writeto(mem_file)
-        return mem_file.getvalue()
+    #     * * * D E P R E C A T E D * * *
+    #def cutout(self, hdu, position, size):
+    #
+    #    w = WCS(hdu.header)
+    #
+    #    # trim to 2d from 4d
+    #    w = w.dropaxis(2).dropaxis(2)
+    #    img_data = np.squeeze(hdu.data)
+    #
+    #    stamp = Cutout2D(img_data, position, size, wcs=w, mode='partial', copy=True)
+    #    header = stamp.wcs.to_header()
+    #    img = fits.PrimaryHDU(stamp.data, header=header)
+    #
+    #    # writing to a pretend file in memory
+    #    mem_file = io.BytesIO()
+    #    img.writeto(mem_file)
+    #    return mem_file.getvalue()
 
 
     def trim_tile(self, hdu, position, size):

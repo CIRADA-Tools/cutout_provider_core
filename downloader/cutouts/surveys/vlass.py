@@ -172,6 +172,7 @@ class VLASS(Survey):
         hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
         return hdu_lists
 
+
     def paste_tiles(self,hdu_tiles,position,size):
         img = None
         if len(hdu_tiles) > 1:
@@ -182,43 +183,46 @@ class VLASS(Survey):
                 print(f"Mosaicing Failed: {e}: file={sys.stderr}")
         elif len(hdu_tiles) == 1:
                 img = hdu_tiles[0]
-        if img:
-            try:
-                img = self.trim_tile(img,position,size)
-            except Exception as e:
-                print(f"Trim Failed: {e}")
+        #if img:
+        #    try:
+        #        img = self.trim_tile(img,position,size)
+        #    except Exception as e:
+        #        print(f"Trim Failed: {e}")
         return img
 
-    def get_tile_cutouts(self, position, size):
-        if position.dec.value > 89:
-            print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
 
-        hdu_lists = self.get_tiles(position,size)
-
-        cutouts = list()
-        for hdu_list in hdu_lists:
-            try:
-                img = self.get_image(hdu_list) if self.is_cutout_server else self.cutout(hdu_list[0], position, size)
-                cutouts.append(img)
-            except NoOverlapError as e:
-                if self.is_cutout_server:
-                    import re
-                    #sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-                    print(f"Overlap Error: {self.get_sexy_string(position)} => {urls}")
-                else:
-                    # TODO: The original script produces a this error, but ignores it... prelminary exploration 
-                    #       seems to indicate it's because the cutouts overlap with no excess... so perhaps its
-                    #       OK, to trim the cutouts servers stuff to taste using cutout(hdu_list[0], position, size), 
-                    #       instead of self.get_image(hdu_list[0]) on self.is_cutout_server == True; effectly it would
-                    #       trim fat caused by the mapping size -> radius = size/sqrt(2).
-                    #
-                    #       Need to consult with Michael Ramsay (original author).
-                    #
-                    #       Update: See (*) TODO. (In consultaion with M Ramsay Jun 5, 19.)
-                    pass
-
-        return cutouts
-
+    #            * * * D E P R E C A T E D * * *
+    #def get_tile_cutouts(self, position, size):
+    #    if position.dec.value > 89:
+    #        print("Warning: cutouts near the poles may give unexpected results/fail", file=sys.stderr)
+    #
+    #    hdu_lists = self.get_tiles(position,size)
+    #
+    #    cutouts = list()
+    #    for hdu_list in hdu_lists:
+    #        try:
+    #            img = self.get_image(hdu_list) if self.is_cutout_server else self.cutout(hdu_list[0], position, size)
+    #            cutouts.append(img)
+    #        except NoOverlapError as e:
+    #            if self.is_cutout_server:
+    #                import re
+    #                #sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+    #                print(f"Overlap Error: {self.get_sexy_string(position)} => {urls}")
+    #            else:
+    #                # TODO: The original script produces a this error, but ignores it... prelminary exploration 
+    #                #       seems to indicate it's because the cutouts overlap with no excess... so perhaps its
+    #                #       OK, to trim the cutouts servers stuff to taste using cutout(hdu_list[0], position, size), 
+    #                #       instead of self.get_image(hdu_list[0]) on self.is_cutout_server == True; effectly it would
+    #                #       trim fat caused by the mapping size -> radius = size/sqrt(2).
+    #                #
+    #                #       Need to consult with Michael Ramsay (original author).
+    #                #
+    #                #       Update: See (*) TODO. (In consultaion with M Ramsay Jun 5, 19.)
+    #                pass
+    #
+    #    return cutouts
+    #
+    #
     #def get_cutout(self,position, size):
     #    cutouts = self.get_tile_cutouts(position,size)
     #
