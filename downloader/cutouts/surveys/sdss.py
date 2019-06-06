@@ -1,10 +1,19 @@
 from astropy import units as u
 import urllib
 
+from enum import Enum
+class sdssFilters(Enum):
+    g = 1 
+    r = 2
+    i = 3
+    z = 4
+    y = 5
+
 from .survey import Survey
 class SDSS(Survey):
-    def __init__(self):
+    def __init__(self,filter=sdssFilters.g):
         super().__init__()
+        self.filter = filter
 
 
     def get_tile_urls(self,position,size):
@@ -15,7 +24,7 @@ class SDSS(Survey):
             'ra': position.ra.value,
             'dec': position.dec.value,
             'layer': 'sdss2',
-            'bands': 'grz',
+            'bands': self.filter.name,
             'pixscale': pix_scale.value,
             'size': int(pixels.value),
         }

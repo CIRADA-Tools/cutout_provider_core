@@ -15,10 +15,10 @@ class wiseFilters(Enum):
 from .survey import Survey
 class WISE(Survey):
     def __init__(self,filter=wiseFilters.w1):
+        super().__init__()
         self.filter = filter
         self.metadata_root = 'p3am_cdd'
         self.url_root = f"https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/{self.metadata_root}"
-        super().__init__()
 
     def __get_coadd_ids(self,metadata):
         if len(metadata) > 0:
