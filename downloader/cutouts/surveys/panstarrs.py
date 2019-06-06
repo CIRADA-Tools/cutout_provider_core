@@ -9,25 +9,40 @@ from astropy.table import Table
 
 from .survey import Survey
 class PanSTARRS(Survey):
-    def __init__(self):
+    def __init__(self,filters='i'):
         super().__init__()
 
-    def get_cutout(self,position, size, filters='i'):
+        self.filters = filters
 
+    def get_tile_urls(self,position,size):
         pix_scale = 0.25 * (u.arcsec/u.pix)
         pixels = (size / pix_scale).to(u.pix)
 
-        ra = position.ra.to(u.deg).value
-        dec = position.dec.to(u.deg).value
+        ra     = position.ra.to(u.deg).value
+        dec    = position.dec.to(u.deg).value
         pixels = int((size / pix_scale).to(u.pix).value)
 
-        url = self.geturl(ra=ra, dec=dec, size=pixels, filters=filters, format='fits')
+        url = self.geturl(ra=ra, dec=dec, size=pixels, filters=self.filters, format='fits')
 
-        if url:
-            bands = [y for y in [self.get_fits(x) for x in url] if y]
-            return self.combine_bands(bands)
-        else:
-            return None
+        return url
+
+    #            * * * D E P R E C A T E D * * *
+    #def get_cutout(self,position, size, filters='i'):
+    #
+    #    pix_scale = 0.25 * (u.arcsec/u.pix)
+    #    pixels = (size / pix_scale).to(u.pix)
+    #
+    #    ra = position.ra.to(u.deg).value
+    #    dec = position.dec.to(u.deg).value
+    #    pixels = int((size / pix_scale).to(u.pix).value)
+    #
+    #    url = self.geturl(ra=ra, dec=dec, size=pixels, filters=filters, format='fits')
+    #
+    #    if url:
+    #        bands = [y for y in [self.get_fits(x) for x in url] if y]
+    #        return self.combine_bands(bands)
+    #    else:
+    #        return None
 
     def combine_bands(self,bands):
 

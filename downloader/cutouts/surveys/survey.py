@@ -24,16 +24,26 @@ class Survey(ABC):
         super().__init__()
 
 
-    # get data over http post
-    def __send_request(self, url, payload=None):
-
-        potential_retries = 5
-
+    def pack(self,url,payload=None):
         if payload:
             data = urllib.parse.urlencode(payload).encode('utf-8')
             request = urllib.request.Request(url, data)
         else:
             request = url
+        return request
+
+
+    # get data over http post
+    def __send_request(self, url, payload=None):
+
+        potential_retries = 5
+
+        #if payload:
+        #    data = urllib.parse.urlencode(payload).encode('utf-8')
+        #    request = urllib.request.Request(url, data)
+        #else:
+        #    request = url
+        request = self.pack(url,payload)
 
         while potential_retries > 0:
 
@@ -179,11 +189,47 @@ class Survey(ABC):
         img.writeto(mem_file)
         return img
 
+
     def get_sexy_string(self,position):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
 
+
+    def get_tiles(self,position,size):
+        urls = self.get_tile_urls(position,size)
+        if len(urls) > 0:
+            hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
+        else:
+            return 0
+        return hdu_lists
+
+
+    def paste_tiles(self,hdu_tiles,position,size):
+        img = None
+        if len(hdu_tiles) > 1:
+            try:
+                imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
+                img = self.create_fits(self.mosaic(imgs))
+            except montage_wrapper.status.MontageError as e:
+                print(f"Mosaicing Failed: {e}: file={sys.stderr}")
+        elif len(hdu_tiles) == 1:
+                img = hdu_tiles[0]
+        if img:
+            try:
+                img = self.trim_tile(img,position,size)
+            except Exception as e:
+                print(f"Trim Failed: {e}")
+        return img
+
+
     # grab a cutout of size <size> centered on <position>
+    #@abstractmethod
+    #def get_cutout(self, position, size):
+    #    pass
+    def get_cutout(self,position, size):
+        return self.paste_tiles(self.get_tiles(position,size),position,size)
+
+
     @abstractmethod
-    def get_cutout(self, position, size):
+    def get_tile_urls(self,position,size):
         pass
