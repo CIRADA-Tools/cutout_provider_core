@@ -99,9 +99,9 @@ class VLASS(Survey):
         self.intersecting_tiles = intersecting_tiles
 
         if self.is_cutout_server:
-            print("=> Using CADC cutout server!")
+            self.print("=> Using CADC cutout server!")
         else:
-            print("=> Using VLASS quick-look images!")
+            self.print("=> Using VLASS quick-look images!")
 
 
     # Greg Sivakoff's CADC cutout server url script...
@@ -117,7 +117,7 @@ class VLASS(Survey):
                                                                  radius.to(u.degree).value))
                 return url
             else:
-                print('CADC URL appears to be incorrect: {}'.format(basefile))
+                self.print('CADC URL appears to be incorrect: {}'.format(basefile))
                 return None
         cadc = Cadc()
         radius = size/np.sqrt(2.0)
@@ -151,7 +151,7 @@ class VLASS(Survey):
 
         tiles = self.intersecting_tiles(position, size)  # the actual file names
         if len(tiles)==0:
-            print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
+            self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
             return list()
         urls = [get_query_url(tile, position, size) for tile in tiles]
         return urls
@@ -163,7 +163,7 @@ class VLASS(Survey):
         else:
             urls = self.__get_vlass_quick_look_image_urls(position,size)
         if len(urls)==0 and self.is_cutout_server:
-            print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
+            self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
         return urls
 
 

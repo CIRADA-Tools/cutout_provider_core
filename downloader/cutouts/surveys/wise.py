@@ -25,7 +25,8 @@ class WISE(Survey):
            coadd_ids = metadata[metadata['band']==self.filter.value]['coadd_id']
            if len(coadd_ids) > 0:
                return coadd_ids
-        return Table()
+        #return Table()
+        return list()
 
     def __get_fits_urls(self,coadd_ids):
         urls = list()
@@ -36,7 +37,7 @@ class WISE(Survey):
         return urls
 
     def get_tile_urls(self,position,size):
-        status = list()
+        #status = list()
 
         wise = IbeClass()
 
@@ -52,23 +53,25 @@ class WISE(Survey):
             intersect  = 'COVERS'
         )
 
+        #if len(metadata)==0:
+        #    # TODO: handle later
+        #    #metadata = wise.query_region(
+        #    #    coordinate = position,
+        #    #    mission    = 'wise',
+        #    #    dataset    = 'allwise',
+        #    #    table      = self.metadata_root,
+        #    #    columns    = 'band,coadd_id',
+        #    #    width      = edge,
+        #    #    height     = edge,
+        #    #    intersect  = 'OVERLAPS'
+        #    #)
+        #    #status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
+        #    ##status.append(f"{metadata[metadata['band']==1]}")
+        #    status.append(f"> Position ({position.ra}, {position.dec}) has overlapping tiles.")
+        #else:
+        #    status.append("> ...")
         if len(metadata)==0:
-            # TODO: handle later
-            #metadata = wise.query_region(
-            #    coordinate = position,
-            #    mission    = 'wise',
-            #    dataset    = 'allwise',
-            #    table      = self.metadata_root,
-            #    columns    = 'band,coadd_id',
-            #    width      = edge,
-            #    height     = edge,
-            #    intersect  = 'OVERLAPS'
-            #)
-            #status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
-            ##status.append(f"{metadata[metadata['band']==1]}")
-            status.append(f"> WISE: Position ({position.ra}, {position.dec}) has overlapping tiles.")
-        else:
-            status.append("> WISE: ...")
+            self.print(f"Position ({position.ra}, {position.dec}) has overlapping tiles.")
 
         coadd_ids = self.__get_coadd_ids(metadata)
         fits_urls = self.__get_fits_urls(coadd_ids)

@@ -135,7 +135,11 @@ def save_cutout(target):
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
     else:
-        print("{0} cutout at {1} returned None".format(type(target['survey']).__name__, target['coord']), sys.stderr)
+        #print("{0}: cutout at {1} returned None: {2}".format(survey, target['coord'], sys.stderr))
+        survey = type(target['survey']).__name__
+        msg_str = f"cutout at {target['coord']} returned None"
+        prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
+        print(prefix_msg_str)
 
 @click.command()
 @click.option('--config-file',default='config.yml',help='yaml search parameters configuration file')

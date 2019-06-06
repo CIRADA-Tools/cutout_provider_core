@@ -23,6 +23,10 @@ class Survey(ABC):
     def __init__(self):
         super().__init__()
 
+    def print(self,string,show_caller=False):
+        prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
+        prefixed_string = "\n".join([f"{prefix}: {s}" for s in string.splitlines()])
+        print(prefixed_string)
 
     def pack(self,url,payload=None):
         if payload:
@@ -70,7 +74,7 @@ class Survey(ABC):
 
             potential_retries -= 1
 
-        print(f"WARNING: Bailed on fetch '{url}'")
+        self.print(f"WARNING: Bailed on fetch '{url}'")
 
 
     # make the directory structure if it doesn't exist
@@ -128,7 +132,7 @@ class Survey(ABC):
         try:
             f = fits.open(fits_file)
         except OSError as e:
-            print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
+            self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
             return None
 
         head = f[0].header
@@ -145,7 +149,7 @@ class Survey(ABC):
 
 
     def get_fits(self, url, payload=None):
-        print(f"Fetching: {url}")
+        self.print(f"Fetching: {url}")
         response = self.__send_request(url, payload)
         # note that it returns None if the response isn't a valid fits
         return self.create_fits(response)
@@ -211,14 +215,14 @@ class Survey(ABC):
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
                 img = self.create_fits(self.mosaic(imgs))
             except montage_wrapper.status.MontageError as e:
-                print(f"Mosaicing Failed: {e}: file={sys.stderr}")
+                self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
         elif len(hdu_tiles) == 1:
                 img = hdu_tiles[0]
         if img:
             try:
                 img = self.trim_tile(img,position,size)
             except Exception as e:
-                print(f"Trim Failed: {e}")
+                self.print(f"Trim Failed: {e}",True)
         return img
 
 
@@ -227,7 +231,13 @@ class Survey(ABC):
     #def get_cutout(self, position, size):
     #    pass
     def get_cutout(self,position, size):
-        return self.paste_tiles(self.get_tiles(position,size),position,size)
+        #return self.paste_tiles(self.get_tiles(position,size),position,size)
+        try:
+            cutout = self.paste_tiles(self.get_tiles(position,size),position,size)
+        except Exception as e:
+            self.print(f"{e}",True)
+            cutout = None
+        return cutout
 
 
     @abstractmethod
