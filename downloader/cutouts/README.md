@@ -34,7 +34,7 @@ Grabbing cutouts from various surveys
 
 From the shell:
 
-`python3 cutout_fetching_tool.py`
+`python3 fetch_cutouts.py`
 
 This will fill `data/out` with the FITS files
 

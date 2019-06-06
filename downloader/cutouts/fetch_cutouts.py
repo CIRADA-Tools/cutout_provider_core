@@ -1,6 +1,9 @@
 import re
 import os
 
+import yaml as yml
+import click
+
 # An example of how to use the survey cutout code
 import csv
 import sys
@@ -68,27 +71,55 @@ def csv_to_dict(filename):
     return entries
 
 
-def get_target_list(size=5*u.arcmin):
+def get_target_list(config_file="config.yml"):
 
+    #   * * * D E P R E C A T E D * * *
     # initial list of 17 galaxies
     #list1 = csv_to_dict('BH12_multicomponent_zlt0p05_targetlist2.csv')
     #list2 = csv_to_dict('BH12_120RA180_minus4DEC16_RC4_targetlist.csv')
     #sources = list1+list2
+    #
+    #sources =  csv_to_dict('targs_for_michelle.csv')
+    config  = yml.load(open(config_file,'r'))['cutouts']
 
-    sources =  csv_to_dict('targs_for_michelle.csv')
+    targets = list()
+    size = config['box_size_armin'] * u.arcmin
+    for coord_csv_file in config['ra_deg_deg_csv_files']:
+        sources = csv_to_dict(coord_csv_file)
 
-    # make all keys lower case to effectively reference case-variants of RA and Dec.
-    sources = [{k.lower(): v for k,v in s.items()} for s in sources]
+        # make all keys lower case to effectively reference case-variants of RA and Dec.
+        sources = [{k.lower(): v for k,v in s.items()} for s in sources]
 
-    # extract position information
-    targets = [
-        {
-            'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
-            'size': size
-        }
-        for x in sources]
+        # extract position information
+        targets.extend([
+            {
+                'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
+                'size': size
+            }
+            for x in sources])
 
     return targets
+
+def get_surveys(config_file="config.yml"):
+    all_surveys = (
+        FIRST.__name__,
+        NVSS.__name__,
+        VLASS.__name__,
+        WISE.__name__,
+        PanSTARRS.__name__,
+        SDSS.__name__,
+    )
+        
+    requested = yml.load(open(config_file))['cutouts']['surveys']
+
+    surveys = list()
+    for survey in all_surveys:
+        for request in requested:
+            if request.lower() == survey.lower():
+                surveys.append(eval("%s()" % survey))
+                break
+
+    return set(surveys)
 
 
 # grab a FITS hdu from some survey
@@ -106,8 +137,12 @@ def save_cutout(target):
     else:
         print("{0} cutout at {1} returned None".format(type(target['survey']).__name__, target['coord']), sys.stderr)
 
+@click.command()
+@click.option('--config-file',default='config.yml',help='yaml search parameters configuration file')
+def batch_process(config_file="config.yml"):
+    """Suvery Cutout fetching script (cf., config.yml)"""
 
-def batch_process():
+    print(f"Using Configuration: {config_file}")
 
     out_dir = "data/out"
     try:
@@ -120,23 +155,23 @@ def batch_process():
     grabbers = 10
     savers = 1
 
-    all_surveys = (
-        FIRST(),
-        NVSS(),
-        VLASS(),
-        WISE(),
-        PanSTARRS(),
-        SDSS(),
-    )
+    #   * * * D E P R E C A T E D * * *
+    #all_surveys = (
+    #    FIRST(),
+    #    NVSS(),
+    #    VLASS(),
+    #    WISE(),
+    #    PanSTARRS(),
+    #    SDSS(),
+    #)
+    all_surveys = get_surveys(config_file)
 
     in_q = queue.Queue()
     out_q = queue.Queue()
 
     # toss all the targets into the queue, including for all surveys
     # i.e some position in both NVSS and VLASS and SDSS, etc.
-    targets = get_target_list(3*u.arcmin)
-    #targets = get_target_list() # debug
-    #targets = get_target_list(7*u.arcmin) # debug
+    targets = get_target_list(config_file)
     zero_padding = len(f"{len(targets)}")
     for idx, target in enumerate(targets):
 

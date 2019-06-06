@@ -1,3 +1,6 @@
+# CLARAN -- SAMPLE FILE
+# => Adjust to taste
+
 # TODO: Envtually there will be a command interface option.
 #       This is good for now, as it makes the development process
 #       go a little smoother...
@@ -15,12 +18,11 @@ cutouts:
     
     surveys:
         - FIRST
-        - NVSS
         - VLASS
         - WISE
         - PanSTARRS
-        - SDSS
 
+#   * * * U N D E R   C O N T R U C T I O N * * *
 # TODO: Implement below...
 # Processing output paramters
 configuration:
