@@ -22,8 +22,7 @@ from astropy.nddata.utils import NoOverlapError
 
 from astroquery.cadc import Cadc
 
-# TODO: factor out
-import montage_wrapper
+#import montage_wrapper
 
 
 # tile_query() static function contructor...

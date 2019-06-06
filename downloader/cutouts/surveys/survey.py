@@ -14,6 +14,8 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.io import fits
 
+from astropy import units as u
+
 import montage_wrapper
 from astropy.nddata.utils import Cutout2D
 
@@ -198,6 +200,9 @@ class Survey(ABC):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
 
+    def get_ra_dec_string(self,position):
+        return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
+
 
     def get_tiles(self,position,size):
         urls = self.get_tile_urls(position,size)
@@ -211,6 +216,7 @@ class Survey(ABC):
     def paste_tiles(self,hdu_tiles,position,size):
         img = None
         if len(hdu_tiles) > 1:
+            self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexy_string(position)}")
             try:
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
                 img = self.create_fits(self.mosaic(imgs))
@@ -219,6 +225,7 @@ class Survey(ABC):
         elif len(hdu_tiles) == 1:
                 img = hdu_tiles[0]
         if img:
+            self.print(f"Trimming J{self.get_sexy_string(position)} to {size}...")
             try:
                 img = self.trim_tile(img,position,size)
             except Exception as e:
@@ -237,6 +244,9 @@ class Survey(ABC):
         except Exception as e:
             self.print(f"{e}",True)
             cutout = None
+
+        self.print(f"Finished processing J{self.get_sexy_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
+
         return cutout
 
 
