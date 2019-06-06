@@ -181,7 +181,7 @@ def batch_process(config_file="config.yml"):
 
             t['survey'] = s
             size = re.sub(r"\.?0+$","","%f" % t['size'].value)
-            t['filename'] = f"{out_dir}/J{s.get_sexy_string(t['coord'])}_s{size}_{type(t['survey']).__name__}.fits"
+            t['filename'] = f"{out_dir}/J{s.get_sexy_string(t['coord'])}_s{size}a_{type(t['survey']).__name__}.fits"
 
             in_q.put(t)
 
