@@ -4,10 +4,11 @@ import sys
 import tempfile
 import shutil
 
-
 import urllib.request
 import urllib.parse
 import urllib.error
+
+import re
 
 import numpy as np
 from astropy.wcs import WCS
@@ -97,15 +98,9 @@ class Survey(ABC):
 
     # TODO: Need to incorporate this somehow into creat_fits(...); right now, 
     #       it's VLASS specific.
-    def squeeze(self,hdu):
-
-        w = WCS(hdu.header)
-
-        # trim to 2d from 4d
-        w = w.dropaxis(2).dropaxis(2)
-        img_data = np.squeeze(hdu.data)
-
-        img = fits.PrimaryHDU(img_data, header=hdu.header)
+    def get_image(self,hdu):
+        img_data = np.squeeze(hdu[0].data)
+        img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
         # writing to a pretend file in memory
         mem_file = io.BytesIO()
@@ -166,21 +161,26 @@ class Survey(ABC):
 
     def trim_tile(self, hdu, position, size):
     
-        w = WCS(hdu.header)
+        w = WCS(hdu[0].header)
     
-        # trim to 2d from 4d
-        w = w.dropaxis(2).dropaxis(2)
-        img_data = np.squeeze(hdu.data)
+        # trim to 2d from nd
+        naxis = w.naxis
+        while naxis > 2:
+            w = w.dropaxis(2)
+            naxis -= 1
+        img_data = np.squeeze(hdu[0].data)
     
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
-        header = stamp.wcs.to_header()
-        img = fits.PrimaryHDU(stamp.data, header=header)
+        img = fits.PrimaryHDU(stamp.data, header=stamp.wcs.to_header())
     
         # writing to a pretend file in memory
         mem_file = io.BytesIO()
         img.writeto(mem_file)
-        return mem_file.getvalue()
+        return img
 
+    def get_sexy_string(self,position):
+        sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+        return sexadecimal 
 
     # grab a cutout of size <size> centered on <position>
     @abstractmethod
