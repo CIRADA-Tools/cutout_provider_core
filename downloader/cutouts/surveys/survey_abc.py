@@ -229,6 +229,11 @@ class SurveyABC(ABC):
 
 
     @abstractmethod
+    def get_filter_setting(self):
+        pass
+
+
+    @abstractmethod
     def get_tile_urls(self,position,size):
         pass
 

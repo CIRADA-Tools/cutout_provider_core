@@ -17,8 +17,8 @@ class SurveyConfig:
     def __init__(self,yml_configuration_file):
         self.config = yml.load(open(yml_configuration_file,'r'))
 
-        print(f"config: {self.config}")
-        print()
+        #print(f"config: {self.config}")
+        #print()
 
         # define supported_surveys
         self.supported_surveys = (
@@ -30,21 +30,21 @@ class SurveyConfig:
             SDSS.__name__,
             # TODO: Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
-        print(f"supported_surveys: {self.supported_surveys}")
+        #print(f"supported_surveys: {self.supported_surveys}")
 
         self.survey_filter_sets = list()
         for supported_survey in self.supported_surveys:
             survey_filters  = eval(f"{supported_survey}.get_filters()")
             if survey_filters:
                 self.survey_filter_sets.append({supported_survey: [f for f in survey_filters]})
-        print(f"survey_filters: {self.survey_filter_sets}")
+        #print(f"survey_filters: {self.survey_filter_sets}")
 
 
         # set survey_names
         self.survey_block = self.config['cutouts']['surveys']
         self.survey_names = self.__extract_surveys_names(self.survey_block)
 
-        print(f"get_survey_names: {self.get_survey_names()}")
+        #print(f"get_survey_names: {self.get_survey_names()}")
 
 
     def __match_filters(self,survey,filters):
@@ -86,7 +86,7 @@ class SurveyConfig:
         def extract_surveys_names_from_config_surveys_block(config_surveys_block):
             survey_names = list()
             for survey in config_surveys_block:
-                print(f"survey: {survey}") # TODO: remove
+                #print(f"survey: {survey}") # TODO: remove
                 if isinstance(survey,str):
                     survey_names.append(survey)
                 elif isinstance(survey,dict):
@@ -130,7 +130,9 @@ class SurveyConfig:
                 name = s if isinstance(s,str) else [k for k in s.keys()][0]
                 if name.lower() == survey.lower() and isinstance(s,dict):
                    survey_parameters = s[name]
-                   if isinstance(survey_parameters,dict) and ('filters' in survey_parameters.keys()):
+                   if isinstance(survey_parameters,dict) and \
+                        ('filters' in survey_parameters.keys()) and \
+                        (len(self.__match_filters(name,survey_parameters['filters'])) > 0):
                        return True
                    break
         return False
@@ -157,4 +159,51 @@ class SurveyConfig:
                         filters = [f.lower() for f in filters]
                     return self.__match_filters(survey,filters)
         return filters
+
+
+    def get_processing_stack(self):
+        # TODO: Fix the repeating message,
+        #
+        #         > In [354]: cfg = SurveyConfig("config_debug.yml") 
+        #         > ...
+        #         > In [355]: cfg.get_processing_stack()
+        #         > 
+        #         > SurveyConfig: INSTANTIATING: FIRST()
+        #         > SurveyConfig: INSTANTIATING: NVSS()
+        #         > SurveyConfig: WARNING: 'VLASS' filter 'foo' is not supported!
+        #         > SurveyConfig: INSTANTIATING: VLASS()
+        #         > VLASS: => Using CADC cutout server!
+        #         > SurveyConfig: INSTANTIATING: WISE(filter=wise_filters.w1)
+        #         > SurveyConfig: WARNING: 'PanSTARRS' filter 'k' is not supported!
+        #         > SurveyConfig: WARNING: 'PanSTARRS' filter 'k' is not supported!
+        #         > SurveyConfig: WARNING: 'PanSTARRS' filter 'k' is not supported!
+        #         > SurveyConfig: INSTANTIATING: PanSTARRS(filter=grizy_filters.i)
+        #         > SurveyConfig: INSTANTIATING: SDSS(filter=grizy_filters.g)
+        #         > SurveyConfig: INSTANTIATING: SDSS(filter=grizy_filters.r)
+        #         > SurveyConfig: INSTANTIATING: SDSS(filter=grizy_filters.i)
+        #         > Out[355]:
+        #         > [<surveys.first.FIRST at 0x11a76acc0>,
+        #         >  <surveys.nvss.NVSS at 0x11a76af28>,
+        #         >  <surveys.vlass.VLASS at 0x11a76a860>,
+        #         >  <surveys.wise.WISE at 0x11a76ac50>,
+        #         >  <surveys.panstarrs.PanSTARRS at 0x11a76af98>,
+        #         >  <surveys.sdss.SDSS at 0x11a76ada0>,
+        #         >  <surveys.sdss.SDSS at 0x11a76a7b8>,
+        #         >  <surveys.sdss.SDSS at 0x11a76a9b0>]
+        #         > 
+        #         > In [356]:
+        #
+        #       problem.
+        processing_stack = list()
+        for survey_name in self.get_survey_names():
+            if self.has_filters(survey_name):
+                for filter in self.get_filters(survey_name):
+                    self.__print(f"INSTANTIATING: {survey_name}(filter={filter})")
+                    processing_stack.append(eval(f"{survey_name}(filter={filter})"))
+            else:
+                self.__print(f"INSTANTIATING: {survey_name}()")
+                processing_stack.append(eval(f"{survey_name}()"))
+        return processing_stack 
+
+
 

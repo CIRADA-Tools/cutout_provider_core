@@ -9,10 +9,11 @@ from astropy import units as u
 from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
 class PanSTARRS(SurveyABC):
-    def __init__(self,filters=grizy_filters.i,trimming_on=True):
+    def __init__(self,filter=grizy_filters.i,trimming_on=True):
         super().__init__(trimming_on)
 
-        self.filters = filters
+        # TODO: Housecleaning: change self.filters to self.filter
+        self.filters = filter
 
 
     # TODO: Determin if useful.
@@ -92,6 +93,10 @@ class PanSTARRS(SurveyABC):
     @staticmethod
     def get_filters():
         return grizy_filters
+
+
+    def get_filter_setting(self):
+        return self.filters
 
 
     def get_tile_urls(self,position,size):

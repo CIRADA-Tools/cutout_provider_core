@@ -20,6 +20,10 @@ class WISE(SurveyABC):
     def get_filters():
         return wise_filters
 
+
+    def get_filter_setting(self):
+        return self.filter
+
     def __get_coadd_ids(self,metadata):
         if len(metadata) > 0:
            coadd_ids = metadata[metadata['band']==self.filter.value]['coadd_id']

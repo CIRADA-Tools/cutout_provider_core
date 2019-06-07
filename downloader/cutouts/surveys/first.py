@@ -10,6 +10,11 @@ class FIRST(SurveyABC):
     def get_filters():
         return None
 
+
+    def get_filter_setting(self):
+        return None
+
+
     def get_tile_urls(self,position,size):
         url = 'https://third.ucllnl.org/cgi-bin/firstimage'
 

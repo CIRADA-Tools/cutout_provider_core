@@ -16,12 +16,12 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 from surveys.survey_config import SurveyConfig
-from surveys.nvss import NVSS
-from surveys.first import FIRST
-from surveys.wise import WISE
-from surveys.sdss import SDSS
-from surveys.vlass import VLASS
-from surveys.panstarrs import PanSTARRS
+#from surveys.nvss import NVSS
+#from surveys.first import FIRST
+#from surveys.wise import WISE
+#from surveys.sdss import SDSS
+#from surveys.vlass import VLASS
+#from surveys.panstarrs import PanSTARRS
 
 
 # kills a thread when given into the queue
@@ -91,25 +91,27 @@ def get_target_list(config_file="config.yml"):
     return targets
 
 def get_surveys(config_file="config.yml"):
-    all_surveys = (
-        FIRST.__name__,
-        NVSS.__name__,
-        VLASS.__name__,
-        WISE.__name__,
-        PanSTARRS.__name__,
-        SDSS.__name__,
-    )
-        
-    requested = [r if isinstance(r,str) else [k for k in r.keys()][0] for r in yml.load(open(config_file))['cutouts']['surveys']]
-
-    surveys = list()
-    for survey in all_surveys:
-        for request in requested:
-            if request.lower() == survey.lower():
-                surveys.append(eval("%s()" % survey))
-                break
-
-    return set(surveys)
+    #all_surveys = (
+    #    FIRST.__name__,
+    #    NVSS.__name__,
+    #    VLASS.__name__,
+    #    WISE.__name__,
+    #    PanSTARRS.__name__,
+    #    SDSS.__name__,
+    #)
+    #    
+    #requested = [r if isinstance(r,str) else [k for k in r.keys()][0] for r in yml.load(open(config_file))['cutouts']['surveys']]
+    #
+    #
+    #surveys = list()
+    #for survey in all_surveys:
+    #    for request in requested:
+    #        if request.lower() == survey.lower():
+    #            surveys.append(eval("%s()" % survey))
+    #            break
+    #
+    #return set(surveys)
+    return SurveyConfig(config_file).get_processing_stack()
 
 
 # grab a FITS hdu from some survey
@@ -165,8 +167,11 @@ def batch_process(config_file="config.yml"):
             t = dict(target)
 
             t['survey'] = s
+            coords = s.get_sexy_string(t['coord'])
             size = re.sub(r"\.?0+$","","%f" % t['size'].value)
-            t['filename'] = f"{out_dir}/J{s.get_sexy_string(t['coord'])}_s{size}arcmin_{type(t['survey']).__name__}.fits"
+            survey = type(t['survey']).__name__
+            filter = (lambda f: '' if f is None else f"-{f.name}")(s.get_filter_setting())
+            t['filename'] = f"{out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
             in_q.put(t)
 
