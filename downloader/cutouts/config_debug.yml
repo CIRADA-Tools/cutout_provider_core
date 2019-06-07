@@ -16,10 +16,15 @@ cutouts:
     surveys:
         - FIRST
         - NVSS
-        - VLASS
-        - WISE
-        - PanSTARRS
-        - SDSS
+        - VLASS:
+              bart: home
+              filters: foo # TODO: fix case when 'foo' is missing for SurveyConfig::get_filters()
+        - WISE:
+              filters: w1
+        - PanSTARRS:
+              filters: [i,k]
+        - SDss:
+              filters: [g,r,i]
 
 # TODO: Implement below...
 # Processing output paramters
