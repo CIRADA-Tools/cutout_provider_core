@@ -15,6 +15,7 @@ from astropy.io import fits
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+from surveys.survey_config import SurveyConfig
 from surveys.nvss import NVSS
 from surveys.first import FIRST
 from surveys.wise import WISE
@@ -99,7 +100,7 @@ def get_surveys(config_file="config.yml"):
         SDSS.__name__,
     )
         
-    requested = yml.load(open(config_file))['cutouts']['surveys']
+    requested = [r if isinstance(r,str) else [k for k in r.keys()][0] for r in yml.load(open(config_file))['cutouts']['surveys']]
 
     surveys = list()
     for survey in all_surveys:
