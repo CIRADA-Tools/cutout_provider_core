@@ -10,6 +10,11 @@ class SDSS(SurveyABC):
         self.filter = filter
 
 
+    @staticmethod
+    def get_filters():
+        return grizy_filters
+
+
     def get_tile_urls(self,position,size):
         pix_scale = 0.262 * (u.arcsec/u.pix)
         pixels = (size / pix_scale).to(u.pix)

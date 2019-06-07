@@ -222,6 +222,13 @@ class SurveyABC(ABC):
         return cutout
 
 
+    @staticmethod
+    @abstractmethod
+    def get_filters():
+        pass
+
+
     @abstractmethod
     def get_tile_urls(self,position,size):
         pass
+

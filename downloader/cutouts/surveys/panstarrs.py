@@ -15,34 +15,23 @@ class PanSTARRS(SurveyABC):
         self.filters = filters
 
 
-    def get_tile_urls(self,position,size):
-        pix_scale = 0.25 * (u.arcsec/u.pix)
-        pixels = (size / pix_scale).to(u.pix)
-
-        ra     = position.ra.to(u.deg).value
-        dec    = position.dec.to(u.deg).value
-        pixels = int((size / pix_scale).to(u.pix).value)
-
-        url = self.geturl(ra=ra, dec=dec, size=pixels, filters=self.filters, format='fits')
-
-        return url
-
-
-    def combine_bands(self,bands):
-        hdus = [b[0] for b in bands]
-        wcs = WCS(hdus[0].header)
-        header = wcs.to_header()
-
-        data = np.stack(reversed([h.data for h in hdus]))
-
-        img = fits.PrimaryHDU(data, header=header)
-
-        return img
+    # TODO: Determin if useful.
+    #   * * * D E P R E C A T E D * * *
+    #def __combine_bands(self,bands):
+    #    hdus = [b[0] for b in bands]
+    #    wcs = WCS(hdus[0].header)
+    #    header = wcs.to_header()
+    #
+    #    data = np.stack(reversed([h.data for h in hdus]))
+    #
+    #    img = fits.PrimaryHDU(data, header=header)
+    #
+    #    return img
 
     # The following two helper functions were taken essentially in full from:
     # https://ps1images.stsci.edu/ps1image.html
 
-    def getimages(self,ra, dec, size=240, filters="grizy"):
+    def __getimages(self,ra, dec, size=240, filters="grizy"):
         """Query ps1filenames.py service to get a list of images
 
         ra, dec = position in degrees
@@ -59,7 +48,7 @@ class PanSTARRS(SurveyABC):
         return table
 
 
-    def geturl(self,ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
+    def __geturl(self,ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
         """Get URL for images in the table
 
         ra, dec = position in degrees
@@ -77,7 +66,7 @@ class PanSTARRS(SurveyABC):
             raise ValueError("color images are available only for jpg or png formats")
         if format not in ("jpg", "png", "fits"):
             raise ValueError("format must be one of jpg, png, fits")
-        table = self.getimages(ra, dec, size=size, filters=filters)
+        table = self.__getimages(ra, dec, size=size, filters=filters)
         url = ("https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?"
                "ra={ra}&dec={dec}&size={size}&format={format}").format(**locals())
         if output_size:
@@ -96,5 +85,23 @@ class PanSTARRS(SurveyABC):
             url = []
             for filename in table['filename']:
                 url.append(urlbase + filename)
+
+        return url
+
+
+    @staticmethod
+    def get_filters():
+        return grizy_filters
+
+
+    def get_tile_urls(self,position,size):
+        pix_scale = 0.25 * (u.arcsec/u.pix)
+        pixels = (size / pix_scale).to(u.pix)
+
+        ra     = position.ra.to(u.deg).value
+        dec    = position.dec.to(u.deg).value
+        pixels = int((size / pix_scale).to(u.pix).value)
+
+        url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filters, format='fits')
 
         return url

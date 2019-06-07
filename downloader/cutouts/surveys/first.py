@@ -5,6 +5,11 @@ class FIRST(SurveyABC):
     def __init__(self,trimming_on=True):
         super().__init__(trimming_on)
 
+
+    @staticmethod
+    def get_filters():
+        return None
+
     def get_tile_urls(self,position,size):
         url = 'https://third.ucllnl.org/cgi-bin/firstimage'
 

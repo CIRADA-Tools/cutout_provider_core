@@ -6,6 +6,11 @@ class NVSS(SurveyABC):
         super().__init__(trimming_on)
 
 
+    @staticmethod
+    def get_filters():
+        return None
+
+
     def get_tile_urls(self,position,size):
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
 

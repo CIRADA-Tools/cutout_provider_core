@@ -158,6 +158,11 @@ class VLASS(SurveyABC):
         return urls
 
 
+    @staticmethod
+    def get_filters():
+        return None
+
+
     def get_tile_urls(self,position,size):
         if self.is_cutout_server:
             urls = self.__get_cadc_cutout_urls(position,size)

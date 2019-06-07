@@ -37,4 +37,5 @@ Also lot of the sandard astronomy pakacges are used, but here's the hightlights:
 * urllib
 * pickle
 * yaml
+* click
 
