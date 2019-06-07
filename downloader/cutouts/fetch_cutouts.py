@@ -25,14 +25,12 @@ from surveys.panstarrs import PanSTARRS
 
 # kills a thread when given into the queue
 class PoisonPill:
-
     def __init__(self):
         pass
 
 
 # A thread that grabs data from a queue, processes, then optionally tosses into another queue
 class WorkerThread(threading.Thread):
-
     def __init__(self, work, input_q, output_q=None, *args, **kwargs):
 
         self.input_q = input_q
@@ -60,7 +58,6 @@ class WorkerThread(threading.Thread):
 
 
 def csv_to_dict(filename):
-
     entries = []
 
     with open(filename, 'r') as infile:
@@ -72,14 +69,6 @@ def csv_to_dict(filename):
 
 
 def get_target_list(config_file="config.yml"):
-
-    #   * * * D E P R E C A T E D * * *
-    # initial list of 17 galaxies
-    #list1 = csv_to_dict('BH12_multicomponent_zlt0p05_targetlist2.csv')
-    #list2 = csv_to_dict('BH12_120RA180_minus4DEC16_RC4_targetlist.csv')
-    #sources = list1+list2
-    #
-    #sources =  csv_to_dict('targs_for_michelle.csv')
     config  = yml.load(open(config_file,'r'))['cutouts']
 
     targets = list()
@@ -159,15 +148,6 @@ def batch_process(config_file="config.yml"):
     grabbers = 10
     savers = 1
 
-    #   * * * D E P R E C A T E D * * *
-    #all_surveys = (
-    #    FIRST(),
-    #    NVSS(),
-    #    VLASS(),
-    #    WISE(),
-    #    PanSTARRS(),
-    #    SDSS(),
-    #)
     all_surveys = get_surveys(config_file)
 
     in_q = queue.Queue()

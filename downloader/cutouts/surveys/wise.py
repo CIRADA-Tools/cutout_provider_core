@@ -5,16 +5,11 @@ from astropy import units as u
 
 from astroquery.ibe import IbeClass
 
-from enum import Enum
-class wiseFilters(Enum):
-    w1 = 1
-    w2 = 2
-    w3 = 3
-    w4 = 4
 
 from .survey import Survey
+from .survey_filters import wise_filters
 class WISE(Survey):
-    def __init__(self,filter=wiseFilters.w1,trimming_on=True):
+    def __init__(self,filter=wise_filters.w1,trimming_on=True):
         super().__init__(trimming_on)
         self.filter = filter
         self.metadata_root = 'p3am_cdd'

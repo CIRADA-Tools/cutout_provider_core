@@ -7,8 +7,9 @@ from astropy.table import Table
 from astropy import units as u
 
 from .survey import Survey
+from .survey_filters import grizy_filters
 class PanSTARRS(Survey):
-    def __init__(self,filters='i',trimming_on=True):
+    def __init__(self,filters=grizy_filters.i,trimming_on=True):
         super().__init__(trimming_on)
 
         self.filters = filters
