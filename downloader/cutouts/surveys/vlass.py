@@ -86,8 +86,8 @@ def tile_query():
 intersecting_tiles = tile_query()
 
 
-from .survey import Survey
-class VLASS(Survey):
+from .survey_abc import SurveyABC
+class VLASS(SurveyABC):
     def __init__(
         self,
         is_cutout_server=True, # True use Cadc I/F; False Use VLASS Quick-Look Images

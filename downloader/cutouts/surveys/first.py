@@ -1,7 +1,7 @@
 from astropy import units as u
 
-from .survey import Survey
-class FIRST(Survey):
+from .survey_abc import SurveyABC
+class FIRST(SurveyABC):
     def __init__(self,trimming_on=True):
         super().__init__(trimming_on)
 

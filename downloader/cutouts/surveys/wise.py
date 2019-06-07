@@ -6,9 +6,9 @@ from astropy import units as u
 from astroquery.ibe import IbeClass
 
 
-from .survey import Survey
+from .survey_abc import SurveyABC
 from .survey_filters import wise_filters
-class WISE(Survey):
+class WISE(SurveyABC):
     def __init__(self,filter=wise_filters.w1,trimming_on=True):
         super().__init__(trimming_on)
         self.filter = filter

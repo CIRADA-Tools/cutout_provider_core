@@ -21,7 +21,7 @@ from astropy.nddata.utils import Cutout2D
 
 # abstract class for a survey
 from abc import ABC, abstractmethod
-class Survey(ABC):
+class SurveyABC(ABC):
     def __init__(self,trimming_on=True):
         super().__init__()
 

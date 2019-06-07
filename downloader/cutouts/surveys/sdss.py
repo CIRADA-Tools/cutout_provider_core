@@ -2,9 +2,9 @@ import urllib
 from astropy import units as u
 
 
-from .survey import Survey
+from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
-class SDSS(Survey):
+class SDSS(SurveyABC):
     def __init__(self,filter=grizy_filters.g,trimming_on=True):
         super().__init__(trimming_on)
         self.filter = filter
