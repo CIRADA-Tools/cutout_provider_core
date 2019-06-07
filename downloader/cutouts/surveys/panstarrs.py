@@ -1,18 +1,18 @@
-from astropy import units as u
-from astropy.io import fits
-from astropy.wcs import WCS
-
 import urllib
 
-import numpy
+import numpy as np
+from astropy.io import fits
+from astropy.wcs import WCS
 from astropy.table import Table
+from astropy import units as u
 
 from .survey import Survey
 class PanSTARRS(Survey):
-    def __init__(self,filters='i'):
-        super().__init__()
+    def __init__(self,filters='i',trimming_on=True):
+        super().__init__(trimming_on)
 
         self.filters = filters
+
 
     def get_tile_urls(self,position,size):
         pix_scale = 0.25 * (u.arcsec/u.pix)
@@ -26,31 +26,13 @@ class PanSTARRS(Survey):
 
         return url
 
-    #            * * * D E P R E C A T E D * * *
-    #def get_cutout(self,position, size, filters='i'):
-    #
-    #    pix_scale = 0.25 * (u.arcsec/u.pix)
-    #    pixels = (size / pix_scale).to(u.pix)
-    #
-    #    ra = position.ra.to(u.deg).value
-    #    dec = position.dec.to(u.deg).value
-    #    pixels = int((size / pix_scale).to(u.pix).value)
-    #
-    #    url = self.geturl(ra=ra, dec=dec, size=pixels, filters=filters, format='fits')
-    #
-    #    if url:
-    #        bands = [y for y in [self.get_fits(x) for x in url] if y]
-    #        return self.combine_bands(bands)
-    #    else:
-    #        return None
 
     def combine_bands(self,bands):
-
         hdus = [b[0] for b in bands]
         wcs = WCS(hdus[0].header)
         header = wcs.to_header()
 
-        data = numpy.stack(reversed([h.data for h in hdus]))
+        data = np.stack(reversed([h.data for h in hdus]))
 
         img = fits.PrimaryHDU(data, header=header)
 
@@ -60,7 +42,6 @@ class PanSTARRS(Survey):
     # https://ps1images.stsci.edu/ps1image.html
 
     def getimages(self,ra, dec, size=240, filters="grizy"):
-
         """Query ps1filenames.py service to get a list of images
 
         ra, dec = position in degrees
@@ -76,8 +57,8 @@ class PanSTARRS(Survey):
         table = Table.read(url, format='ascii')
         return table
 
-    def geturl(self,ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
 
+    def geturl(self,ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
         """Get URL for images in the table
 
         ra, dec = position in degrees
@@ -102,7 +83,7 @@ class PanSTARRS(Survey):
             url = url + "&output_size={}".format(output_size)
         # sort filters from red to blue
         flist = ["yzirg".find(x) for x in table['filter']]
-        table = table[numpy.argsort(flist)]
+        table = table[np.argsort(flist)]
         if color:
             if len(table) > 3:
                 # pick 3 filters

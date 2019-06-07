@@ -1,7 +1,7 @@
 import re
 
-from astropy import units as u
 from astropy.table import Table
+from astropy import units as u
 
 from astroquery.ibe import IbeClass
 
@@ -14,8 +14,8 @@ class wiseFilters(Enum):
 
 from .survey import Survey
 class WISE(Survey):
-    def __init__(self,filter=wiseFilters.w1):
-        super().__init__()
+    def __init__(self,filter=wiseFilters.w1,trimming_on=True):
+        super().__init__(trimming_on)
         self.filter = filter
         self.metadata_root = 'p3am_cdd'
         self.url_root = f"https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/{self.metadata_root}"
@@ -53,23 +53,6 @@ class WISE(Survey):
             intersect  = 'COVERS'
         )
 
-        #if len(metadata)==0:
-        #    # TODO: handle later
-        #    #metadata = wise.query_region(
-        #    #    coordinate = position,
-        #    #    mission    = 'wise',
-        #    #    dataset    = 'allwise',
-        #    #    table      = self.metadata_root,
-        #    #    columns    = 'band,coadd_id',
-        #    #    width      = edge,
-        #    #    height     = edge,
-        #    #    intersect  = 'OVERLAPS'
-        #    #)
-        #    #status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
-        #    ##status.append(f"{metadata[metadata['band']==1]}")
-        #    status.append(f"> Position ({position.ra}, {position.dec}) has overlapping tiles.")
-        #else:
-        #    status.append("> ...")
         if len(metadata)==0:
             self.print(f"Position ({position.ra}, {position.dec}) has overlapping tiles.")
 
@@ -77,54 +60,4 @@ class WISE(Survey):
         fits_urls = self.__get_fits_urls(coadd_ids)
 
         return fits_urls
-
-    #            * * * D E P R E C A T E D * * *
-    #def get_cutout(self,position, size):
-    #    status = list()
-    #
-    #    wise = IbeClass()
-    #
-    #    edge = size.to(u.deg)
-    #    metadata = wise.query_region(
-    #        coordinate = position,
-    #        mission    = 'wise',
-    #        dataset    = 'allwise',
-    #        table      = self.metadata_root,
-    #        columns    = 'band,coadd_id',
-    #        width      = edge,
-    #        height     = edge,
-    #        intersect  = 'COVERS'
-    #    )
-    #
-    #    if len(metadata)==0:
-    #        # TODO: handle later
-    #        #metadata = wise.query_region(
-    #        #    coordinate = position,
-    #        #    mission    = 'wise',
-    #        #    dataset    = 'allwise',
-    #        #    table      = self.metadata_root,
-    #        #    columns    = 'band,coadd_id',
-    #        #    width      = edge,
-    #        #    height     = edge,
-    #        #    intersect  = 'OVERLAPS'
-    #        #)
-    #        #status.append(f"> WISE: Position ({position.ra}, {position.dec}) has {len(metadata)} overlapping tiles.")
-    #        ##status.append(f"{metadata[metadata['band']==1]}")
-    #        status.append(f"> WISE: Position ({position.ra}, {position.dec}) has overlapping tiles.")
-    #    else:
-    #        status.append("> WISE: ...")
-    #
-    #    coadd_ids = self.__get_coadd_ids(metadata)
-    #    fits_urls = self.__get_fits_urls(coadd_ids)
-    #
-    #    # temp prints
-    #    if len(fits_urls)==0:
-    #        status.append("> https://WHOOPS!")
-    #    else:
-    #        for fits_url in fits_urls:
-    #            status.append(f"> {fits_url}")
-    #    print("{0}".format('\n'.join(status)))
-    #
-    #    return self.get_fits(fits_urls[0]) if len(fits_urls) > 0 else None
-
 

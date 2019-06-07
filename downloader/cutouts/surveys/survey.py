@@ -22,8 +22,10 @@ from astropy.nddata.utils import Cutout2D
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class Survey(ABC):
-    def __init__(self):
+    def __init__(self,trimming_on=True):
         super().__init__()
+
+        self.trimming_on = trimming_on
 
     def print(self,string,show_caller=False):
         prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
@@ -44,11 +46,6 @@ class Survey(ABC):
 
         potential_retries = 5
 
-        #if payload:
-        #    data = urllib.parse.urlencode(payload).encode('utf-8')
-        #    request = urllib.request.Request(url, data)
-        #else:
-        #    request = url
         request = self.pack(url,payload)
 
         while potential_retries > 0:
@@ -112,8 +109,6 @@ class Survey(ABC):
         return merged
 
 
-    # TODO: Need to incorporate this somehow into creat_fits(...); right now, 
-    #       it's VLASS specific.
     def get_image(self,hdu):
         img_data = np.squeeze(hdu[0].data)
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
@@ -157,25 +152,6 @@ class Survey(ABC):
         return self.create_fits(response)
 
 
-    #     * * * D E P R E C A T E D * * *
-    #def cutout(self, hdu, position, size):
-    #
-    #    w = WCS(hdu.header)
-    #
-    #    # trim to 2d from 4d
-    #    w = w.dropaxis(2).dropaxis(2)
-    #    img_data = np.squeeze(hdu.data)
-    #
-    #    stamp = Cutout2D(img_data, position, size, wcs=w, mode='partial', copy=True)
-    #    header = stamp.wcs.to_header()
-    #    img = fits.PrimaryHDU(stamp.data, header=header)
-    #
-    #    # writing to a pretend file in memory
-    #    mem_file = io.BytesIO()
-    #    img.writeto(mem_file)
-    #    return mem_file.getvalue()
-
-
     def trim_tile(self, hdu, position, size):
     
         w = WCS(hdu[0].header)
@@ -199,6 +175,7 @@ class Survey(ABC):
     def get_sexy_string(self,position):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
+
 
     def get_ra_dec_string(self,position):
         return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
@@ -224,7 +201,7 @@ class Survey(ABC):
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
         elif len(hdu_tiles) == 1:
                 img = hdu_tiles[0]
-        if img:
+        if self.trimming_on and img:
             self.print(f"Trimming J{self.get_sexy_string(position)} to {size}...")
             try:
                 img = self.trim_tile(img,position,size)
@@ -233,12 +210,7 @@ class Survey(ABC):
         return img
 
 
-    # grab a cutout of size <size> centered on <position>
-    #@abstractmethod
-    #def get_cutout(self, position, size):
-    #    pass
     def get_cutout(self,position, size):
-        #return self.paste_tiles(self.get_tiles(position,size),position,size)
         try:
             cutout = self.paste_tiles(self.get_tiles(position,size),position,size)
         except Exception as e:
