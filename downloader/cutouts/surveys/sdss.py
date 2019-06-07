@@ -1,17 +1,11 @@
 import urllib
 from astropy import units as u
 
-from enum import Enum
-class sdssFilters(Enum):
-    g = 1 
-    r = 2
-    i = 3
-    z = 4
-    y = 5
 
 from .survey import Survey
+from .survey_filters import grizy_filters
 class SDSS(Survey):
-    def __init__(self,filter=sdssFilters.g,trimming_on=True):
+    def __init__(self,filter=grizy_filters.g,trimming_on=True):
         super().__init__(trimming_on)
         self.filter = filter
 
