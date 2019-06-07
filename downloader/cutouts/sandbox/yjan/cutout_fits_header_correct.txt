@@ -1,0 +1,10 @@
+Email from Yjan:
+    [Fri  7 Jun 2019 16:36:01 CDT]
+    sub: fits header correction code
+    
+    Hi Michelle, 
+    
+    You’ll want the two functions in the attached code to correct the fits headers for the cutout images. These are setup to be based on the survey name, the old ‘preserved’ header from the survey image, the cutout array, and the target ra/dec from the input file (currently targs_for_michelle). If the survey isn’t one of ‘PanSTARRS’, ‘VLASS’, ‘FIRST’ or ‘WISE’ then this will still work but the survey info will be less detailed.
+    
+    Cheers,
+    Yjan
