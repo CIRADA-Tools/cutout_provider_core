@@ -24,7 +24,7 @@ cutouts:
         - PanSTARRS:
               filters: [i,k]
         - SDss:
-              filters: [g,r,i]
+              filters: [G,r,i]
 
 # TODO: Implement below...
 # Processing output paramters

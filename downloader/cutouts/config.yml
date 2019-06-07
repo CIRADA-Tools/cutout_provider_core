@@ -17,9 +17,12 @@ cutouts:
         - FIRST
         - NVSS
         - VLASS
-        - WISE
-        - PanSTARRS
-        - SDSS
+        - WISE:
+              filters: w1
+        - PanSTARRS:
+              filters: [i,k]
+        - SDSS:
+              filters: [g,r,i]
 
 # TODO: Implement below...
 # Processing output paramters
