@@ -84,10 +84,11 @@ def save_cutout(target):
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
     else:
-        survey = type(target['survey']).__name__
-        msg_str = f"cutout at {target['coord']} returned None"
-        prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
-        print(prefix_msg_str)
+        #survey = type(target['survey']).__name__
+        #msg_str = f"cutout at {target['coord']} returned None"
+        #prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
+        #print(prefix_msg_str)
+        target['survey'].print(f"cutout at {target['coord']} returned None")
 
 
 @click.command()
