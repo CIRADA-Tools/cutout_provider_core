@@ -22,7 +22,8 @@ from surveys.survey_config import SurveyConfig
 def set_sig_handler(threads):
     def sig_handler(sig, frame):
         #signal.signal(signal.SIGINT, original_sigint)
-        print(" ".join("  ***  CTRL-C RECEIVED! KILLING THREADS... ***"))
+        msg = (lambda s: f"\n{len(s)*'*'}\n{s}\n{len(s)*'*'}\n")("***  CTRL-C RECEIVED! KILLING THREADS... ***")
+        print(" ".join(re.sub('\n','\n  ',msg)))
         for t in threads:
             t.die()
         sys.exit(0)
@@ -50,7 +51,7 @@ class WorkerThread(threading.Thread):
             # if it's swallowed
             if type(task) is PoisonPill:
                 self.input_q.task_done()
-                return
+                break
 
             ret = self.worker(task)
             self.input_q.task_done()
@@ -60,14 +61,9 @@ class WorkerThread(threading.Thread):
 
         if self.kill_recieved:
             try:
-                survey = task['survey']
-                survey.print(' '.join('SHUTTING DOWN GRACEFULLY...'))
-                del survey
+                task['survey'].print("Bye!")
             except:
                 print("Bye!")
-            del self.input_q
-            if self.output_q:
-                del self.output_q
 
     def die(self):
         self.kill_recieved = True
