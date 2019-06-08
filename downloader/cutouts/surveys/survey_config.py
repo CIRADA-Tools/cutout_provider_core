@@ -1,7 +1,15 @@
+#system
 import sys
 
+# configuration
+import csv
 import yaml as yml
 
+# astropy libs
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
+# filters used by various surveys
 from .survey_filters import wise_filters
 from .survey_filters import grizy_filters
 
@@ -28,6 +36,7 @@ class SurveyConfig:
             # TODO: Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
 
+        # set the filters
         self.survey_filter_sets = list()
         for supported_survey in self.supported_surveys:
             survey_filters  = eval(f"{supported_survey}.get_filters()")
@@ -38,34 +47,58 @@ class SurveyConfig:
         self.survey_block = self.config['cutouts']['surveys']
         self.survey_names = self.__extract_surveys_names(self.survey_block)
 
+        # set the cutout size
+        self.size_arcmin = self.config['cutouts']['box_size_armin'] * u.arcmin
 
-    def __match_filters(self,survey,filters):
-        def get_supported_filters(survey):
-            filters = list()
-            if self.has_survey(survey):
-                for survey_filters in self.survey_filter_sets:
-                    s = [k for k in survey_filters.keys()][0]
-                    if s.lower() == survey.lower():
-                      filters = survey_filters[s]
-            return filters
+        # set targets
+        self.targets = list()
+        for coords_csv_file in self.config['cutouts']['ra_deg_deg_csv_files']:
+            sources = self.__csv_to_dict(coords_csv_file)
+    
+            # make all keys lower case to effectively reference case-variants of RA and Dec.
+            sources = [{k.lower(): v for k,v in s.items()} for s in sources]
+    
+            # extract position information
+            self.targets.extend([{
+                'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
+                'size':  self.size_arcmin
+            } for x in sources])
 
-        if isinstance(filters,str):
-            filters = [filters]
 
-        matched = list()
-        for filter in filters:
-            found = False
-            for supported_filter in get_supported_filters(survey):
-                if supported_filter.name.lower() == filter.lower():
-                    found = True
-                    break
-            if found:
-                matched.append(supported_filter)
-                found = False
-            else:
-                self.__print(f"WARNING: '{survey}' filter '{filter}' is not supported!")
-        
-        return matched
+    def __csv_to_dict(self,filename):
+        entries = []
+    
+        with open(filename, 'r') as infile:
+            c = csv.DictReader(infile)
+            for entry in c:
+                entries.append(entry)
+    
+        return entries
+
+    def get_targets(self):
+        return self.targets
+
+
+    def __get_target_list(self,config_file):
+        config  = yml.load(open(config_file,'r'))['cutouts']
+    
+        targets = list()
+        size = config['box_size_armin'] * u.arcmin
+        for coord_csv_file in config['ra_deg_deg_csv_files']:
+            sources = csv_to_dict(coord_csv_file)
+    
+            # make all keys lower case to effectively reference case-variants of RA and Dec.
+            sources = [{k.lower(): v for k,v in s.items()} for s in sources]
+    
+            # extract position information
+            targets.extend([
+                {
+                    'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
+                    'size': size
+                }
+                for x in sources])
+    
+        return targets
 
 
     def __print(self,string,show_caller=False):
@@ -105,6 +138,35 @@ class SurveyConfig:
             if survey.lower() == supported_survey.lower():
                 return True
         return False
+
+
+    def __match_filters(self,survey,filters):
+        def get_supported_filters(survey):
+            filters = list()
+            if self.has_survey(survey):
+                for survey_filters in self.survey_filter_sets:
+                    s = [k for k in survey_filters.keys()][0]
+                    if s.lower() == survey.lower():
+                      filters = survey_filters[s]
+            return filters
+
+        if isinstance(filters,str):
+            filters = [filters]
+
+        matched = list()
+        for filter in filters:
+            found = False
+            for supported_filter in get_supported_filters(survey):
+                if supported_filter.name.lower() == filter.lower():
+                    found = True
+                    break
+            if found:
+                matched.append(supported_filter)
+                found = False
+            else:
+                self.__print(f"WARNING: '{survey}' filter '{filter}' is not supported!")
+        
+        return matched
 
 
     def has_survey(self,survey):

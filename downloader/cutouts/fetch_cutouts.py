@@ -5,7 +5,7 @@ import yaml as yml
 import click
 
 # An example of how to use the survey cutout code
-import csv
+#import csv
 import sys
 
 import threading
@@ -52,37 +52,38 @@ class WorkerThread(threading.Thread):
                 self.output_q.put(item=ret)
 
 
-def csv_to_dict(filename):
-    entries = []
-
-    with open(filename, 'r') as infile:
-        c = csv.DictReader(infile)
-        for entry in c:
-            entries.append(entry)
-
-    return entries
-
-
+#def csv_to_dict(filename):
+#    entries = []
+#
+#    with open(filename, 'r') as infile:
+#        c = csv.DictReader(infile)
+#        for entry in c:
+#            entries.append(entry)
+#
+#    return entries
+#
+#
 def get_target_list(config_file="config.yml"):
-    config  = yml.load(open(config_file,'r'))['cutouts']
-
-    targets = list()
-    size = config['box_size_armin'] * u.arcmin
-    for coord_csv_file in config['ra_deg_deg_csv_files']:
-        sources = csv_to_dict(coord_csv_file)
-
-        # make all keys lower case to effectively reference case-variants of RA and Dec.
-        sources = [{k.lower(): v for k,v in s.items()} for s in sources]
-
-        # extract position information
-        targets.extend([
-            {
-                'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
-                'size': size
-            }
-            for x in sources])
-
-    return targets
+#    config  = yml.load(open(config_file,'r'))['cutouts']
+#
+#    targets = list()
+#    size = config['box_size_armin'] * u.arcmin
+#    for coord_csv_file in config['ra_deg_deg_csv_files']:
+#        sources = csv_to_dict(coord_csv_file)
+#
+#        # make all keys lower case to effectively reference case-variants of RA and Dec.
+#        sources = [{k.lower(): v for k,v in s.items()} for s in sources]
+#
+#        # extract position information
+#        targets.extend([
+#            {
+#                'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
+#                'size': size
+#            }
+#            for x in sources])
+#
+#    return targets
+    return SurveyConfig(config_file).get_targets()
 
 def get_surveys(config_file="config.yml"):
     return SurveyConfig(config_file).get_processing_stack()
