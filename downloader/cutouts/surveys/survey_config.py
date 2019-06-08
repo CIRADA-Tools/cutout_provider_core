@@ -1,5 +1,9 @@
 #system
+import os
 import sys
+
+# utilities
+import re
 
 # configuration
 import csv
@@ -64,6 +68,16 @@ class SurveyConfig:
                 'size':  self.size_arcmin
             } for x in sources])
 
+        # set the data output dir
+        # TODO: Add 'out_dir' (etc?) to yaml config file
+        self.out_dir = "data/out"
+        try:
+            os.makedirs(self.out_dir)
+        except FileExistsError:
+            print(f"Using FITS output dir: {self.out_dir}")
+        else:
+            print(f"Created FITS output dir: {self.out_dir}")
+
 
     def __csv_to_dict(self,filename):
         entries = []
@@ -74,9 +88,6 @@ class SurveyConfig:
                 entries.append(entry)
     
         return entries
-
-    def get_targets(self):
-        return self.targets
 
 
     def __get_target_list(self,config_file):
@@ -214,12 +225,16 @@ class SurveyConfig:
         return filters
 
 
-    def get_processing_stack(self):
+    def get_survey_targets(self):
+        return self.targets
+
+
+    def get_survey_instance_stack(self):
         # TODO: Fix the repeating message,
         #
         #         > In [354]: cfg = SurveyConfig("config_debug.yml") 
         #         > ...
-        #         > In [355]: cfg.get_processing_stack()
+        #         > In [355]: cfg.get_survey_instance_stack()
         #         > 
         #         > SurveyConfig: INSTANTIATING: FIRST()
         #         > SurveyConfig: INSTANTIATING: NVSS()
@@ -259,4 +274,21 @@ class SurveyConfig:
         return processing_stack 
 
 
+    def get_procssing_stack(self):
+        survey_targets = self.get_survey_targets()
+        survey_instances = self.get_survey_instance_stack()
+        procssing_stack = list()
+        for survey_target in survey_targets:
+            for survey_instance in survey_instances:
+                t = dict(survey_target)
+
+                t['survey'] = survey_instance
+
+                coords = survey_instance.get_sexy_string(t['coord'])
+                size = re.sub(r"\.?0+$","","%f" % t['size'].value)
+                survey = type(t['survey']).__name__
+                filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
+                t['filename'] = f"{self.out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                procssing_stack.append(t)
+        return procssing_stack
 
