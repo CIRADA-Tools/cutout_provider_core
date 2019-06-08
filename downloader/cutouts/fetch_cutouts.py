@@ -1,19 +1,20 @@
-import re
+# system
 import os
-
-import yaml as yml
-import click
-
-# An example of how to use the survey cutout code
 import sys
 
+# utilities
+import re
+import click
+import yaml as yml
+
+# astropy
+from astropy.io import fits
+
+# threading
 import threading
 import queue
 
-from astropy.io import fits
-#from astropy.coordinates import SkyCoord
-#from astropy import units as u
-
+# configuration
 from surveys.survey_config import SurveyConfig
 
 
@@ -26,15 +27,12 @@ class PoisonPill:
 # A thread that grabs data from a queue, processes, then optionally tosses into another queue
 class WorkerThread(threading.Thread):
     def __init__(self, work, input_q, output_q=None, *args, **kwargs):
-
         self.input_q = input_q
         self.output_q = output_q
         self.work = work
-
         super().__init__(*args, **kwargs)
 
     def run(self):
-
         while True:
 
             work_in = self.input_q.get()
@@ -51,22 +49,14 @@ class WorkerThread(threading.Thread):
                 self.output_q.put(item=ret)
 
 
-#def get_target_list(config_file="config.yml"):
-#    return SurveyConfig(config_file).get_targets()
-#
-#def get_surveys(config_file="config.yml"):
-#    return SurveyConfig(config_file).get_processing_stack()
-
 # grab a FITS hdu from some survey
 def get_cutout(target):
-
     target['hdu'] = target['survey'].get_cutout(target['coord'], target['size'])
     return target
 
 
 # save an HDU into a file
 def save_cutout(target):
-
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
     else:
@@ -75,6 +65,7 @@ def save_cutout(target):
         msg_str = f"cutout at {target['coord']} returned None"
         prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
         print(prefix_msg_str)
+
 
 @click.command()
 @click.option('--config-file',default='config.yml',help='yaml search parameters configuration file')
@@ -95,28 +86,28 @@ def batch_process(config_file="config.yml"):
     grabbers = 10
     savers = 1
 
-    #all_surveys = get_surveys(config_file)
-    all_surveys = cfg.get_processing_stack()
-
-    in_q = queue.Queue()
+    # set up i/o queues
+    in_q  = queue.Queue()
     out_q = queue.Queue()
+
+    # get ra-dec-size targets for fetching cutouts
+    targets = cfg.get_targets()
+
+    # get instantiate survey class for the set of all survey-[filter] pairs
+    surveys_instances = cfg.get_processing_stack()
 
     # toss all the targets into the queue, including for all surveys
     # i.e., some position in both NVSS and VLASS and SDSS, etc.
-    #targets = get_target_list(config_file)
-    targets = cfg.get_targets()
-    zero_padding = len(f"{len(targets)}")
-    for idx, target in enumerate(targets):
-
-        for s in all_surveys:
-
+    for target in targets:
+        for surveys_instance in surveys_instances:
             t = dict(target)
 
-            t['survey'] = s
-            coords = s.get_sexy_string(t['coord'])
+            t['survey'] = surveys_instance
+
+            coords = surveys_instance.get_sexy_string(t['coord'])
             size = re.sub(r"\.?0+$","","%f" % t['size'].value)
             survey = type(t['survey']).__name__
-            filter = (lambda f: '' if f is None else f"-{f.name}")(s.get_filter_setting())
+            filter = (lambda f: '' if f is None else f"-{f.name}")(surveys_instance.get_filter_setting())
             t['filename'] = f"{out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
             in_q.put(t)
@@ -125,7 +116,6 @@ def batch_process(config_file="config.yml"):
     # in principle these could be chained further, such that you could go
     # targets -> hdus -> save to file -> process to jpg -> save to file
     for _ in range(grabbers):
-
         WorkerThread(get_cutout, in_q, out_q).start()
         in_q.put(PoisonPill())
 
