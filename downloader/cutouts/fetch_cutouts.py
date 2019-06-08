@@ -5,15 +5,14 @@ import yaml as yml
 import click
 
 # An example of how to use the survey cutout code
-#import csv
 import sys
 
 import threading
 import queue
 
 from astropy.io import fits
-from astropy.coordinates import SkyCoord
-from astropy import units as u
+#from astropy.coordinates import SkyCoord
+#from astropy import units as u
 
 from surveys.survey_config import SurveyConfig
 
@@ -52,42 +51,11 @@ class WorkerThread(threading.Thread):
                 self.output_q.put(item=ret)
 
 
-#def csv_to_dict(filename):
-#    entries = []
+#def get_target_list(config_file="config.yml"):
+#    return SurveyConfig(config_file).get_targets()
 #
-#    with open(filename, 'r') as infile:
-#        c = csv.DictReader(infile)
-#        for entry in c:
-#            entries.append(entry)
-#
-#    return entries
-#
-#
-def get_target_list(config_file="config.yml"):
-#    config  = yml.load(open(config_file,'r'))['cutouts']
-#
-#    targets = list()
-#    size = config['box_size_armin'] * u.arcmin
-#    for coord_csv_file in config['ra_deg_deg_csv_files']:
-#        sources = csv_to_dict(coord_csv_file)
-#
-#        # make all keys lower case to effectively reference case-variants of RA and Dec.
-#        sources = [{k.lower(): v for k,v in s.items()} for s in sources]
-#
-#        # extract position information
-#        targets.extend([
-#            {
-#                'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
-#                'size': size
-#            }
-#            for x in sources])
-#
-#    return targets
-    return SurveyConfig(config_file).get_targets()
-
-def get_surveys(config_file="config.yml"):
-    return SurveyConfig(config_file).get_processing_stack()
-
+#def get_surveys(config_file="config.yml"):
+#    return SurveyConfig(config_file).get_processing_stack()
 
 # grab a FITS hdu from some survey
 def get_cutout(target):
@@ -114,6 +82,7 @@ def batch_process(config_file="config.yml"):
     """Suvery Cutout fetching script (cf., config.yml)"""
 
     print(f"Using Configuration: {config_file}")
+    cfg = SurveyConfig(config_file)
 
     out_dir = "data/out"
     try:
@@ -126,14 +95,16 @@ def batch_process(config_file="config.yml"):
     grabbers = 10
     savers = 1
 
-    all_surveys = get_surveys(config_file)
+    #all_surveys = get_surveys(config_file)
+    all_surveys = cfg.get_processing_stack()
 
     in_q = queue.Queue()
     out_q = queue.Queue()
 
     # toss all the targets into the queue, including for all surveys
     # i.e., some position in both NVSS and VLASS and SDSS, etc.
-    targets = get_target_list(config_file)
+    #targets = get_target_list(config_file)
+    targets = cfg.get_targets()
     zero_padding = len(f"{len(targets)}")
     for idx, target in enumerate(targets):
 
