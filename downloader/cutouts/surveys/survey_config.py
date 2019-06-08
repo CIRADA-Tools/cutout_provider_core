@@ -262,15 +262,20 @@ class SurveyConfig:
         #         > In [356]:
         #
         #       problem.
+        pid = 0 # process/task id # TODO: add this to the for statement...
         processing_stack = list()
         for survey_name in self.get_survey_names():
             if self.has_filters(survey_name):
                 for filter in self.get_filters(survey_name):
-                    self.__print(f"INSTANTIATING: {survey_name}(filter={filter})")
-                    processing_stack.append(eval(f"{survey_name}(filter={filter})"))
+                    self.__print(f"INSTANTIATING: {survey_name}(pid={pid},filter={filter})")
+                    worker = eval(f"{survey_name}(filter={filter})")
+                    processing_stack.append(worker)
             else:
-                self.__print(f"INSTANTIATING: {survey_name}()")
-                processing_stack.append(eval(f"{survey_name}()"))
+                self.__print(f"INSTANTIATING: {survey_name}(pid={pid})")
+                worker = eval(f"{survey_name}()")
+                processing_stack.append(worker)
+            worker.set_pid(pid)
+            pid += 1
         return processing_stack 
 
 

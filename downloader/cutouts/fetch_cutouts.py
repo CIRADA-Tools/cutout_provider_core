@@ -61,8 +61,7 @@ class WorkerThread(threading.Thread):
         if self.kill_recieved:
             try:
                 survey = work_in['survey']
-                filter = (lambda f: "()" if f is None else f"(filter='{f.name}')")(survey.get_filter_setting())
-                print(f"{type(survey).__name__}{filter}: {' '.join('SHUTTING DOWN GRACEFULLY...')}")
+                survey.print(' '.join('SHUTTING DOWN GRACEFULLY...'))
                 del survey
             except:
                 print("Bye!")

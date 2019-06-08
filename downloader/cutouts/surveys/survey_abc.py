@@ -22,16 +22,28 @@ from astropy.nddata.utils import Cutout2D
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
-    def __init__(self,trimming_on=True):
+    def __init__(self,
+        trimming_on=True, # 4 debug
+        pid = None        # 4 threads
+    ):
         super().__init__()
 
         self.trimming_on = trimming_on
+        self.pid = None
 
-    def print(self,string,show_caller=False):
-        prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
-        filter = (lambda f: "()" if f is None else f"(filter='{f.name}')")(self.get_filter_setting())
-        prefixed_string = "\n".join([f"{prefix}{filter}: {s}" for s in string.splitlines()])
-        print(prefixed_string)
+
+    def set_pid(self,pid):
+        self.pid = pid
+
+
+    def print(self,msg,show_caller=False):
+        my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
+        my_pid     = "" if self.pid is None else f"pid={self.pid}"
+        my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
+        prefix = f"{my_name}({my_pid}{'' if my_pid=='' or my_filter=='' else ','}{my_filter})"
+        prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg.splitlines()])
+        print(prefixed_output)
+
 
     def pack(self,url,payload=None):
         if payload:
