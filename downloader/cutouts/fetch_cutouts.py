@@ -22,7 +22,7 @@ from surveys.survey_config import SurveyConfig
 def set_sig_handler(threads):
     def sig_handler(sig, frame):
         #signal.signal(signal.SIGINT, original_sigint)
-        print(" ".join("  ***  CTRL-C  RECEIVED! KILLING THREADS... ***"))
+        print(" ".join("  ***  CTRL-C RECEIVED! KILLING THREADS... ***"))
         for t in threads:
             t.die()
         sys.exit(0)
