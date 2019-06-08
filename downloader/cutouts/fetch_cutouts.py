@@ -91,9 +91,9 @@ def save_cutout(target):
 
 
 @click.command()
-@click.option('--config-file',default='config.yml',help='yaml search parameters configuration file')
-def batch_process(config_file="config.yml"):
-    """Survey Cutout fetching script (cf., config.yml)"""
+@click.option('--config-file',default='config_default.yml',help='yaml search parameters configuration file')
+def batch_process(config_file="config_default.yml"):
+    """Survey Cutout fetching script (cf., config_default.yml)"""
 
     # load yaml configuration file
     print(f"Using Configuration: {config_file}")
