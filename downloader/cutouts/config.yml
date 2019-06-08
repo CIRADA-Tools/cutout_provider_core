@@ -20,7 +20,7 @@ cutouts:
         - WISE:
               filters: w1
         - PanSTARRS:
-              filters: [i,k]
+              filters: [i]
         - SDSS:
               filters: [g,r,i]
 
