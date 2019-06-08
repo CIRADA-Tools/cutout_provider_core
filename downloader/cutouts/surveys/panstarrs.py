@@ -16,7 +16,7 @@ class PanSTARRS(SurveyABC):
         self.filters = filter
 
 
-    # TODO: Determin if useful.
+    # TODO: Determine if useful.
     #   * * * D E P R E C A T E D * * *
     #def __combine_bands(self,bands):
     #    hdus = [b[0] for b in bands]
