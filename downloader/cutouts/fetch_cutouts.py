@@ -34,28 +34,6 @@ class PoisonPill:
         pass
 
 
-# A thread that grabs data from a queue, processes, then optionally tosses into another queue
-#class WorkerThread(threading.Thread):
-#    def __init__(self, work, input_q, output_q=None, *args, **kwargs):
-#        self.input_q = input_q
-#        self.output_q = output_q
-#        self.work = work
-#        super().__init__(*args, **kwargs)
-#
-#    def run(self):
-#        while True:
-#            work_in = self.input_q.get()
-#
-#            # if it's swallowed
-#            if type(work_in) is PoisonPill:
-#                self.input_q.task_done()
-#                return
-#
-#            ret = self.work(work_in)
-#            self.input_q.task_done()
-#
-#            if self.output_q:
-#                self.output_q.put(item=ret)
 class WorkerThread(threading.Thread):
     def __init__(self, work, input_q, output_q=None, *args, **kwargs):
         self.input_q = input_q
@@ -134,22 +112,7 @@ def batch_process(config_file="config.yml"):
     for task in cfg.get_procssing_stack():
         in_q.put(task)
 
-    ## spin up a bunch of worker threads to process all the data
-    ## in principle these could be chained further, such that you could go
-    ## targets -> hdus -> save to file -> process to jpg -> save to file
-    #for _ in range(grabbers):
-    #    WorkerThread(get_cutout, in_q, out_q).start()
-    #    in_q.put(PoisonPill())
-    #
-    ## testing out 1 save to file threads (absolutely not necessary)
-    #for _ in range(savers):
-    #    WorkerThread(save_cutout, out_q).start()
-    #in_q.join()
-    #
-    #for _ in range(savers):
-    #    out_q.put(PoisonPill())
-    #out_q.join()
-
+    # need this for ctrl-c shutdown
     threads = list()
 
     # spin up a bunch of worker threads to process all the data
@@ -165,21 +128,13 @@ def batch_process(config_file="config.yml"):
         thread = WorkerThread(save_cutout, out_q)
         thread.start()
         threads.append(thread)
-    set_sig_handler(threads)
+    set_sig_handler(threads) # install ctrl-c handler
     in_q.join()
 
     # testing out 1 save to file threads (absolutely not necessary)
     for _ in range(savers):
         out_q.put(PoisonPill())
     out_q.join()
-
-    #def sig_handler(sig, frame):
-    #    #signal.signal(signal.SIGINT, original_sigint)
-    #    print("   *** CTRL-C received! killing threads... ***")
-    #    for t in threads:
-    #        t.die()
-    #    sys.exit(0)
-    #signal.signal(signal.SIGINT,sig_handler)
 
 
 if __name__ == "__main__":
