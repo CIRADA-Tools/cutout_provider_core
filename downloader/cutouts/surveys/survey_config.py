@@ -78,6 +78,10 @@ class SurveyConfig:
         else:
             print(f"Created FITS output dir: {self.out_dir}")
 
+        # set the overwrite file parameter
+        # TODO: Add this setting to the yaml configuration file
+        self.overwrite = False
+
 
     def __csv_to_dict(self,filename):
         entries = []
@@ -274,6 +278,14 @@ class SurveyConfig:
         return processing_stack 
 
 
+    def set_overwrite(self,overwrite=True):
+        self.overwrite = overwrite
+
+
+    def get_overwrite(self):
+        return self.overwrite
+
+
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
@@ -299,12 +311,15 @@ class SurveyConfig:
                 filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
                 task['filename'] = f"{self.out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
-                # push the task onto the processing stack
-                procssing_stack.append(task)
+                if self.overwrite or (not os.path.isfile(task['filename'])):
+                    # push the task onto the processing stack
+                    procssing_stack.append(task)
 
-                # set the task id ...
-                survey_instance.set_pid(pid)
-                pid += 1
+                    # set the task id ...
+                    survey_instance.set_pid(pid)
+                    pid += 1
+                else:
+                    self.__print(f"File '{task['filename']}' exists; overwrite={self.overwrite}, skipping...")
 
         self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
         return procssing_stack

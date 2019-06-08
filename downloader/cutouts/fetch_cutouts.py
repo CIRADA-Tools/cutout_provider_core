@@ -89,12 +89,19 @@ def save_cutout(target):
 
 @click.command()
 @click.option('--config-file',default='config_default.yml',help='yaml search parameters configuration file')
-def batch_process(config_file="config_default.yml"):
+@click.option('--overwrite',default=False,help='overwrite existing target files')
+def batch_process(
+    config_file,
+    overwrite
+):
     """Survey Cutout fetching script (cf., config_default.yml)"""
 
     # load yaml configuration file
     print(f"Using Configuration: {config_file}")
     cfg = SurveyConfig(config_file)
+
+    print(f'Setting target overwrite mode to {overwrite}')
+    cfg.set_overwrite(overwrite)
 
     grabbers = 10
     savers = 1
