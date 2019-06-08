@@ -270,12 +270,14 @@ class SurveyConfig:
                     self.__print(f"INSTANTIATING: {survey_name}(pid={pid},filter={filter})")
                     worker = eval(f"{survey_name}(filter={filter})")
                     processing_stack.append(worker)
+                    worker.set_pid(pid)
+                    pid += 1
             else:
                 self.__print(f"INSTANTIATING: {survey_name}(pid={pid})")
                 worker = eval(f"{survey_name}()")
                 processing_stack.append(worker)
-            worker.set_pid(pid)
-            pid += 1
+                worker.set_pid(pid)
+                pid += 1
         return processing_stack 
 
 
