@@ -34,7 +34,6 @@ class WorkerThread(threading.Thread):
 
     def run(self):
         while True:
-
             work_in = self.input_q.get()
 
             # if it's swallowed
@@ -60,7 +59,6 @@ def save_cutout(target):
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
     else:
-        #print("{0}: cutout at {1} returned None: {2}".format(survey, target['coord'], sys.stderr))
         survey = type(target['survey']).__name__
         msg_str = f"cutout at {target['coord']} returned None"
         prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
@@ -70,7 +68,8 @@ def save_cutout(target):
 @click.command()
 @click.option('--config-file',default='config.yml',help='yaml search parameters configuration file')
 def batch_process(config_file="config.yml"):
-    """Suvery Cutout fetching script (cf., config.yml)"""
+    """Survey Cutout fetching script (cf., config.yml)"""
+
 
     print(f"Using Configuration: {config_file}")
     cfg = SurveyConfig(config_file)
@@ -79,6 +78,7 @@ def batch_process(config_file="config.yml"):
     savers = 1
 
     # set up i/o queues
+    # TODO: Add ctrl-c queues sigkill...
     in_q  = queue.Queue()
     out_q = queue.Queue()
 
