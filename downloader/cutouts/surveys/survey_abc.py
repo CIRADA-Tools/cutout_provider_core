@@ -29,7 +29,8 @@ class SurveyABC(ABC):
 
     def print(self,string,show_caller=False):
         prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
-        prefixed_string = "\n".join([f"{prefix}: {s}" for s in string.splitlines()])
+        filter = (lambda f: "()" if f is None else f"(filter='{f.name}')")(self.get_filter_setting())
+        prefixed_string = "\n".join([f"{prefix}{filter}: {s}" for s in string.splitlines()])
         print(prefixed_string)
 
     def pack(self,url,payload=None):
