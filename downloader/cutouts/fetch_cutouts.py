@@ -16,12 +16,6 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 from surveys.survey_config import SurveyConfig
-#from surveys.nvss import NVSS
-#from surveys.first import FIRST
-#from surveys.wise import WISE
-#from surveys.sdss import SDSS
-#from surveys.vlass import VLASS
-#from surveys.panstarrs import PanSTARRS
 
 
 # kills a thread when given into the queue
@@ -91,26 +85,6 @@ def get_target_list(config_file="config.yml"):
     return targets
 
 def get_surveys(config_file="config.yml"):
-    #all_surveys = (
-    #    FIRST.__name__,
-    #    NVSS.__name__,
-    #    VLASS.__name__,
-    #    WISE.__name__,
-    #    PanSTARRS.__name__,
-    #    SDSS.__name__,
-    #)
-    #    
-    #requested = [r if isinstance(r,str) else [k for k in r.keys()][0] for r in yml.load(open(config_file))['cutouts']['surveys']]
-    #
-    #
-    #surveys = list()
-    #for survey in all_surveys:
-    #    for request in requested:
-    #        if request.lower() == survey.lower():
-    #            surveys.append(eval("%s()" % survey))
-    #            break
-    #
-    #return set(surveys)
     return SurveyConfig(config_file).get_processing_stack()
 
 
@@ -157,7 +131,7 @@ def batch_process(config_file="config.yml"):
     out_q = queue.Queue()
 
     # toss all the targets into the queue, including for all surveys
-    # i.e some position in both NVSS and VLASS and SDSS, etc.
+    # i.e., some position in both NVSS and VLASS and SDSS, etc.
     targets = get_target_list(config_file)
     zero_padding = len(f"{len(targets)}")
     for idx, target in enumerate(targets):

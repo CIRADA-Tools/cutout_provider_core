@@ -17,9 +17,6 @@ class SurveyConfig:
     def __init__(self,yml_configuration_file):
         self.config = yml.load(open(yml_configuration_file,'r'))
 
-        #print(f"config: {self.config}")
-        #print()
-
         # define supported_surveys
         self.supported_surveys = (
             FIRST.__name__,
@@ -30,21 +27,16 @@ class SurveyConfig:
             SDSS.__name__,
             # TODO: Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
-        #print(f"supported_surveys: {self.supported_surveys}")
 
         self.survey_filter_sets = list()
         for supported_survey in self.supported_surveys:
             survey_filters  = eval(f"{supported_survey}.get_filters()")
             if survey_filters:
                 self.survey_filter_sets.append({supported_survey: [f for f in survey_filters]})
-        #print(f"survey_filters: {self.survey_filter_sets}")
-
 
         # set survey_names
         self.survey_block = self.config['cutouts']['surveys']
         self.survey_names = self.__extract_surveys_names(self.survey_block)
-
-        #print(f"get_survey_names: {self.get_survey_names()}")
 
 
     def __match_filters(self,survey,filters):
@@ -86,7 +78,6 @@ class SurveyConfig:
         def extract_surveys_names_from_config_surveys_block(config_surveys_block):
             survey_names = list()
             for survey in config_surveys_block:
-                #print(f"survey: {survey}") # TODO: remove
                 if isinstance(survey,str):
                     survey_names.append(survey)
                 elif isinstance(survey,dict):
