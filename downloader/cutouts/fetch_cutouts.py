@@ -75,14 +75,6 @@ def batch_process(config_file="config.yml"):
     print(f"Using Configuration: {config_file}")
     cfg = SurveyConfig(config_file)
 
-    #out_dir = "data/out"
-    #try:
-    #    os.makedirs(out_dir)
-    #except FileExistsError:
-    #    print(f"Using FITS output dir: {out_dir}")
-    #else:
-    #    print(f"Created FITS output dir: {out_dir}")
-
     grabbers = 10
     savers = 1
 
@@ -90,27 +82,8 @@ def batch_process(config_file="config.yml"):
     in_q  = queue.Queue()
     out_q = queue.Queue()
 
-    ## get ra-dec-size targets for fetching cutouts
-    #survey_targets = cfg.get_survey_targets()
-
-    ## get instantiate survey class for the set of all survey-[filter] pairs
-    #survey_instances = cfg.get_survey_instance_stack()
-
-    ## toss all the targets into the queue, including for all surveys
-    ## i.e., some position in both NVSS and VLASS and SDSS, etc.
-    #for survey_target in survey_targets:
-    #    for survey_instance in survey_instances:
-    #        t = dict(survey_target)
-    #
-    #        t['survey'] = survey_instance
-    #
-    #        coords = survey_instance.get_sexy_string(t['coord'])
-    #        size = re.sub(r"\.?0+$","","%f" % t['size'].value)
-    #        survey = type(t['survey']).__name__
-    #        filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-    #        t['filename'] = f"{out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
-    #
-    #        in_q.put(t)
+    # toss all the targets into the queue, including for all surveys
+    # i.e., some position in both NVSS and VLASS and SDSS, etc.
     for task in cfg.get_procssing_stack():
         in_q.put(task)
 

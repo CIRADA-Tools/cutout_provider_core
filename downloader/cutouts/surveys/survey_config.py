@@ -275,20 +275,31 @@ class SurveyConfig:
 
 
     def get_procssing_stack(self):
+        # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
+
+        # survey-target processing intances
         survey_instances = self.get_survey_instance_stack()
+
+        # ok, let's build the cutout-fetching processing stack
         procssing_stack = list()
         for survey_target in survey_targets:
             for survey_instance in survey_instances:
-                t = dict(survey_target)
+                # ra-dec-size cutout target
+                task = dict(survey_target)
 
-                t['survey'] = survey_instance
+                # add survey instance for processing stack
+                task['survey'] = survey_instance
 
-                coords = survey_instance.get_sexy_string(t['coord'])
-                size = re.sub(r"\.?0+$","","%f" % t['size'].value)
-                survey = type(t['survey']).__name__
+                # define the fits output filename
+                coords = survey_instance.get_sexy_string(task['coord'])
+                size = re.sub(r"\.?0+$","","%f" % task['size'].value)
+                survey = type(task['survey']).__name__
                 filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                t['filename'] = f"{self.out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
-                procssing_stack.append(t)
+                task['filename'] = f"{self.out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
+
+                # push the task onto the processing stack
+                procssing_stack.append(task)
+
         return procssing_stack
 
