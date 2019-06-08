@@ -18,10 +18,11 @@ import queue
 # configuration
 from surveys.survey_config import SurveyConfig
 
+
 def set_sig_handler(threads):
     def sig_handler(sig, frame):
         #signal.signal(signal.SIGINT, original_sigint)
-        print("   * * *   C T R L - C   R E C E I V E D !   K I L L I N G   T H R E A D S . . .   * * *")
+        print(" ".join("  ***  CTRL-C  RECEIVED! KILLING THREADS... ***"))
         for t in threads:
             t.die()
         sys.exit(0)
@@ -61,7 +62,7 @@ class WorkerThread(threading.Thread):
             try:
                 survey = work_in['survey']
                 filter = (lambda f: "()" if f is None else f"(filter='{f.name}')")(survey.get_filter_setting())
-                print(f"{type(survey).__name__}{filter}: S H U T T I N G   D O W N   G R A C E F U L L Y . . .")
+                print(f"{type(survey).__name__}{filter}: {' '.join('SHUTTING DOWN GRACEFULLY...')}")
                 del survey
             except:
                 print("Bye!")
@@ -95,7 +96,7 @@ def save_cutout(target):
 def batch_process(config_file="config.yml"):
     """Survey Cutout fetching script (cf., config.yml)"""
 
-
+    # load yaml configuration file
     print(f"Using Configuration: {config_file}")
     cfg = SurveyConfig(config_file)
 
@@ -103,7 +104,6 @@ def batch_process(config_file="config.yml"):
     savers = 1
 
     # set up i/o queues
-    # TODO: Add ctrl-c queues sigkill...
     in_q  = queue.Queue()
     out_q = queue.Queue()
 
