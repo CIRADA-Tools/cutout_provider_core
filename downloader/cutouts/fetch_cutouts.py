@@ -36,23 +36,23 @@ class PoisonPill:
 
 
 class WorkerThread(threading.Thread):
-    def __init__(self, work, input_q, output_q=None, *args, **kwargs):
+    def __init__(self, worker, input_q, output_q=None, *args, **kwargs):
         self.input_q = input_q
         self.output_q = output_q
-        self.work = work
+        self.worker = worker
         self.kill_recieved = False
         super().__init__(*args, **kwargs)
 
     def run(self):
         while not self.kill_recieved:
-            work_in = self.input_q.get()
+            task = self.input_q.get()
 
             # if it's swallowed
-            if type(work_in) is PoisonPill:
+            if type(task) is PoisonPill:
                 self.input_q.task_done()
                 return
 
-            ret = self.work(work_in)
+            ret = self.worker(task)
             self.input_q.task_done()
 
             if self.output_q:
@@ -60,7 +60,7 @@ class WorkerThread(threading.Thread):
 
         if self.kill_recieved:
             try:
-                survey = work_in['survey']
+                survey = task['survey']
                 survey.print(' '.join('SHUTTING DOWN GRACEFULLY...'))
                 del survey
             except:
