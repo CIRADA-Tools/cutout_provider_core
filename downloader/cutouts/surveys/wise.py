@@ -17,7 +17,7 @@ class WISE(SurveyABC):
 
 
     @staticmethod
-    def get_filters():
+    def get_supported_filters():
         return wise_filters
 
 

@@ -155,6 +155,20 @@ class SurveyABC(ABC):
         if data.min() == 0 and data.max() == 0:
             return None
 
+        #
+        # Adding Yjan's stuff...
+        #
+
+        ## remove superfluous nesting
+        #if data.ndum > 2:
+        #     data = data[0]
+
+        ## set up pole_longitude
+        #ra = position.ra.to(u.deg).value
+        #pole_longitude = 180.0 if 90.0 < ra and ra < 270.0 else 0
+
+        #sdict = {'BAND': 'na', 'pos_units': 'deg', 'RADESYS': ('FK5', 'assumed'), 'DATE-OBS': 'na'}
+
         return f
 
 
@@ -237,7 +251,7 @@ class SurveyABC(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_filters():
+    def get_supported_filters():
         pass
 
 
@@ -249,4 +263,9 @@ class SurveyABC(ABC):
     @abstractmethod
     def get_tile_urls(self,position,size):
         pass
+
+
+    #@abstrachmethod
+    #def format_fits_header(self,hdu,position):
+    #    pass
 

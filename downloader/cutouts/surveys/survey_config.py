@@ -43,7 +43,7 @@ class SurveyConfig:
         # set the filters
         self.survey_filter_sets = list()
         for supported_survey in self.supported_surveys:
-            survey_filters  = eval(f"{supported_survey}.get_filters()")
+            survey_filters  = eval(f"{supported_survey}.get_supported_filters()")
             if survey_filters:
                 self.survey_filter_sets.append({supported_survey: [f for f in survey_filters]})
 
@@ -214,7 +214,7 @@ class SurveyConfig:
         return self.survey_names
     
 
-    def get_filters(self,survey):
+    def get_supported_filters(self,survey):
         filters = list()
         if self.has_filters(survey):
             for s in self.survey_block:
@@ -269,7 +269,7 @@ class SurveyConfig:
         processing_stack = list()
         for survey_name in self.get_survey_names():
             if self.has_filters(survey_name):
-                for filter in self.get_filters(survey_name):
+                for filter in self.get_supported_filters(survey_name):
                     self.__print(f"INSTANTIATING: {survey_name}(filter={filter})")
                     processing_stack.append(eval(f"{survey_name}(filter={filter})"))
             else:
