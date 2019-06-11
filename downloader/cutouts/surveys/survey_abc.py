@@ -182,6 +182,8 @@ class SurveyABC(ABC):
 
 
     def trim_tile(self, hdu, position, size):
+        if hdu is None:
+            return None
     
         w = WCS(hdu[0].header)
     
@@ -215,21 +217,24 @@ class SurveyABC(ABC):
         if len(urls) > 0:
             hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
         else:
-            return 0
+            return None
         return hdu_lists
 
 
     def paste_tiles(self,hdu_tiles,position,size):
-        img = None
+        if hdu_tiles is None:
+            return None
+
+        hdu = None
         if len(hdu_tiles) > 1:
             self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexy_string(position)}")
             try:
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
-                img = self.create_fits(self.mosaic(imgs))
+                hdu  = self.create_fits(self.mosaic(imgs))
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
         elif len(hdu_tiles) == 1:
-                img = hdu_tiles[0]
+                hdu = hdu_tiles[0]
         # TODO: remove self.trimming_on flag...
         #if self.trimming_on and img:
         #    self.print(f"Trimming J{self.get_sexy_string(position)} to {size}...")
@@ -237,7 +242,8 @@ class SurveyABC(ABC):
         #        img = self.trim_tile(img,position,size)
         #    except Exception as e:
         #        self.print(f"Trim Failed: {e}",True)
-        return img
+        #return img
+        return hdu
 
 
     def get_cutout(self,position, size):
