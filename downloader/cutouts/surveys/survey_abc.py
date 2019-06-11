@@ -145,8 +145,8 @@ class SurveyABC(ABC):
             self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
             return None
 
-        head = f[0].header
-        if head['NAXIS'] == 0 or head['NAXIS1'] == 0 or head['NAXIS2'] == 0:
+        header = f[0].header
+        if header['NAXIS'] == 0 or header['NAXIS1'] == 0 or header['NAXIS2'] == 0:
             return None
 
         data = f[0].data
@@ -162,6 +162,8 @@ class SurveyABC(ABC):
         ## remove superfluous nesting
         #if data.ndum > 2:
         #     data = data[0]
+
+        #print(f" ******************** HEADER ********************\n{header}")
 
         ## set up pole_longitude
         #ra = position.ra.to(u.deg).value
@@ -228,18 +230,21 @@ class SurveyABC(ABC):
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
         elif len(hdu_tiles) == 1:
                 img = hdu_tiles[0]
-        if self.trimming_on and img:
-            self.print(f"Trimming J{self.get_sexy_string(position)} to {size}...")
-            try:
-                img = self.trim_tile(img,position,size)
-            except Exception as e:
-                self.print(f"Trim Failed: {e}",True)
+        # TODO: remove self.trimming_on flag...
+        #if self.trimming_on and img:
+        #    self.print(f"Trimming J{self.get_sexy_string(position)} to {size}...")
+        #    try:
+        #        img = self.trim_tile(img,position,size)
+        #    except Exception as e:
+        #        self.print(f"Trim Failed: {e}",True)
         return img
 
 
     def get_cutout(self,position, size):
         try:
-            cutout = self.paste_tiles(self.get_tiles(position,size),position,size)
+            tiles  = self.get_tiles(position,size)
+            tile   = self.paste_tiles(tiles,position,size)
+            cutout = self.trim_tile(tile,position,size)
         except Exception as e:
             self.print(f"{e}",True)
             cutout = None
