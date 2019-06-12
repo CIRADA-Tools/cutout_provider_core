@@ -91,9 +91,8 @@ class VLASS(SurveyABC):
     def __init__(
         self,
         is_cutout_server=True, # True use Cadc I/F; False Use VLASS Quick-Look Images
-        trimming_on=True       # for debugging
     ):
-        super().__init__(trimming_on)
+        super().__init__()
 
         self.is_cutout_server   = is_cutout_server
 

@@ -305,7 +305,7 @@ class SurveyConfig:
                 task['survey'] = survey_instance
 
                 # define the fits output filename
-                coords = survey_instance.get_sexy_string(task['coord'])
+                coords = survey_instance.get_sexadecimal_string(task['coord'])
                 size = re.sub(r"\.?0+$","","%f" % task['size'].value)
                 survey = type(task['survey']).__name__
                 filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())

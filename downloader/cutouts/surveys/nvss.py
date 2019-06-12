@@ -2,8 +2,8 @@ from astropy import units as u
 
 from .survey_abc import SurveyABC
 class NVSS(SurveyABC):
-    def __init__(self,trimming_on=True):
-        super().__init__(trimming_on)
+    def __init__(self):
+        super().__init__()
 
 
     @staticmethod

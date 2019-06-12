@@ -23,12 +23,10 @@ from astropy.nddata.utils import Cutout2D
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
     def __init__(self,
-        trimming_on=True, # 4 debug
         pid = None        # 4 threads
     ):
         super().__init__()
 
-        self.trimming_on = trimming_on
         self.pid = None
 
 
@@ -37,7 +35,7 @@ class SurveyABC(ABC):
 
 
     # TODO: rename...
-    def get_sexy_string(self,position):
+    def get_sexadecimal_string(self,position):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
 
@@ -217,7 +215,7 @@ class SurveyABC(ABC):
 
         # set BAND default
         if not ('BAND' in header):
-             header['BAND'] = 'na'
+            header['BAND'] = 'na'
 
         # set EPOCH
         if not ('EPOCH' in header):
@@ -235,6 +233,32 @@ class SurveyABC(ABC):
         response = self.__send_request(url, payload)
         # note that it returns None if the response isn't a valid fits
         return self.create_fits(response, position)
+
+
+    def get_tiles(self,position,size):
+        urls = self.get_tile_urls(position,size)
+        if len(urls) > 0:
+            hdu_lists = [h for h in [self.get_fits(url,position) for url in urls] if h]
+        else:
+            return None
+        return hdu_lists
+
+
+    def paste_tiles(self,hdu_tiles,position,size):
+        if hdu_tiles is None:
+            return None
+
+        hdu = None
+        if len(hdu_tiles) > 1:
+            self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexadecimal_string(position)}")
+            try:
+                imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
+                hdu  = self.create_fits(self.mosaic(imgs),position)
+            except montage_wrapper.status.MontageError as e:
+                self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
+        elif len(hdu_tiles) == 1:
+                hdu = hdu_tiles[0]
+        return hdu
 
 
     def trim_tile(self, hdu, position, size):
@@ -259,40 +283,6 @@ class SurveyABC(ABC):
         return img
 
 
-    def get_tiles(self,position,size):
-        urls = self.get_tile_urls(position,size)
-        if len(urls) > 0:
-            hdu_lists = [h for h in [self.get_fits(url,position) for url in urls] if h]
-        else:
-            return None
-        return hdu_lists
-
-
-    def paste_tiles(self,hdu_tiles,position,size):
-        if hdu_tiles is None:
-            return None
-
-        hdu = None
-        if len(hdu_tiles) > 1:
-            self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexy_string(position)}")
-            try:
-                imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
-                hdu  = self.create_fits(self.mosaic(imgs),position)
-            except montage_wrapper.status.MontageError as e:
-                self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
-        elif len(hdu_tiles) == 1:
-                hdu = hdu_tiles[0]
-        # TODO: remove self.trimming_on flag...
-        #if self.trimming_on and img:
-        #    self.print(f"Trimming J{self.get_sexy_string(position)} to {size}...")
-        #    try:
-        #        img = self.trim_tile(img,position,size)
-        #    except Exception as e:
-        #        self.print(f"Trim Failed: {e}",True)
-        #return img
-        return hdu
-
-
     def get_cutout(self,position, size):
         try:
             tiles  = self.get_tiles(position,size)
@@ -303,7 +293,7 @@ class SurveyABC(ABC):
             self.print(f"{e}",True)
             cutout = None
 
-        self.print(f"Finished processing J{self.get_sexy_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
+        self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
 
         return cutout
 

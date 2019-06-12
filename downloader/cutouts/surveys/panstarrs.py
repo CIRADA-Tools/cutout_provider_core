@@ -9,8 +9,8 @@ from astropy import units as u
 from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
 class PanSTARRS(SurveyABC):
-    def __init__(self,filter=grizy_filters.i,trimming_on=True):
-        super().__init__(trimming_on)
+    def __init__(self,filter=grizy_filters.i):
+        super().__init__()
 
         # TODO: Housecleaning: change self.filters to self.filter
         self.filters = filter
