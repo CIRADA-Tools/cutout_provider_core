@@ -38,3 +38,7 @@ class SDSS(SurveyABC):
 
         return [url]
 
+
+    def format_fits_header(self,hdu,position,size):
+        return hdu
+

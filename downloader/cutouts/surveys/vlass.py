@@ -175,3 +175,7 @@ class VLASS(SurveyABC):
             self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
         return urls
 
+
+    def format_fits_header(self,hdu,position,size):
+        return hdu
+

@@ -31,3 +31,7 @@ class FIRST(SurveyABC):
 
         return [self.pack(url, post_values)]
 
+
+    def format_fits_header(self,hdu,position,size):
+        return hdu
+

@@ -110,3 +110,8 @@ class PanSTARRS(SurveyABC):
         url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filters, format='fits')
 
         return url
+
+
+    def format_fits_header(self,hdu,position,size):
+        return hdu
+

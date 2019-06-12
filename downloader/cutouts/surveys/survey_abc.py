@@ -242,14 +242,13 @@ class SurveyABC(ABC):
         if len(hdu_tiles) > 1:
             self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
-                header_template = hdu_tiles[0][0].header
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
-                # TODO: check header is ok
-                #hdu  = self.create_fits(self.mosaic(imgs),position)
+                # TODO: this will probably need cleaning up at some point, as the header 
+                #       definitions from the first tile is used for the tile fits...
+                header_template = hdu_tiles[0][0].header
                 tiled_fits_file = io.BytesIO(self.mosaic(imgs))
                 tiled_fits_file.seek(0)
                 hdu = fits.open(tiled_fits_file)
-                #hdu[0].header.update(header_template)
                 hdu[0].header = header_template
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
@@ -491,7 +490,7 @@ class SurveyABC(ABC):
         pass
 
 
-    #@abstrachmethod
-    #def format_fits_header(self,hdu,position):
-    #    pass
+    @abstractmethod
+    def format_fits_header(self,hdu,position,size):
+        pass
 

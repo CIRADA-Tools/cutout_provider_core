@@ -65,3 +65,7 @@ class WISE(SurveyABC):
 
         return fits_urls
 
+
+    def format_fits_header(self,hdu,position,size):
+        return hdu
+
