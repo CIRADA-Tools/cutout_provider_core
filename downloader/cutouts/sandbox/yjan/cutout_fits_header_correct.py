@@ -88,14 +88,19 @@ def headwrite(data, head, survey, a, d):
                  'FNAME': (vfile, 'VLASS image file')}
     else:
         sdict = {'BAND': 'na', 'pos_units': 'deg', 'RADESYS': ('FK5', 'assumed'), 'DATE-OBS': 'na'}
+    
+    ###set up naxis len - vlass QL image headers bugger up just extracting this from header
+    #####take from data instead - fixed by YG (12 Jun 2019 - 11:01)
+    xlen = len(data[0])
+    ylen = len(data)
 
     ### set up main header keys for all surveys
     ####add in FUNIT (z-axis unit, flux)?
     hkeys = {'WCSAXES': (2, 'Number of WCS axes'),
              'CRVAL1': (a, 'RA at reference pixel'),
              'CRVAL2': (d, 'Dec at reference pixel'),
-             'CRPIX1': (np.round(head['NAXIS1']/2, 1), 'Axis 1 reference pixel'),
-             'CRPIX2': (np.round(head['NAXIS2']/2, 1), 'Axis 2 reference pixel'),
+             'CRPIX1': (np.round(xlen/2, 1), 'Axis 1 reference pixel'),
+             'CRPIX2': (np.round(ylen/2, 1), 'Axis 2 reference pixel'),
              'CDELT1': (-abs(head['CDELT1']), 'Axis 1 step size per pixel'),
              'CDELT2': (head['CDELT2'], 'Axis 2 step size per pixel'),
              'CUNIT1': (sdict['pos_units'], 'Unit for CDELT1'),
