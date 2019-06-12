@@ -28,7 +28,8 @@ def yrmon_to_isot(yrmon):
     ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
     ###allows atropy time to be used
     yr = yrmon[:4]
-    mon = yrmon[4:]
+    mon = yrmon[4:6] ###set to assume str len == 6 accounts for some FIRST FITS adding dd at end
+    ##can make more complex later to use dd info, at moment good enough as yyyymm will assume dd==15 T==00:00:00 for MJD
     isottime = yr+'-'+mon+'-15T00:00:00.000'
     return(isottime)
 
