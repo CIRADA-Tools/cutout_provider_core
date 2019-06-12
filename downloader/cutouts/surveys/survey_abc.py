@@ -36,6 +36,16 @@ class SurveyABC(ABC):
         self.pid = pid
 
 
+    # TODO: rename...
+    def get_sexy_string(self,position):
+        sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+        return sexadecimal 
+
+
+    def get_ra_dec_string(self,position):
+        return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
+
+
     def print(self,msg,show_caller=False):
         my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid     = "" if self.pid is None else f"pid={self.pid}"
@@ -134,51 +144,97 @@ class SurveyABC(ABC):
 
     # tries to create a fits file from bytes.
     # on fail it returns None
-    def create_fits(self, data):
+    def create_fits(self, data, position):
         # a pretend file in memory
         fits_file = io.BytesIO(data)
         fits_file.seek(0)
 
+        # open fits hdul
         try:
-            f = fits.open(fits_file)
+            hdul = fits.open(fits_file)
         except OSError as e:
             self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
             return None
 
-        header = f[0].header
-        if header['NAXIS'] == 0 or header['NAXIS1'] == 0 or header['NAXIS2'] == 0:
+        # get/check header field
+        header = hdul[0].header
+        if ('NAXIS'  in header and header['NAXIS']  <  2) or \
+           ('NAXIS1' in header and header['NAXIS1'] == 0) or \
+           ('NAXIS2' in header and header['NAXIS2'] == 0):
+            self.print("WARINING: Ill-defined 'NAXIS/i': skipping...")
             return None
 
-        data = f[0].data
-
-        # if data is all 0
+        # get/check data field
+        data = hdul[0].data
         if data.min() == 0 and data.max() == 0:
+            self.print("WARNING: Fits file contains no data: skipping...")
             return None
 
         #
-        # Adding Yjan's stuff...
+        # OK, let's make sure there's some standard stuff in our headers!
+        # We'll fix up the WCS later...
+        # Originator: Yjan Gordon (JN1119).
         #
 
-        ## remove superfluous nesting
-        #if data.ndum > 2:
-        #     data = data[0]
+        # remove superfluous nesting
+        # TODO: This seems to have no effect, once the fits file is reload... investigate!
+        if data.ndim > 2:
+             data = data[0]
 
-        #print(f" ******************** HEADER ********************\n{header}")
+        # define the NAXISi=1,2 unit fields
+        if ('CUNIT1' in header) and ('CUNIT2' in header) and (header['CUNIT1'] != header['CUNIT2']):
+            self.print(f"WARNING: ('CUNIT1'={header['CUNIT1']}) != ('CUNIT2'={header['CUNIT2']}) !")
+        elif not (('CUNIT1' in header) or ('CUNIT2' in header)):
+             pos_units = 'deg'
+             if 'CTYPE1' in header:
+                 header.insert('CTYPE1', ('CUNIT1', pos_units), after=True)
+             else:
+                 self.print(f"WARNING: 'CTYPE1' undefined!")
+                 header['CUNIT1'] = pos_units
+             if 'CTYPE2' in header:
+                 header.insert('CTYPE2', ('CUNIT2', pos_units), after=True)
+             else:
+                 self.print(f"WARNING: 'CTYPE2' undefined!")
+                 header['CUNIT2'] = pos_units
 
-        ## set up pole_longitude
-        #ra = position.ra.to(u.deg).value
-        #pole_longitude = 180.0 if 90.0 < ra and ra < 270.0 else 0
+        # set LATPOLE
+        if not ('LATPOLE' in header):
+            header['LATPOLE'] = (position.dec.to(u.deg).value, 'Native latitude of celestial pole')
 
-        #sdict = {'BAND': 'na', 'pos_units': 'deg', 'RADESYS': ('FK5', 'assumed'), 'DATE-OBS': 'na'}
+        # set LONPOLE
+        if not ('LONPOLE' in header):
+            ra = position.ra.to(u.deg).value
+            pole_longitude = 180.0 if 90.0 < ra and ra <= 270.0 else 0.0
+            header['LONPOLE'] = (pole_longitude, 'Native longitude of celestial pole')
 
-        return f
+        # define RADESYS field
+        if not ('RADESYS' in header):
+            header['RADESYS'] = ('FK5', 'assumed')
+
+        # set SURVEY
+        if not ('SURVEY' in header):
+            header['SURVEY'] = (type(self).__name__, 'Survey image obtained from')
+
+        # set BAND default
+        if not ('BAND' in header):
+             header['BAND'] = 'na'
+
+        # set EPOCH
+        if not ('EPOCH' in header):
+            header['EPOCH'] = (2000.0, 'Julian epoch of observation')
+
+        # define DATE-OBS field
+        if not ('DATE-OBS' in header):
+            header['DATE-OBS'] = 'na'
+
+        return hdul
 
 
-    def get_fits(self, url, payload=None):
+    def get_fits(self, url, position, payload=None):
         self.print(f"Fetching: {url}")
         response = self.__send_request(url, payload)
         # note that it returns None if the response isn't a valid fits
-        return self.create_fits(response)
+        return self.create_fits(response, position)
 
 
     def trim_tile(self, hdu, position, size):
@@ -203,19 +259,10 @@ class SurveyABC(ABC):
         return img
 
 
-    def get_sexy_string(self,position):
-        sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-        return sexadecimal 
-
-
-    def get_ra_dec_string(self,position):
-        return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
-
-
     def get_tiles(self,position,size):
         urls = self.get_tile_urls(position,size)
         if len(urls) > 0:
-            hdu_lists = [h for h in [self.get_fits(url) for url in urls] if h]
+            hdu_lists = [h for h in [self.get_fits(url,position) for url in urls] if h]
         else:
             return None
         return hdu_lists
@@ -230,7 +277,7 @@ class SurveyABC(ABC):
             self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexy_string(position)}")
             try:
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
-                hdu  = self.create_fits(self.mosaic(imgs))
+                hdu  = self.create_fits(self.mosaic(imgs),position)
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
         elif len(hdu_tiles) == 1:
@@ -249,8 +296,9 @@ class SurveyABC(ABC):
     def get_cutout(self,position, size):
         try:
             tiles  = self.get_tiles(position,size)
-            tile   = self.paste_tiles(tiles,position,size)
-            cutout = self.trim_tile(tile,position,size)
+            #tile   = self.paste_tiles(tiles,position,size)
+            #cutout = self.trim_tile(tile,position,size)
+            cutout = tiles[0] if tiles else None
         except Exception as e:
             self.print(f"{e}",True)
             cutout = None
