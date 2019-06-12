@@ -34,7 +34,6 @@ class SurveyABC(ABC):
         self.pid = pid
 
 
-    # TODO: rename...
     def get_sexadecimal_string(self,position):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
