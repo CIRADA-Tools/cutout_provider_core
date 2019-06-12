@@ -12,6 +12,7 @@ import re
 
 import numpy as np
 from astropy.wcs import WCS
+from astropy.time import Time
 from astropy.io import fits
 
 from astropy import units as u
@@ -128,6 +129,15 @@ class SurveyABC(ABC):
 
         return merged
 
+    def standardize_fits_header_DATE_OBS_field(self,date_obs_value):
+        # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
+        #    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
+        date_obs = re.sub(r"\s*","",date_obs_value)
+        if len(date_obs) < 8: # pre-Y2K
+            re.sub(r"^(\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"19\1-\3-\5T00:00:00.000",date_obs) 
+        else: # post-Y2K
+            re.sub(r"^(\d\d\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"\1-\3-\5T00:00:00.000",date_obs) 
+        return date_obs
 
     # tries to create a fits file from bytes.
     # on fail it returns None
@@ -157,74 +167,43 @@ class SurveyABC(ABC):
             self.print("WARNING: Fits file contains no data: skipping...")
             return None
 
-        #
-        # OK, let's make sure there's some standard stuff in our headers!
-        # We'll fix up the WCS later...
-        # Originator: Yjan Gordon (JN1119).
-        #
+        ##
+        ## OK, let's make sure there's some standard stuff in our headers!
+        ##
 
-        # remove superfluous nesting
-        # TODO: This seems to have no effect, once the fits file is reload... investigate!
-        if data.ndim > 2:
-             data = data[0]
-        
-        # Add WCS info
-        # TODO: So it appears this is all deprecated, in light of the replacment below -- validate!
-        ## define the NAXISi=1,2 unit fields
-        #if ('CUNIT1' in header) and ('CUNIT2' in header) and (header['CUNIT1'] != header['CUNIT2']):
-        #    self.print(f"WARNING: ('CUNIT1'={header['CUNIT1']}) != ('CUNIT2'={header['CUNIT2']}) !")
-        #elif not (('CUNIT1' in header) or ('CUNIT2' in header)):
-        #     pos_units = 'deg'
-        #     if 'CTYPE1' in header:
-        #         header.insert('CTYPE1', ('CUNIT1', pos_units), after=True)
-        #     else:
-        #         self.print(f"WARNING: 'CTYPE1' undefined!")
-        #         header['CUNIT1'] = pos_units
-        #     if 'CTYPE2' in header:
-        #         header.insert('CTYPE2', ('CUNIT2', pos_units), after=True)
-        #     else:
-        #         self.print(f"WARNING: 'CTYPE2' undefined!")
-        #         header['CUNIT2'] = pos_units
+        ## define DATE-OBS field
+        #if not ('DATE-OBS' in header):
+        #    header['DATE-OBS'] = 'na'
+        #else:
+        #    # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
+        #    #    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
+        #    re.sub(r"\s*","",header['DATE-OBS'])
+        #    if len(header['DATE-OBS']) < 8: # pre-Y2K
+        #        re.sub(r"^(\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"19\1-\3-\5T00:00:00.000",header['DATE-OBS']) 
+        #    else: # post-Y2K
+        #        re.sub(r"^(\d\d\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"\1-\3-\5T00:00:00.000",header['DATE-OBS']) 
+        ## remove superfluous nesting
+        ## TODO: This seems to have no effect, once the fits file is reload... investigate!
+        #if data.ndim > 2:
+        #     data = data[0]
         #
-        ### set LATPOLE
-        ##if not ('LATPOLE' in header):
-        ##    header['LATPOLE'] = (position.dec.to(u.deg).value, 'Native latitude of celestial pole')
-        #
-        ### set LONPOLE
-        ##if not ('LONPOLE' in header):
-        ##    ra = position.ra.to(u.deg).value
-        ##    pole_longitude = 180.0 if 90.0 < ra and ra <= 270.0 else 0.0
-        ##    header['LONPOLE'] = (pole_longitude, 'Native longitude of celestial pole')
-        #
-        ### define RADESYS field
-        ##if not ('RADESYS' in header):
-        ##    header['RADESYS'] = ('FK5', 'assumed')
-        # TODO: Align fields and include comments... so we'll need to loop...
-        header.update(WCS(header).to_header())
+        ## Add WCS info
+        #wcs_info = WCS(header).to_header()
+        #for key in wcs_info.keys():
+        #    header[key] = wcs_info[key]
+        #    header.comments[key] = f" => {wcs_info.comments[key]}"
 
-        # set SURVEY
-        if not ('SURVEY' in header):
-            header['SURVEY'] = (type(self).__name__, 'Survey image obtained from')
+        ## set SURVEY
+        #if not ('SURVEY' in header):
+        #    header['SURVEY'] = (type(self).__name__, 'Survey image obtained from')
 
-        # set BAND default
-        if not ('BAND' in header):
-            header['BAND'] = 'na'
+        ## set BAND default
+        #if not ('BAND' in header):
+        #    header['BAND'] = 'na'
 
-        # set EPOCH
-        if not ('EPOCH' in header):
-            header['EPOCH'] = (2000.0, 'Julian epoch of observation')
-
-        # define DATE-OBS field
-        if not ('DATE-OBS' in header):
-            header['DATE-OBS'] = 'na'
-        else:
-            # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
-            #    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
-            re.sub(r"\s*","",header['DATE-OBS'])
-            if len(header['DATE-OBS']) < 8: # pre-Y2K
-                re.sub(r"^(\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"19\1-\3-\5:T00:00:00.000",header['DATE-OBS']) 
-            else: # Y2K
-                re.sub(r"^(\d\d\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"\1-\3-\5:T00:00:00.000",header['DATE-OBS']) 
+        ## set EPOCH
+        #if not ('EPOCH' in header):
+        #    header['EPOCH'] = (2000.0, 'Julian epoch of observation')
 
         return hdul
 
@@ -263,10 +242,19 @@ class SurveyABC(ABC):
         if len(hdu_tiles) > 1:
             self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
+                header_template = hdu_tiles[0][0].header
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
-                hdu  = self.create_fits(self.mosaic(imgs),position)
+                # TODO: check header is ok
+                #hdu  = self.create_fits(self.mosaic(imgs),position)
+                tiled_fits_file = io.BytesIO(self.mosaic(imgs))
+                tiled_fits_file.seek(0)
+                hdu = fits.open(tiled_fits_file)
+                #hdu[0].header.update(header_template)
+                hdu[0].header = header_template
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
+            except OSError as e:
+                self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
         elif len(hdu_tiles) == 1:
                 hdu = hdu_tiles[0]
         return hdu
@@ -296,18 +284,195 @@ class SurveyABC(ABC):
         return img
 
 
+    def header_write(self,hdu,position):
+        def yrmon_to_isot(yrmon):
+            ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
+            ###allows atropy time to be used
+            yr = yrmon[:4]
+            mon = yrmon[4:6] ###set to assume str len == 6 accounts for some FIRST FITS adding dd at end
+            ##can make more complex later to use dd info, at moment good enough as yyyymm will assume dd==15 T==00:00:00 for MJD
+            isottime = yr+'-'+mon+'-15T00:00:00.000'
+            return(isottime)
+
+        if hdu is None:
+            return None
+
+        self.print(f"HDU: {hdu}")
+
+        head = hdu.header
+        data = hdu.data
+        survey = type(self).__name__
+        a = position.ra.to(u.deg).value
+        d = position.dec.to(u.deg).value
+        #head['DATE-OBS'] = self.standardize_fits_header_DATE_OBS_field(head['DATE-OBS']) if 'DATE-OBS' in head else 'na'
+
+        ###data = cutout image data array
+        ###head = original header from survey image - i.e. preserved old header
+        ###survey =  survey image taken from
+        ###a = target RA - not the image RA from the survey main image, this can be different
+        ###d = target Dec - as RA, target RA/Dec should be obtained from the target input file
+        ##round a, d to 5dp (more than good enough)
+        a, d = np.round(a, 5), np.round(d, 5)
+        
+        ####remove superfluous nesting
+        if data.ndim > 2:
+            data = data[0]
+        
+        #set up pole_longitude
+        if a>90 and a<=270:
+            p_lon = 180.0
+        else:
+            p_lon = 0.0
+
+        ##set up survey specific info
+        if survey == 'PanSTARRS':
+            sdict = {'BAND': ('i-band', 'Filter used in observation'),
+                     'pos_units': 'deg',
+                     'RADESYS': (head['RADESYS'], 'Coordinate system used'),
+                     'DATE-OBS': (Time(head['MJD-OBS'], format='mjd').isot, 'Obs. date')}
+        elif survey == 'WISE':
+                sdict = {'BAND': ('W1', 'Filter used in observation'),
+                         'pos_units': 'deg',
+                         'RADESYS': ('FK5', 'Coordinate system used'),
+                         'DATE-OBS': (head['MIDOBS'], 'Median observation date of stack')}
+        elif survey == 'FIRST':
+            sdict = {'BAND': ('1.4 GHz', 'Frequency of observation'),
+                     'pos_units': 'deg',
+                     'RADESYS': ('FK5', 'Coordinate system used'),
+                     'DATE-OBS': (head['DATE-OBS'], 'Obs. date (yearmonth)'),
+                     'FNAME': (head['FIELDNAM'], 'FIRST coadded image')}
+        elif survey == 'VLASS':
+            ###complex file name - extract from header info
+            fpartkeys = ['FILNAM01', 'FILNAM02', 'FILNAM03', 'FILNAM04', 'FILNAM05', 'FILNAM06',
+                         'FILNAM07', 'FILNAM08', 'FILNAM09', 'FILNAM10', 'FILNAM11', 'FILNAM12']
+            nameparts = [head[key] for key in fpartkeys]
+            ###create single string - FILNAM12 goes after a constant
+            vfile = nameparts[0]
+            for i in range(len(nameparts)-2):
+                vfile = vfile + '.' + nameparts[i+1]
+            vfile = vfile + '.pbcor.' + nameparts[len(nameparts)-1] + '.subim.fits'
+                             
+            sdict = {'BAND': ('2-4 GHz', 'Frequency coverage of observation'),
+                     'pos_units': head['CUNIT1'],
+                     'RADESYS': (head['RADESYS'], 'Coordinate system used'),
+                     'DATE-OBS': (head['DATE-OBS'], 'Obs. date'),
+                     'STOKES': (head['BTYPE'], 'Stokes polarisation'),
+                     'FNAME': (vfile, 'VLASS image file')}
+        else:
+            sdict = {'BAND': 'na', 'pos_units': 'deg', 'RADESYS': ('FK5', 'assumed'), 'DATE-OBS': 'na'}
+        
+        ###set up naxis len - vlass QL image headers bugger up just extracting this from header
+        #####take from data instead - fixed by YG (12 Jun 2019 - 11:01)
+        xlen = len(data[0])
+        ylen = len(data)
+
+        ### set up main header keys for all surveys
+        ####add in FUNIT (z-axis unit, flux)?
+        hkeys = {'WCSAXES': (2, 'Number of WCS axes'),
+                 'CRVAL1': (a, 'RA at reference pixel'),
+                 'CRVAL2': (d, 'Dec at reference pixel'),
+                 'CRPIX1': (np.round(xlen/2, 1), 'Axis 1 reference pixel'),
+                 'CRPIX2': (np.round(ylen/2, 1), 'Axis 2 reference pixel'),
+                 'CDELT1': (-abs(head['CDELT1']), 'Axis 1 step size per pixel'),
+                 'CDELT2': (head['CDELT2'], 'Axis 2 step size per pixel'),
+                 'CUNIT1': (sdict['pos_units'], 'Unit for CDELT1'),
+                 'CUNIT2': (sdict['pos_units'], 'Unit for CDELT2'),
+                 'CTYPE1': (head['CTYPE1'], 'RA projection'),
+                 'CTYPE2': (head['CTYPE2'], 'Dec projection'),
+                 'LATPOLE': (d, 'Native latitude of celestial pole'),
+                 'LONPOLE': (p_lon, 'Native longitude of celestial pole'),
+                 'RADESYS': sdict['RADESYS'],
+                 'SURVEY': (survey, 'Survey image obtained from'),
+                 'BAND': sdict['BAND'],
+                 'EPOCH': (2000.0, 'Julian epoch of observation'),
+                 'DATE-OBS': sdict['DATE-OBS']}
+
+        keylist = list(hkeys.keys())
+        
+        
+        ##set up new header
+        newhead = fits.PrimaryHDU(data).header
+        
+        ##append main keys+info to header
+        for key in hkeys:
+            newhead[key] = hkeys[key]
+
+        ###add in MJD and radio specific header info
+        if survey == 'FIRST':
+            # TODO: Fix... gives..
+            # ValueError: Input values did not match any of the formats where the format keyword is optional ['datetime', 'iso', 'isot', 'yday', 'datetime64', 'fits', 'byear_str', 'jyear_str']
+            #
+            newhead['MJD'] = (Time(yrmon_to_isot(newhead['DATE-OBS'])).mjd,
+                              'Median MJD of obs month (00:00:00 on 15th)')
+            ###set up radio specific keys (beamsize etc)
+            radkeys = {'BUNIT': ('Jy/beam', 'Pixel flux unit'),
+                       'BMAJ': (head['BMAJ'], 'Beam major axis [deg]'),
+                       'BMIN': (head['BMIN'], 'Beam minor axis [deg]'),
+                       'BPA': (head['BPA'], 'Beam position angle')}
+            rklist = list(radkeys.keys())
+            ##append to header
+            for key in rklist:
+                newhead[key] = radkeys[key]
+            
+            ##add image filename (original image from survey not cutout)
+            newhead['IMFILE'] = sdict['FNAME']
+
+        elif survey == 'VLASS':
+            newhead['MJD'] = (Time(newhead['DATE-OBS']).mjd, 'MJD of the observation date')
+            
+            ###set up radio specific keys (beamsize etc)
+            radkeys = {'BUNIT': ('Jy/beam', 'Pixel flux unit'),
+                       'BMAJ': (head['BMAJ'], 'Beam major axis [deg]'),
+                       'BMIN': (head['BMIN'], 'Beam minor axis [deg]'),
+                       'BPA': (head['BPA'], 'Beam position angle')}
+            rklist = list(radkeys.keys())
+            ##append to header
+            for key in rklist:
+                newhead[key] = radkeys[key]
+
+            ##include polarisation info
+            newhead['STOKES'] = sdict['STOKES']
+
+            ### add original image filename
+            newhead['IMFILE'] = sdict['FNAME']
+
+        ### PanSTARRS/WISE specifics
+        elif survey == 'PanSTARRS':
+            newhead['STK_TYPE'] = (head['STK_TYPE'], 'PanSTARRS image stack type')
+            newhead['STK_ID'] = (head['STK_ID'], 'PanSTARRS image stack ID')
+            newhead['SKYCELL'] = (head['SKYCELL'], 'PanSTARRS image sky cell')
+            newhead['TESS_ID'] = (head['TESS_ID'], 'PanSTARRS tesselation')
+        
+        ##wise specifics
+        elif survey == 'WISE':
+            newhead['IMFILE'] = (head['COADDID'], 'ATLAS image identifier')
+
+        ## add comments to header
+        newhead['Comment'] = ('This cutout was by the VLASS cross-ID ' +
+                              'working group within the CIRADA project (www.cirada.ca)')
+
+        ##DONE - return new header for use in output cutout fits file
+
+        img = fits.PrimaryHDU(data,header=newhead)
+        mem_file = io.BytesIO()
+        img.writeto(mem_file)
+        return img
+
+
     def get_cutout(self,position, size):
-        try:
+        #try:
             tiles  = self.get_tiles(position,size)
             tile   = self.paste_tiles(tiles,position,size)
             cutout = self.trim_tile(tile,position,size)
-        except Exception as e:
-            self.print(f"{e}",True)
-            cutout = None
+            cutout = self.header_write(cutout,position)
+        #except Exception as e:
+        #    self.print(f"{e}",True)
+        #    cutout = None
 
-        self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
+        #self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
 
-        return cutout
+        #return cutout
+            return cutout
 
 
     @staticmethod
