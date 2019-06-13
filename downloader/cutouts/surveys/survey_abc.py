@@ -24,27 +24,27 @@ from astropy.nddata.utils import Cutout2D
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
     def __init__(self,
-        pid = None        # 4 threads
+        pid = None # 4 threads
     ):
         super().__init__()
 
         self.pid = None
 
 
-    def set_pid(self,pid):
+    def set_pid(self, pid):
         self.pid = pid
 
 
-    def get_sexadecimal_string(self,position):
+    def get_sexadecimal_string(self, position):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
 
 
-    def get_ra_dec_string(self,position):
+    def get_ra_dec_string(self, position):
         return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
 
 
-    def print(self,msg,show_caller=False):
+    def print(self, msg, show_caller=False):
         my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid     = "" if self.pid is None else f"pid={self.pid}"
         my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
@@ -53,7 +53,7 @@ class SurveyABC(ABC):
         print(prefixed_output)
 
 
-    def pack(self,url,payload=None):
+    def pack(self, url, payload=None):
         if payload:
             data = urllib.parse.urlencode(payload).encode('utf-8')
             request = urllib.request.Request(url, data)
@@ -129,15 +129,34 @@ class SurveyABC(ABC):
 
         return merged
 
-    def standardize_fits_header_DATE_OBS_field(self,date_obs_value):
+    def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
         #    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
-        date_obs = re.sub(r"\s*","",date_obs_value)
-        if len(date_obs) < 8: # pre-Y2K
-            re.sub(r"^(\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"19\1-\3-\5T00:00:00.000",date_obs) 
-        else: # post-Y2K
-            re.sub(r"^(\d\d\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"\1-\3-\5T00:00:00.000",date_obs) 
-        return date_obs
+        date_obs = re.sub(r"\s+","",date_obs_value)
+        reduced_date_obs = re.sub(r"(\s|-|/)","",date_obs_value)
+        if len(reduced_date_obs) == 6: # pre-y2k
+            try: 
+                year_xfix     = int(reduced_date_obs[0:2])
+                year_or_month = int(reduced_date_obs[2:4])
+                month_or_day  = int(reduced_date_obs[4:6])
+                if not (year_xfix == 19 or year_xfix == 20) and \
+                   (1 <= year_or_month and year_or_month <= 12) and \
+                   (1 <= month_or_day  and month_or_day  <= 31):
+                    date_obs = '19' + date_obs
+                else: # ok, not y2k, it's yyyymm -- violates standards
+                    date_obs += "15"
+            except:
+                pass
+        return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",date_obs) 
+        #def yrmon_to_isot(yrmon):
+        #    ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
+        #    ###allows atropy time to be used
+        #    yr = yrmon[:4]
+        #    mon = yrmon[4:6] ###set to assume str len == 6 accounts for some FIRST FITS adding dd at end
+        #    ##can make more complex later to use dd info, at moment good enough as yyyymm will assume dd==15 T==00:00:00 for MJD
+        #    isottime = yr+'-'+mon+'-15T00:00:00.000'
+        #    return(isottime)
+        #return yrmon_to_isot(date_obs_value)
 
     # tries to create a fits file from bytes.
     # on fail it returns None
@@ -215,7 +234,7 @@ class SurveyABC(ABC):
         return self.create_fits(response, position)
 
 
-    def get_tiles(self,position,size):
+    def get_tiles(self, position, size):
         urls = self.get_tile_urls(position,size)
         if len(urls) > 0:
             hdu_lists = [h for h in [self.get_fits(url,position) for url in urls] if h]
@@ -224,7 +243,7 @@ class SurveyABC(ABC):
         return hdu_lists
 
 
-    def get_image(self,hdu):
+    def get_image(self, hdu):
         img_data = np.squeeze(hdu[0].data)
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
@@ -234,7 +253,7 @@ class SurveyABC(ABC):
         return mem_file.getvalue()
 
 
-    def paste_tiles(self,hdu_tiles,position,size):
+    def paste_tiles(self, hdu_tiles, position, size):
         if hdu_tiles is None:
             return None
 
@@ -283,7 +302,7 @@ class SurveyABC(ABC):
         return img
 
 
-    def header_write(self,hdu,position):
+    def header_write(self, hdu, position):
         def yrmon_to_isot(yrmon):
             ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
             ###allows atropy time to be used
@@ -295,8 +314,6 @@ class SurveyABC(ABC):
 
         if hdu is None:
             return None
-
-        self.print(f"HDU: {hdu}")
 
         head = hdu.header
         data = hdu.data
@@ -340,7 +357,7 @@ class SurveyABC(ABC):
                      'RADESYS': ('FK5', 'Coordinate system used'),
                      'DATE-OBS': (head['DATE-OBS'], 'Obs. date (yearmonth)'),
                      'FNAME': (head['FIELDNAM'], 'FIRST coadded image')}
-        elif survey == 'VLASS':
+        elif survey == 'VLASS': # michelle was here!
             ###complex file name - extract from header info
             fpartkeys = ['FILNAM01', 'FILNAM02', 'FILNAM03', 'FILNAM04', 'FILNAM05', 'FILNAM06',
                          'FILNAM07', 'FILNAM08', 'FILNAM09', 'FILNAM10', 'FILNAM11', 'FILNAM12']
@@ -398,9 +415,6 @@ class SurveyABC(ABC):
 
         ###add in MJD and radio specific header info
         if survey == 'FIRST':
-            # TODO: Fix... gives..
-            # ValueError: Input values did not match any of the formats where the format keyword is optional ['datetime', 'iso', 'isot', 'yday', 'datetime64', 'fits', 'byear_str', 'jyear_str']
-            #
             newhead['MJD'] = (Time(yrmon_to_isot(newhead['DATE-OBS'])).mjd,
                               'Median MJD of obs month (00:00:00 on 15th)')
             ###set up radio specific keys (beamsize etc)
@@ -458,20 +472,112 @@ class SurveyABC(ABC):
         return img
 
 
-    def get_cutout(self,position, size):
-        #try:
-            tiles  = self.get_tiles(position,size)
-            tile   = self.paste_tiles(tiles,position,size)
-            cutout = self.trim_tile(tile,position,size)
-            cutout = self.header_write(cutout,position)
-        #except Exception as e:
-        #    self.print(f"{e}",True)
-        #    cutout = None
+    def format_fits_hdu(self, hdu, position, size):
+        if hdu is None:
+            return None
 
-        #self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
+        # hdu stuff...
+        header = hdu.header
+        data = hdu.data
+        if not ('DATE-OBS' in header):
+            header['DATE-OBS'] = 'na'
+        date_obs = header['DATE-OBS'] if 'DATE-OBS' in header else 'na'
 
-        #return cutout
-            return cutout
+        class key_saver:
+            def __init__(self,header):
+                self.save_keys = list()
+                self.updates = dict()
+                self.header = header
+            def update(self,updates):
+                self.save_keys.extend([k for k in updates.keys()])
+                self.save_keys = list(set(self.save_keys))
+                self.updates.update(updates)
+                self.header.update(updates)
+            def get_keys(self):
+                return self.save_keys
+            def get_updates(self):
+                return self.updates
+            def get_header(self):
+                return self.header
+        hdr = key_saver(header)
+
+        # add wcs info to header
+        hdr.update(WCS(header).to_header())
+
+        # set (ra,dec) tile center ... rounded to 5dp -- more than good enough
+        ra  = np.round(position.ra.to(u.deg).value,5)
+        dec = np.round(position.dec.to(u.deg).value,5)
+        hdr.update({
+            'CRVAL1': (ra, 'RA at reference pixel'),
+            'CRVAL2': (dec, 'Dec at reference pixel')
+        })
+
+        # standardize DATE-OBS to 'yyyy-mm-ddT00:00:00.000'
+        hdr.update({
+            'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(date_obs)
+        })
+
+        # set pixel reference position to center of tile
+        x_pixels = len(data[0])
+        y_pixels = len(data)
+        hdr.update({
+            'CRPIX1': (np.round(x_pixels/2, 1), 'Axis 1 reference pixel'),
+            'CRPIX2': (np.round(y_pixels/2, 1), 'Axis 2 reference pixel')
+        })
+
+        # set survey name
+        survey = type(self).__name__
+        hdr.update({
+            'SURVEY': (survey, 'Survey image obtained from')
+        })
+
+        # set default band
+        if not ('BAND' in header):
+            hdr.update({
+                'BAND': 'na',
+            })
+
+        # set epoch
+        if not ('EPOCH' in header):
+            hdr.update({
+                'EPOCH': (2000.0, 'Julian epoch of observation')
+            })
+
+        # add survey dependent stuff...
+        hdr.update(self.get_fits_header_updates(hdr.get_header(),position,size))
+
+        # set up new header
+        save_keys = hdr.get_keys()
+        save_hdr  = hdr.get_header()
+        new_header = fits.PrimaryHDU(data).header
+        new_header.update({k: (save_hdr[k], save_hdr.comments[k]) for k in save_keys})
+
+        # add custom comments
+        new_header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
+
+        # save to memory and return
+        img = fits.PrimaryHDU(data,header=new_header)
+        mem_file = io.BytesIO()
+        img.writeto(mem_file) 
+        return img
+
+
+    def get_cutout(self, position, size):
+        try:
+            tiles   = self.get_tiles(position,size)
+            tile    = self.paste_tiles(tiles,position,size)
+            trimmed = self.trim_tile(tile,position,size)
+            # Yjan's code
+            cutout = self.header_write(trimmed,position)
+            # Integrated code
+            #cutout = self.format_fits_hdu(trimmed,position,size)
+        except Exception as e:
+            self.print(f"{e}",True)
+            cutout = None
+
+        self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
+
+        return cutout
 
 
     @staticmethod
@@ -491,6 +597,6 @@ class SurveyABC(ABC):
 
 
     @abstractmethod
-    def format_fits_header(self,hdu,position,size):
+    def get_fits_header_updates(self,hdu,position,size):
         pass
 

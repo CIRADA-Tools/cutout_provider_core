@@ -13,6 +13,7 @@ import pickle
 
 import numpy as np
 from astropy.io import fits
+from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import Angle
 from astropy import units as u
@@ -176,6 +177,30 @@ class VLASS(SurveyABC):
         return urls
 
 
-    def format_fits_header(self,hdu,position,size):
-        return hdu
+    def get_fits_header_updates(self,header,position,size):
+        ###complex file name - extract from header info
+        fpartkeys = [f'FILNAM{i+1:02}' for i in range(12)]
+        nameparts = [header[key] for key in fpartkeys]
+        ###create single string - FILNAM12 goes after a constant
+        vfile = nameparts[0]
+        for i in range(len(nameparts)-2):
+            vfile = vfile + '.' + nameparts[i+1]
+        vfile = vfile + '.pbcor.' + nameparts[len(nameparts)-1] + '.subim.fits'
+        header_updates = {
+            'BAND': ('2-4 GHz', 'Frequency coverage of observation'),
+            'pos_units': header['CUNIT1'],
+            'RADESYS':  (header['RADESYS'], 'Coordinate system used'),
+            'DATE-OBS': (header['DATE-OBS'], 'Obs. date'),
+            'MJD': (Time(header['DATE-OBS']).mjd, 'MJD of the observation date'),
+            # TODO: might be already in wcs part of header...
+            'BUNIT': ('Jy/beam', 'Pixel flux unit'),
+            'BMAJ':  (header['BMAJ'], 'Beam major axis [deg]'),
+            'BMIN':  (header['BMIN'], 'Beam minor axis [deg]'),
+            'BPA':   (header['BPA'], 'Beam position angle'),
+            # TODO: might be already in wcs part of header...
+            'STOKES': (header['BTYPE'], 'Stokes polarisation'),
+            # TODO: Tiling issue and based on quick-look images -- I think...
+            'FNAME': (vfile, 'VLASS image file'),
+        }
+        return header_updates
 

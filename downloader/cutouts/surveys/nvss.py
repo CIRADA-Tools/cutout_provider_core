@@ -48,6 +48,6 @@ class NVSS(SurveyABC):
         return [self.pack(url, post_values)]
 
 
-    def format_fits_header(self,hdu,position,size):
-        return hdu
+    def get_fits_header_updates(self,header,position,size):
+        return None
 

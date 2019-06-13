@@ -1,5 +1,4 @@
 from astropy import units as u
-from astropy.time import Time
 
 from .survey_abc import SurveyABC
 class FIRST(SurveyABC):
@@ -34,17 +33,5 @@ class FIRST(SurveyABC):
 
 
     def get_fits_header_updates(self,header,position,size):
-        header_updates = {
-            'BAND':     ('1.4 GHz', 'Frequency of observation'),
-            'DATE-OBS': (header['DATE-OBS'], 'Obs. date (yearmonth)'),
-            'MJD': (Time(header['DATE-OBS']).mjd, 'Median MJD of obs month (00:00:00 on 15th)'),
-            # TODO: this is probably already in the wcs part of the header
-            'BUNIT': ('Jy/beam', 'Pixel flux unit'),
-            'BMAJ':  (header['BMAJ'], 'Beam major axis [deg]'),
-            'BMIN':  (header['BMIN'], 'Beam minor axis [deg]'),
-            'BPA':   (header['BPA'],  'Beam position angle'),
-             # TODO: 'FNAME' inadequate for mosaics...
-            'FNAME': (header['FIELDNAM'], 'FIRST coadded image')
-        }
-        return header_updates
+        return None
 

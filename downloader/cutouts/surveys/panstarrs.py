@@ -3,6 +3,7 @@ import urllib
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
+from astropy.time import Time
 from astropy.table import Table
 from astropy import units as u
 
@@ -12,8 +13,8 @@ class PanSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
         super().__init__()
 
-        # TODO: Housecleaning: change self.filters to self.filter
-        self.filters = filter
+        # TODO: Housecleaning: change self.filter to self.filter
+        self.filter = filter
 
 
     # TODO: Determine if useful.
@@ -96,7 +97,7 @@ class PanSTARRS(SurveyABC):
 
 
     def get_filter_setting(self):
-        return self.filters
+        return self.filter
 
 
     def get_tile_urls(self,position,size):
@@ -107,11 +108,20 @@ class PanSTARRS(SurveyABC):
         dec    = position.dec.to(u.deg).value
         pixels = int((size / pix_scale).to(u.pix).value)
 
-        url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filters, format='fits')
+        url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filter, format='fits')
 
         return url
 
 
-    def format_fits_header(self,hdu,position,size):
-        return hdu
+    def get_fits_header_updates(self,header,position,size):
+        survey = type(self).__name__
+        header_updates = {
+            'BAND':     (f'{self.filter.name}-band', 'Filter used in observation'),
+            'DATE-OBS': (Time(header['MJD-OBS'], format='mjd').isot, 'Obs. date'),
+            'STK_TYPE': (header['STK_TYPE'], f'{survey} image stack type'),
+            'STK_ID':   (header['STK_ID'],   f'{survey} image stack ID'),
+            'SKYCELL':  (header['SKYCELL'],  f'{survey} image sky cell'),
+            'TESS_ID':  (header['TESS_ID'],  f'{survey} tesselation')
+        }
+        return header_updates
 

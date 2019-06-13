@@ -66,6 +66,12 @@ class WISE(SurveyABC):
         return fits_urls
 
 
-    def format_fits_header(self,hdu,position,size):
-        return hdu
+    def get_fits_header_updates(self,header,position,size):
+        header_updates = {
+            'BAND':     (f'{self.filter.name.upper()}', 'Filter used in observation'),
+            'DATE-OBS': (header['MIDOBS'], 'Median observation date of stack'),
+             # TODO: 'IMFILE' inadequate for mosaics...
+            'IMFILE':   (header['COADDID'], 'ATLAS image identifier')
+        }
+        return header_updates
 
