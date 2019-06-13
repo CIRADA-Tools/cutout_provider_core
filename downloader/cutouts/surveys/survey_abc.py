@@ -1,6 +1,7 @@
 import io
 import os
 import sys
+import traceback
 import tempfile
 import shutil
 
@@ -14,6 +15,8 @@ import numpy as np
 from astropy.wcs import WCS
 from astropy.time import Time
 from astropy.io import fits
+from .survey_filters import HeaderFilter
+from .survey_filters import get_header_pretty_string
 
 from astropy import units as u
 
@@ -44,12 +47,16 @@ class SurveyABC(ABC):
         return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
 
 
-    def print(self, msg, show_caller=False):
+    def print(self, msg, traceback_msg=None, show_caller=False):
         my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid     = "" if self.pid is None else f"pid={self.pid}"
         my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
         prefix = f"{my_name}({my_pid}{'' if my_pid=='' or my_filter=='' else ','}{my_filter})"
-        prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg.splitlines()])
+        if not (traceback_msg is None):
+            msg_str = msg + "\nTRACEBACK:\n>%s" % "\n> ".join(traceback_msg.splitlines())
+        else:
+            msg_str = msg
+        prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
         print(prefixed_output)
 
 
@@ -270,7 +277,7 @@ class SurveyABC(ABC):
                 hdu = fits.open(tiled_fits_file)
                 hdu[0].header = header_template
             except montage_wrapper.status.MontageError as e:
-                self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",True)
+                self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",show_caller=True)
             except OSError as e:
                 self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
         elif len(hdu_tiles) == 1:
@@ -477,83 +484,66 @@ class SurveyABC(ABC):
             return None
 
         # hdu stuff...
-        header = hdu.header
+        hdf = HeaderFilter(hdu.header,is_add_wcs=True).update({'DATE-OBS': ('na','')},is_overwrite_existing=False)
         data = hdu.data
-        if not ('DATE-OBS' in header):
-            header['DATE-OBS'] = 'na'
-        date_obs = header['DATE-OBS'] if 'DATE-OBS' in header else 'na'
 
-        class key_saver:
-            def __init__(self,header):
-                self.save_keys = list()
-                self.updates = dict()
-                self.header = header
-            def update(self,updates):
-                self.save_keys.extend([k for k in updates.keys()])
-                self.save_keys = list(set(self.save_keys))
-                self.updates.update(updates)
-                self.header.update(updates)
-            def get_keys(self):
-                return self.save_keys
-            def get_updates(self):
-                return self.updates
-            def get_header(self):
-                return self.header
-        hdr = key_saver(header)
-
-        # add wcs info to header
-        hdr.update(WCS(header).to_header())
+        # standardize DATE-OBS to 'yyyy-mm-ddT00:00:00.000'
+        hdf.update({
+            'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(hdf.get_header()['DATE-OBS'])
+        })
 
         # set (ra,dec) tile center ... rounded to 5dp -- more than good enough
         ra  = np.round(position.ra.to(u.deg).value,5)
         dec = np.round(position.dec.to(u.deg).value,5)
-        hdr.update({
+        hdf.update({
             'CRVAL1': (ra, 'RA at reference pixel'),
             'CRVAL2': (dec, 'Dec at reference pixel')
-        })
-
-        # standardize DATE-OBS to 'yyyy-mm-ddT00:00:00.000'
-        hdr.update({
-            'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(date_obs)
         })
 
         # set pixel reference position to center of tile
         x_pixels = len(data[0])
         y_pixels = len(data)
-        hdr.update({
+        hdf.update({
             'CRPIX1': (np.round(x_pixels/2, 1), 'Axis 1 reference pixel'),
             'CRPIX2': (np.round(y_pixels/2, 1), 'Axis 2 reference pixel')
         })
 
         # set survey name
         survey = type(self).__name__
-        hdr.update({
+        hdf.update({
             'SURVEY': (survey, 'Survey image obtained from')
         })
 
         # set default band
-        if not ('BAND' in header):
-            hdr.update({
-                'BAND': 'na',
-            })
+        hdf.update({
+            'BAND': 'na',
+        }, is_overwrite_existing=False)
 
         # set epoch
-        if not ('EPOCH' in header):
-            hdr.update({
-                'EPOCH': (2000.0, 'Julian epoch of observation')
-            })
+        hdf.update({
+            'EPOCH': (2000.0, 'Julian epoch of observation')
+        }, is_overwrite_existing=False)
 
         # add survey dependent stuff...
-        hdr.update(self.get_fits_header_updates(hdr.get_header(),position,size))
+        hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
 
         # set up new header
-        save_keys = hdr.get_keys()
-        save_hdr  = hdr.get_header()
+        saved_keys = hdf.get_saved_keys()
+        old_header = hdf.get_header()
+        filtered_header = {k: (old_header[k], old_header.comments[k]) for k in saved_keys}
         new_header = fits.PrimaryHDU(data).header
-        new_header.update({k: (save_hdr[k], save_hdr.comments[k]) for k in save_keys})
+        self.print(f"  ===>  new_header:")
+        self.print(f"{get_header_pretty_string(new_header)}")
+        self.print(f"  ===>  filtered_header:")
+        self.print(f"{get_header_pretty_string(filtered_header)}")
+        #new_header.update({k: (old_header[k], old_header.comments[k]) for k in saved_keys})
+        new_header.update(filtered_header)
 
         # add custom comments
         new_header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
+
+        self.print(f"  ===>  new_header:")
+        self.print(f"{get_header_pretty_string(new_header)}")
 
         # save to memory and return
         img = fits.PrimaryHDU(data,header=new_header)
@@ -572,7 +562,7 @@ class SurveyABC(ABC):
             # Integrated code
             #cutout = self.format_fits_hdu(trimmed,position,size)
         except Exception as e:
-            self.print(f"{e}",True)
+            self.print(f"ERROR: {e}",traceback_msg=traceback.format_exc(),show_caller=True)
             cutout = None
 
         self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
