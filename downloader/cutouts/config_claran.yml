@@ -19,8 +19,10 @@ cutouts:
     surveys:
         - FIRST
         - VLASS
-        - WISE
-        - PanSTARRS
+        - WISE:
+              filters: [w1]
+        - PanSTARRS:
+              filters: [i]
 
 #   * * * U N D E R   C O N T R U C T I O N * * *
 # TODO: Implement below...

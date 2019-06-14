@@ -14,13 +14,13 @@ cutouts:
     box_size_armin: 3
     
     surveys:
-        - FIRST      # *
-        #- NVSS
-        - VLASS:     # *
-        - WISE:      # *
+        - FIRST      # * claran
+        - NVSS
+        - VLASS:     # * claran
+        - WISE:      # * claran
               filters: w1
-        - PanSTARRS: # *
-              filters: i
+        - PanSTARRS: # * claran
+              filters: [i,z]
         #- SDSS:
         #      filters: [g,r,i]
 
