@@ -29,23 +29,19 @@ class grizy_filters(Enum):
 
 def get_header_pretty_string(header):
     def get_value(h,k):
-        try:
-           return h[k][0]
-        except:
-           pass
-        return h[k]
+        return h[k][0] if isinstance(header,dict) else h[k]
     def get_comments(h,k):
-        try:
-            return h.comments[k]
-        except:
-            return h[k][1]
+        return h[k][1] if isinstance(header,dict) else h.comments[k]
     pr_str = ""
     for k in header.keys():
         hdr_value = get_value(header,k)
         if isinstance(hdr_value, str):
              hdr_vstr = "'%s'" % hdr_value
         elif isinstance(hdr_value,int):
-             hdr_vstr = "%d" % hdr_value
+             if k == 'SIMPLE' or k == 'EXTEND':
+                 hdr_vstr = 'T' if hdr_value > 0 else 'F'
+             else:
+                 hdr_vstr = "%d" % hdr_value
         elif isinstance(hdr_value,float):
              hdr_vstr = "%f" % hdr_value
         else:
@@ -54,24 +50,23 @@ def get_header_pretty_string(header):
     return pr_str
 
 
-
-
 class HeaderFilter:
     def __init__(self, header, is_add_wcs=False):
+        # set the header layout order, for saved_keys, and default comments, if any.
         self.header_layout = {
             'TOP_KEYS': [
                 ['SIMPLE'],
                 ['BITPIX'],
-                ['NAXIS'],
+                ['NAXIS',{'COMMENT': 'Number of array dimensions'}],
                 [{'NAXIS_BLOCK': [
                     ['NAXIS1'],
                 ]}],
                 ['WCSAXES',{'VALUE': 'FK5', 'COMMENT': 'Number of WCS axes'}],
-                [{'NAXIS_BLOCK': [
+                [{'WCSAXES_BLOCK': [
                     ['CTYPE1'],
                     ['CUNIT1'],
                     ['CRVAL1'],
-                    ['CRPIX1'],
+                    ['CRPIX1',{'COMMENT': 'Axis %d reference pixel'}],
                     ['CDELT1'],
                 ]}],
                 ['LATPOLE'],
@@ -82,7 +77,8 @@ class HeaderFilter:
             ],
             'BOTTOM_KEYS': [
                 ['EPOCH'],
-                ['DATE-OBS']
+                ['DATE-OBS'],
+                ['COMMENT']
             ]
         }
 
@@ -100,15 +96,21 @@ class HeaderFilter:
 
     def __set_layout(self):
         def get_keys(blocks):
-            naxis = self.header['NAXIS'] if 'NAXIS' in self.header else None
+            naxis   = self.header['NAXIS'] if 'NAXIS' in self.header else None
+            wcsaxes = self.header['WCSAXES'] if 'WCSAXES' in self.header else None
             block_keys = list()
             for block in blocks:
                 if isinstance(block[0],str):
                     block_keys.append(block[0])
-                elif isinstance(block[0],dict) and 'NAXIS_BLOCK' in block[0]:
-                    if naxis:
+                elif isinstance(block[0],dict):
+                    if 'NAXIS_BLOCK' in block[0] and naxis:
                         fields = block[0]['NAXIS_BLOCK']
                         for n in range(1,naxis+1):
+                            for field in fields:
+                                block_keys.append(re.sub(r"\d$",f"{n}",field[0]))
+                    elif 'WCSAXES_BLOCK' in block[0] and wcsaxes:
+                        fields = block[0]['WCSAXES_BLOCK']
+                        for n in range(1,wcsaxes+1):
                             for field in fields:
                                 block_keys.append(re.sub(r"\d$",f"{n}",field[0]))
             return block_keys

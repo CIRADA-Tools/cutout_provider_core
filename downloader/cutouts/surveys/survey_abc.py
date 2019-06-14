@@ -524,27 +524,28 @@ class SurveyABC(ABC):
             'EPOCH': (2000.0, 'Julian epoch of observation')
         }, is_overwrite_existing=False)
 
+        #hdf.update({
+        #    'COMMENT': ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
+        #})
+
         # add survey dependent stuff...
         hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
 
-        # set up new header
-        saved_keys = hdf.get_saved_keys()
-        old_header = hdf.get_header()
-        new_header = fits.PrimaryHDU(data).header
-        for k in saved_keys:
-            new_header[k] = (old_header[k], old_header.comments[k])
+        # set up new hdu
+        ordered_keys   = hdf.get_saved_keys()
+        updated_header = hdf.get_header()
+        new_hdu = fits.PrimaryHDU(data)
+        for k in ordered_keys:
+            #print(f" ===> k: {k}")
+            new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
 
         # add custom comments
-        new_header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
+        new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
 
         self.print(f"  ===>  new_header:")
-        self.print(f"{get_header_pretty_string(new_header)}")
+        self.print(f"{get_header_pretty_string(new_hdu.header)}")
 
-        # save to memory and return
-        img = fits.PrimaryHDU(data,header=new_header)
-        mem_file = io.BytesIO()
-        img.writeto(mem_file) 
-        return img
+        return new_hdu
 
 
     def get_cutout(self, position, size):
