@@ -164,6 +164,10 @@ class SurveyABC(ABC):
             self.print("WARINING: Ill-defined 'NAXIS/i': skipping...")
             return None
 
+        # debug
+        #if type(self).__name__ == 'VLASS':
+        #    self.print(f"WCS: {get_header_pretty_string(WCS(header).to_header())}")
+
         # get/check data field
         data = hdul[0].data
         if data.min() == 0 and data.max() == 0:

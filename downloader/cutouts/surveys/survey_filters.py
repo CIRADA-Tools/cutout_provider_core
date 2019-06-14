@@ -127,7 +127,7 @@ class HeaderFilter:
         if 'DATE-OBS' in header:
             self.header['DATE-OBS'] = (repair_fits_date_field(self.header['DATE-OBS']), self.header.comments['DATE-OBS']) 
         if is_add_wcs:
-            self.update(WCS(header).to_header())
+            self.update(WCS(header,naxis=2).to_header())
 
         # special header keys
         self.reserved_keys = ['SIMPLE', 'BITPIX','NAXIS','NAXIS1','NAXIS2','EXTEND']
