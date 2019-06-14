@@ -77,6 +77,7 @@ def repair_fits_date_field(date_obs_value):
 
 class HeaderFilter:
     def __init__(self, header, is_add_wcs=False):
+
         # set the header layout order, for saved_keys, and default comments, if any.
         self.header_layout = {
             'TOP_KEYS': [
