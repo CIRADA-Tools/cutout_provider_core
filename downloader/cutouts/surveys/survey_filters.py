@@ -50,6 +50,31 @@ def get_header_pretty_string(header):
     return pr_str
 
 
+def repair_fits_date_field(date_obs_value):
+    # attempts to fix y2k issues, re., 
+    # https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html,
+    # and header flaws...
+    date_obs = re.sub(r"\s+","",date_obs_value)
+    reduced_date_obs = re.sub(r"(\s|-|/)","",date_obs_value)
+    if len(reduced_date_obs) == 6: # pre-y2k
+        try: 
+            year_xfix     = int(reduced_date_obs[0:2])
+            year_or_month = int(reduced_date_obs[2:4])
+            month_or_day  = int(reduced_date_obs[4:6])
+            if not (year_xfix == 19 or year_xfix == 20) and \
+               (1 <= year_or_month and year_or_month <= 12) and \
+               (1 <= month_or_day  and month_or_day  <= 31):
+                date_obs = '19' + reduced_date_obs 
+            else: # ok, not y2k, it's yyyymm -- violates standards
+                date_obs = reduced_date_obs + "15"
+            date_obs = f"{int(date_obs[0:4])}-{int(date_obs[4:6]):02d}-{int(date_obs[6:8]):02d}"
+        except:
+            pass
+    elif len(reduced_date_obs) == 8: # yyyymmdd not post-y2k standard
+        date_obs = f"{int(reduced_date_obs[0:4])}-{int(reduced_date_obs[4:6]):02d}-{int(reduced_date_obs[6:8]):02d}"
+    return date_obs
+
+
 class HeaderFilter:
     def __init__(self, header, is_add_wcs=False):
         # set the header layout order, for saved_keys, and default comments, if any.
@@ -97,7 +122,11 @@ class HeaderFilter:
 
         self.saved_keys = list()
         self.updates = dict()
-        self.header = header
+        self.header = header.copy()
+        if 'DATE-OBS' in header:
+            print(f"=======> {self.header['DATE-OBS']}")
+            self.header['DATE-OBS'] = (repair_fits_date_field(self.header['DATE-OBS']), self.header.comments['DATE-OBS']) 
+            print(f"> {self.header['DATE-OBS']}")
         if is_add_wcs:
             self.update(WCS(header).to_header())
 
