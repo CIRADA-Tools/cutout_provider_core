@@ -188,7 +188,6 @@ class VLASS(SurveyABC):
         vfile = vfile + '.pbcor.' + nameparts[len(nameparts)-1] + '.subim.fits'
         header_updates = {
             'BAND': ('2-4 GHz', 'Frequency coverage of observation'),
-            'pos_units': header['CUNIT1'],
             'RADESYS':  (header['RADESYS'], 'Coordinate system used'),
             'DATE-OBS': (header['DATE-OBS'], 'Obs. date'),
             'MJD': (Time(header['DATE-OBS']).mjd, 'MJD of the observation date'),
