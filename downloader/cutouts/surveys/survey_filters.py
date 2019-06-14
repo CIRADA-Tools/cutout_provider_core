@@ -87,6 +87,7 @@ class HeaderFilter:
             'BOTTOM_KEYS': [
                 ['FNAME', {'COMMENT': 'Survey coadded image'}],
                 ['IMFILE',{'COMMENT': 'ATLAS image identifier'}],
+                ['EQUINOX'],
                 ['EPOCH'],
                 ['MJD'],
                 ['DATE-OBS'],
@@ -161,8 +162,6 @@ class HeaderFilter:
 
         return self.saved_keys
 
-    def do_it(self):
-        self.__set_layout()
 
     def update(self,updates,is_overwrite_existing=True):
         if not (updates is None):
