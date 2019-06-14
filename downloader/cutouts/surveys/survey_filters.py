@@ -88,6 +88,7 @@ class HeaderFilter:
                     ['NAXIS1'],
                 ]}],
                 ['WCSAXES',{'VALUE': '???', 'COMMENT': 'Number of WCS axes'}],
+                ['RADESYS'],
                 [{'WCSAXES_BLOCK': [
                     ['CTYPE1'],
                     ['CUNIT1'],
@@ -95,7 +96,6 @@ class HeaderFilter:
                     ['CRPIX1',{'COMMENT': 'Axis %d reference pixel'}],
                     ['CDELT1'],
                 ]}],
-                ['RADESYS'],
                 ['LATPOLE'],
                 ['LONPOLE'],
                 ['SURVEY'],
