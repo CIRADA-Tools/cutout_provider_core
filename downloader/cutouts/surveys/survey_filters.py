@@ -79,6 +79,8 @@ class HeaderFilter:
     def __init__(self, header, is_add_wcs=False):
 
         # set the header layout order, for saved_keys, and default comments, if any.
+        # Note: The default (i.e., if none) COMMENT fields have not been implemented.
+        # TODO: Determine if default COMMENT are still required; if yes, implement.
         self.header_layout = {
             'TOP_KEYS': [
                 ['SIMPLE'],
