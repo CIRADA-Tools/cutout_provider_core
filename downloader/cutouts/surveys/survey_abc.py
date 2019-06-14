@@ -17,6 +17,7 @@ from astropy.time import Time
 from astropy.io import fits
 from .survey_filters import HeaderFilter
 from .survey_filters import get_header_pretty_string
+from .survey_filters import repair_fits_date_field
 
 from astropy import units as u
 
@@ -136,34 +137,37 @@ class SurveyABC(ABC):
 
         return merged
 
+
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
-        # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
-        #    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
-        date_obs = re.sub(r"\s+","",date_obs_value)
-        reduced_date_obs = re.sub(r"(\s|-|/)","",date_obs_value)
-        if len(reduced_date_obs) == 6: # pre-y2k
-            try: 
-                year_xfix     = int(reduced_date_obs[0:2])
-                year_or_month = int(reduced_date_obs[2:4])
-                month_or_day  = int(reduced_date_obs[4:6])
-                if not (year_xfix == 19 or year_xfix == 20) and \
-                   (1 <= year_or_month and year_or_month <= 12) and \
-                   (1 <= month_or_day  and month_or_day  <= 31):
-                    date_obs = '19' + date_obs
-                else: # ok, not y2k, it's yyyymm -- violates standards
-                    date_obs += "15"
-            except:
-                pass
+        ## standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
+        ##    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
+        #date_obs = re.sub(r"\s+","",date_obs_value)
+        #reduced_date_obs = re.sub(r"(\s|-|/)","",date_obs_value)
+        #if len(reduced_date_obs) == 6: # pre-y2k
+        #    try: 
+        #        year_xfix     = int(reduced_date_obs[0:2])
+        #        year_or_month = int(reduced_date_obs[2:4])
+        #        month_or_day  = int(reduced_date_obs[4:6])
+        #        if not (year_xfix == 19 or year_xfix == 20) and \
+        #           (1 <= year_or_month and year_or_month <= 12) and \
+        #           (1 <= month_or_day  and month_or_day  <= 31):
+        #            date_obs = '19' + date_obs
+        #        else: # ok, not y2k, it's yyyymm -- violates standards
+        #            date_obs += "15"
+        #    except:
+        #        pass
+        #return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",date_obs) 
+        ##def yrmon_to_isot(yrmon):
+        ##    ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
+        ##    ###allows atropy time to be used
+        ##    yr = yrmon[:4]
+        ##    mon = yrmon[4:6] ###set to assume str len == 6 accounts for some FIRST FITS adding dd at end
+        ##    ##can make more complex later to use dd info, at moment good enough as yyyymm will assume dd==15 T==00:00:00 for MJD
+        ##    isottime = yr+'-'+mon+'-15T00:00:00.000'
+        ##    return(isottime)
+        ##return yrmon_to_isot(date_obs_value)
+        date_obs = repair_fits_date_field(date_obs_value)
         return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",date_obs) 
-        #def yrmon_to_isot(yrmon):
-        #    ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
-        #    ###allows atropy time to be used
-        #    yr = yrmon[:4]
-        #    mon = yrmon[4:6] ###set to assume str len == 6 accounts for some FIRST FITS adding dd at end
-        #    ##can make more complex later to use dd info, at moment good enough as yyyymm will assume dd==15 T==00:00:00 for MJD
-        #    isottime = yr+'-'+mon+'-15T00:00:00.000'
-        #    return(isottime)
-        #return yrmon_to_isot(date_obs_value)
 
     # tries to create a fits file from bytes.
     # on fail it returns None
