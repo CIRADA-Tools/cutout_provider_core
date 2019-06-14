@@ -37,7 +37,8 @@ class FIRST(SurveyABC):
         header_updates = {
             'BAND':     ('1.4 GHz', 'Frequency of observation'),
             'DATE-OBS': (header['DATE-OBS'], 'Obs. date (yearmonth)'),
-            'MJD': (Time(header['DATE-OBS']).mjd, 'Median MJD of obs month (00:00:00 on 15th)'),
+            # TODO: same as MJD-OB... depricate.
+            #'MJD': (Time(header['DATE-OBS']).mjd, 'Median MJD of obs month (00:00:00 on 15th)'),
             # TODO: this is probably already in the wcs part of the header
             'BUNIT': ('Jy/beam', 'Pixel flux unit'),
             'BMAJ':  (header['BMAJ'], 'Beam major axis [deg]'),

@@ -190,8 +190,8 @@ class VLASS(SurveyABC):
             'BAND': ('2-4 GHz', 'Frequency coverage of observation'),
             'RADESYS':  (header['RADESYS'], 'Coordinate system used'),
             'DATE-OBS': (header['DATE-OBS'], 'Obs. date'),
-            'MJD': (Time(header['DATE-OBS']).mjd, 'MJD of the observation date'),
-            # TODO: might be already in wcs part of header...
+            # TODO: same as MJD-OB... depricate.
+            #'MJD': (Time(header['DATE-OBS']).mjd, 'MJD of the observation date'),
             'BUNIT': ('Jy/beam', 'Pixel flux unit'),
             'BMAJ':  (header['BMAJ'], 'Beam major axis [deg]'),
             'BMIN':  (header['BMIN'], 'Beam minor axis [deg]'),

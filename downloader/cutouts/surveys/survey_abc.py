@@ -464,10 +464,11 @@ class SurveyABC(ABC):
             'BAND': 'na',
         }, is_overwrite_existing=False)
 
-        # set epoch
-        hdf.update({
-            'EPOCH': (2000.0, 'Julian epoch of observation')
-        }, is_overwrite_existing=False)
+        # TODO: Same thing as EQUINOX ... depricate.
+        ## set epoch
+        #hdf.update({
+        #    'EPOCH': (2000.0, 'Julian epoch of observation')
+        #}, is_overwrite_existing=False)
 
         #hdf.update({
         #    'COMMENT': ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
