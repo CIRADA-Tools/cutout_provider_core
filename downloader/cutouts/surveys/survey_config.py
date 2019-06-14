@@ -2,6 +2,8 @@
 import os
 import sys
 
+from random import shuffle
+
 # utilities
 import re
 
@@ -320,6 +322,9 @@ class SurveyConfig:
                     pid += 1
                 else:
                     self.__print(f"File '{task['filename']}' exists; overwrite={self.overwrite}, skipping...")
+
+            # randomize to processing stack to minimize server hits...
+            shuffle(procssing_stack)
 
         self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
         return procssing_stack

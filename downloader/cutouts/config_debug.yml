@@ -15,12 +15,13 @@ cutouts:
     
     surveys:
         - FIRST      # * claran
-        - NVSS
+        #- NVSS
         - VLASS:     # * claran
         - WISE:      # * claran
               filters: w1
         - PanSTARRS: # * claran
-              filters: [i,z]
+              # TODO: Make it handle cases like i,z instead of [i,z]
+              filters: i 
         #- SDSS:
         #      filters: [g,r,i]
 
