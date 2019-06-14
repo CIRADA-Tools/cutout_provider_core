@@ -111,12 +111,13 @@ class HeaderFilter:
                 ['BPA',  {'COMMENT': 'Beam position angle'}],
             ],
             'BOTTOM_KEYS': [
-                ['FNAME', {'COMMENT': 'Survey coadded image'}],
-                ['IMFILE',{'COMMENT': 'ATLAS image identifier'}],
                 ['EQUINOX'],
                 ['EPOCH'],
                 ['MJD'],
+                ['MJD-OBS'],
                 ['DATE-OBS'],
+                ['FNAME', {'COMMENT': 'Survey coadded image'}],
+                ['IMFILE',{'COMMENT': 'ATLAS image identifier'}],
                 ['COMMENT']
             ]
         }
@@ -127,7 +128,31 @@ class HeaderFilter:
         if 'DATE-OBS' in header:
             self.header['DATE-OBS'] = (repair_fits_date_field(self.header['DATE-OBS']), self.header.comments['DATE-OBS']) 
         if is_add_wcs:
-            self.update(WCS(header,naxis=2).to_header())
+            wcs_header = WCS(header,naxis=2).to_header()
+            keep = [
+                'WCSAXES',
+                'RADESYS',
+                'CTYPE1',
+                'CUNIT1',
+                'CRVAL1',
+                'CRPIX1',
+                'CDELT1',
+                'CTYPE2',
+                'CUNIT2',
+                'CRVAL2',
+                'CRPIX2',
+                'CDELT2',
+                'LATPOLE',
+                'LONPOLE',
+                'RADESYS',
+                'EQUINOX',
+                'MJD-OBS',
+                'DATE-OBS'
+            ]
+            for field in wcs_header:
+                if field in keep:
+                    self.update({field: (wcs_header[field], wcs_header.comments[field])})
+            self.update({'WCSAXES': (2, wcs_header.comments['WCSAXES'])})
 
         # special header keys
         self.reserved_keys = ['SIMPLE', 'BITPIX','NAXIS','NAXIS1','NAXIS2','EXTEND']
