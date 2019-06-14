@@ -45,7 +45,7 @@ class FIRST(SurveyABC):
             'BMIN':  (header['BMIN'], 'Beam minor axis [deg]'),
             'BPA':   (header['BPA'],  'Beam position angle'),
              # TODO: 'FNAME' inadequate for mosaics...
-            'FNAME': (header['FIELDNAM'], 'FIRST coadded image')
+            'IMFILE': (header['FIELDNAM'], 'FIRST coadded image')
         }
         return header_updates
 

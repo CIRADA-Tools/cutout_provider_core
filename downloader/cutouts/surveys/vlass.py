@@ -199,7 +199,7 @@ class VLASS(SurveyABC):
             # TODO: might be already in wcs part of header...
             'STOKES': (header['BTYPE'], 'Stokes polarisation'),
             # TODO: Tiling issue and based on quick-look images -- I think...
-            'FNAME': (vfile, 'VLASS image file'),
+            'IMFILE': (vfile, 'VLASS image file'),
         }
         return header_updates
 

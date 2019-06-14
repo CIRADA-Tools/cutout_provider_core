@@ -482,7 +482,6 @@ class SurveyABC(ABC):
         updated_header = hdf.get_header()
         new_hdu = fits.PrimaryHDU(data)
         for k in ordered_keys:
-            #print(f" ===> k: {k}")
             new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
 
         # add custom comments
