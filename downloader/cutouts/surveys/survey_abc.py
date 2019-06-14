@@ -530,14 +530,9 @@ class SurveyABC(ABC):
         # set up new header
         saved_keys = hdf.get_saved_keys()
         old_header = hdf.get_header()
-        filtered_header = {k: (old_header[k], old_header.comments[k]) for k in saved_keys}
         new_header = fits.PrimaryHDU(data).header
-        self.print(f"  ===>  new_header:")
-        self.print(f"{get_header_pretty_string(new_header)}")
-        self.print(f"  ===>  filtered_header:")
-        self.print(f"{get_header_pretty_string(filtered_header)}")
-        #new_header.update({k: (old_header[k], old_header.comments[k]) for k in saved_keys})
-        new_header.update(filtered_header)
+        for k in saved_keys:
+            new_header[k] = (old_header[k], old_header.comments[k])
 
         # add custom comments
         new_header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
@@ -558,9 +553,9 @@ class SurveyABC(ABC):
             tile    = self.paste_tiles(tiles,position,size)
             trimmed = self.trim_tile(tile,position,size)
             # Yjan's code
-            cutout = self.header_write(trimmed,position)
+            #cutout = self.header_write(trimmed,position)
             # Integrated code
-            #cutout = self.format_fits_hdu(trimmed,position,size)
+            cutout = self.format_fits_hdu(trimmed,position,size)
         except Exception as e:
             self.print(f"ERROR: {e}",traceback_msg=traceback.format_exc(),show_caller=True)
             cutout = None
