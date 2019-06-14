@@ -86,7 +86,6 @@ class HeaderFilter:
                 [{'NAXIS_BLOCK': [
                     ['NAXIS1'],
                 ]}],
-                ['RADESYS'],
                 ['WCSAXES',{'VALUE': '???', 'COMMENT': 'Number of WCS axes'}],
                 [{'WCSAXES_BLOCK': [
                     ['CTYPE1'],
@@ -95,6 +94,7 @@ class HeaderFilter:
                     ['CRPIX1',{'COMMENT': 'Axis %d reference pixel'}],
                     ['CDELT1'],
                 ]}],
+                ['RADESYS'],
                 ['LATPOLE'],
                 ['LONPOLE'],
                 ['SURVEY'],
@@ -124,9 +124,7 @@ class HeaderFilter:
         self.updates = dict()
         self.header = header.copy()
         if 'DATE-OBS' in header:
-            print(f"=======> {self.header['DATE-OBS']}")
             self.header['DATE-OBS'] = (repair_fits_date_field(self.header['DATE-OBS']), self.header.comments['DATE-OBS']) 
-            print(f"> {self.header['DATE-OBS']}")
         if is_add_wcs:
             self.update(WCS(header).to_header())
 
