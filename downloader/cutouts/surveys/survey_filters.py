@@ -15,6 +15,7 @@ class wise_filters(Enum):
     w3 = 3
     w4 = 4
 
+
 class grizy_filters(Enum):
     g = 1 
     r = 2
@@ -28,6 +29,8 @@ class grizy_filters(Enum):
 #
 
 def get_header_pretty_string(header):
+    """This is routine for providing nice formatted header strings
+       for pretty printing."""
     def get_value(h,k):
         return h[k][0] if isinstance(header,dict) else h[k]
     def get_comments(h,k):
@@ -50,13 +53,30 @@ def get_header_pretty_string(header):
     return pr_str
 
 
-def repair_fits_date_field(date_obs_value):
+def sanitize_fits_date_fields(date_obs_value):
+    """This routine attempts to ensure the fits header date field conforms to
+       post-Y2K stanards: i.e.,
+
+          KEYWORD:   DATE-OBS
+          REFERENCE: FITS Standard 
+          STATUS:    reserved
+          HDU:       any
+          VALUE:     string
+          COMMENT:   date of the observation
+          DEFINITION: The date of the observation, in the format specified in the
+          FITS Standard.  The old date format was 'yy/mm/dd' and may be used only
+          for dates from 1900 through 1999.  The new Y2K compliant date format is
+          'yyyy-mm-dd' or 'yyyy-mm-ddTHH:MM:SS[.sss]'.
+
+       as per, https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html.
+    """
     # attempts to fix y2k issues, re., 
     # https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html,
     # and header flaws...
     date_obs = re.sub(r"\s+","",date_obs_value)
     reduced_date_obs = re.sub(r"(\s|-|/)","",date_obs_value)
     if len(reduced_date_obs) == 6: # pre-y2k
+        # nb: this is not perfect: i.e., it has not been completely rationalized out.
         try: 
             year_xfix     = int(reduced_date_obs[0:2])
             year_or_month = int(reduced_date_obs[2:4])
@@ -76,11 +96,24 @@ def repair_fits_date_field(date_obs_value):
 
 
 class HeaderFilter:
+    """This class is used as header filter tool for modifying, adding, formating, and extracting header infomation
+       intended for the creation of new headers.
+
+       method:
+          - update(updates,is_overwrite_existing=True) - updates internal header and adds field to save list
+          - save_keys(keys)  - adds header field to save list
+          - get_saved_keys() - returns save list ordered according to self.header_layout
+          - get_header()     - returns modified copy of header
+
+    """
     def __init__(self, header, is_add_wcs=False):
 
         # set the header layout order, for saved_keys, and default comments, if any.
-        # Note: The default (i.e., if none) COMMENT fields have not been implemented.
+        # Notes: 
+        #    [1] Not in this list are placed between TOP_KEYS and BOTTOM_KEYS.
+        #    [2] The default (i.e., if none) COMMENT fields have not been implemented.
         # TODO: Determine if default COMMENT are still required; if yes, implement.
+        # TODO: Remove default VALUE field -- only second guessing... so...
         self.header_layout = {
             'TOP_KEYS': [
                 ['SIMPLE'],
@@ -127,8 +160,12 @@ class HeaderFilter:
         self.saved_keys = list()
         self.updates = dict()
         self.header = header.copy()
+
+        # sanitize the date-obs string
         if 'DATE-OBS' in header:
-            self.header['DATE-OBS'] = (repair_fits_date_field(self.header['DATE-OBS']), self.header.comments['DATE-OBS']) 
+            self.header['DATE-OBS'] = (sanitize_fits_date_fields(self.header['DATE-OBS']), self.header.comments['DATE-OBS']) 
+
+        # Use WCS to do caluclations and extract required fields for 2D (WCSAXES) fits images, only.
         if is_add_wcs:
             wcs_header = WCS(header,naxis=2).to_header()
             keep = [
@@ -161,8 +198,11 @@ class HeaderFilter:
         self.comment_block = ['COMMENT']
 
 
-
     def __set_layout(self):
+        """This is a private routine which is (should be) called each time self.saved_keys is updated,
+           in order to insure it's order according the pattern defined in self.header_layout."""
+        # helper function to extract order-keys (header fields) from the self.header_layout 
+        # top and bottom blocks.
         def get_keys(blocks):
             naxis   = self.header['NAXIS'] if 'NAXIS' in self.header else None
             wcsaxes = self.header['WCSAXES'] if 'WCSAXES' in self.header else None
@@ -182,6 +222,8 @@ class HeaderFilter:
                             for field in fields:
                                 block_keys.append(re.sub(r"\d$",f"{n}",field[0]))
             return block_keys
+
+        # break up the keys into top, bottom, and middle sets.
         self.saved_keys = list(set(self.saved_keys))
         top_keys    = get_keys(self.header_layout['TOP_KEYS'])
         bottom_keys = get_keys(self.header_layout['BOTTOM_KEYS'])
@@ -193,7 +235,8 @@ class HeaderFilter:
         bottom_set = list(set(bottom_keys) & set(self.saved_keys))
         middle_set = [k for k in self.saved_keys if not k in top_set and not k in bottom_set]
 
-        unordered_keys = self.saved_keys.copy()
+        # now lets order the self.saved_keys according to self.header_layout
+        unordered_keys = self.saved_keys.copy() # nb: must copy in place
         ordered_keys = list()
         for k in top_keys:
             if k in unordered_keys:
@@ -210,6 +253,7 @@ class HeaderFilter:
                 ordered_keys.append(k)
                 unordered_keys.remove(k)
 
+        # copy sorted keys if all accounted for
         if len(unordered_keys) == 0:
             self.saved_keys = ordered_keys.copy()
         else:
@@ -219,20 +263,25 @@ class HeaderFilter:
 
 
     def update(self,updates,is_overwrite_existing=True):
+        """This is use to update the running self.header while keeping tabs of what was updated
+           for later extraction, via, self.saved keys (along with self.updates that keep a record)."""
+        # update if not empty
         if not (updates is None):
             self.saved_keys.extend([k for k in updates.keys()])
-            if is_overwrite_existing:
+            if is_overwrite_existing: # upate everything
                 self.updates.update(updates)
                 self.header.update(updates)
-            else:
+            else: # don't overwrite self.header, but update if field doesn't exist.
                 for k in updates.keys():
                     if k in self.header:
                         self.updates[k] = (self.header[k], self.header.comments[k])
                     else:
                         self.updates[k] = updates[k]
                         self.header[k]  = updates[k]
+            # reorder keys to conform to self.header_layout
             self.__set_layout()
         return self
+
 
     def save_keys(self,keys):
         if not (keys is None):
@@ -246,11 +295,21 @@ class HeaderFilter:
             self.__set_layout()
         return self.get_saved_keys()
 
+
     def get_saved_keys(self):
+        """The will return a sorted list of saved header fields, as define by self.header_layout."""
         return self.saved_keys
 
-    def get_updates(self):
-        return self.updates
+
+    ## TODO: *** DEPRECATED ***
+    ##       Appears to be of now value... consider removing...
+    #def get_updates(self):
+    #    """The will return a dict of updates."""
+    #    return self.updates
+
 
     def get_header(self):
+        """This returns the modified header, which can be used in conjucting with get_save_keys(), 
+           to provide a nicely sorted header, in accordance with self.header_layout."""
         return self.header
+
