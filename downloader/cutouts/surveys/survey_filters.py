@@ -61,7 +61,8 @@ class HeaderFilter:
                 [{'NAXIS_BLOCK': [
                     ['NAXIS1'],
                 ]}],
-                ['WCSAXES',{'VALUE': 'FK5', 'COMMENT': 'Number of WCS axes'}],
+                ['RADESYS'],
+                ['WCSAXES',{'VALUE': '???', 'COMMENT': 'Number of WCS axes'}],
                 [{'WCSAXES_BLOCK': [
                     ['CTYPE1'],
                     ['CUNIT1'],
@@ -71,12 +72,23 @@ class HeaderFilter:
                 ]}],
                 ['LATPOLE'],
                 ['LONPOLE'],
-                ['RADESYS'],
                 ['SURVEY'],
-                ['BAND']
+                ['BAND'],
+                ['STOKES'],
+                ['STK_TYPE',{'COMMENT': 'Survey image stack type'}],
+                ['STK_ID',  {'COMMENT': 'Survey image sksy cell'}],
+                ['SKYCELL', {'COMMENT': 'Survey image sky cell'}],
+                ['TESS_ID', {'COMMENT': 'Survey tesselation'}],
+                ['BUNIT',{'VALUE': '???', 'COMMENT': 'Pixel flux unit'}],
+                ['BMAJ', {'COMMENT': 'Beam major axis [deg]'}],
+                ['BMIN', {'COMMENT': 'Beam minor axis [deg]'}],
+                ['BPA',  {'COMMENT': 'Beam position angle'}],
             ],
             'BOTTOM_KEYS': [
+                ['FNAME', {'COMMENT': 'Survey coadded image'}],
+                ['IMFILE',{'COMMENT': 'ATLAS image identifier'}],
                 ['EPOCH'],
+                ['MJD'],
                 ['DATE-OBS'],
                 ['COMMENT']
             ]

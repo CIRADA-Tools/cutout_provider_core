@@ -193,44 +193,6 @@ class SurveyABC(ABC):
             self.print("WARNING: Fits file contains no data: skipping...")
             return None
 
-        ##
-        ## OK, let's make sure there's some standard stuff in our headers!
-        ##
-
-        ## define DATE-OBS field
-        #if not ('DATE-OBS' in header):
-        #    header['DATE-OBS'] = 'na'
-        #else:
-        #    # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf.,
-        #    #    https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html
-        #    re.sub(r"\s*","",header['DATE-OBS'])
-        #    if len(header['DATE-OBS']) < 8: # pre-Y2K
-        #        re.sub(r"^(\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"19\1-\3-\5T00:00:00.000",header['DATE-OBS']) 
-        #    else: # post-Y2K
-        #        re.sub(r"^(\d\d\d\d)(|-|/)(\d\d)(|-|/)(\d\d)$",r"\1-\3-\5T00:00:00.000",header['DATE-OBS']) 
-        ## remove superfluous nesting
-        ## TODO: This seems to have no effect, once the fits file is reload... investigate!
-        #if data.ndim > 2:
-        #     data = data[0]
-        #
-        ## Add WCS info
-        #wcs_info = WCS(header).to_header()
-        #for key in wcs_info.keys():
-        #    header[key] = wcs_info[key]
-        #    header.comments[key] = f" => {wcs_info.comments[key]}"
-
-        ## set SURVEY
-        #if not ('SURVEY' in header):
-        #    header['SURVEY'] = (type(self).__name__, 'Survey image obtained from')
-
-        ## set BAND default
-        #if not ('BAND' in header):
-        #    header['BAND'] = 'na'
-
-        ## set EPOCH
-        #if not ('EPOCH' in header):
-        #    header['EPOCH'] = (2000.0, 'Julian epoch of observation')
-
         return hdul
 
 
@@ -542,8 +504,8 @@ class SurveyABC(ABC):
         # add custom comments
         new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
 
-        self.print(f"  ===>  new_header:")
-        self.print(f"{get_header_pretty_string(new_hdu.header)}")
+        #self.print(f"  ===>  new_header:")
+        #self.print(f"{get_header_pretty_string(new_hdu.header)}")
 
         return new_hdu
 
