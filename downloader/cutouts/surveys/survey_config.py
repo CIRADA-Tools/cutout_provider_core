@@ -58,7 +58,7 @@ class SurveyConfig:
 
         # set targets
         self.targets = list()
-        for coords_csv_file in self.config['cutouts']['ra_deg_deg_csv_files']:
+        for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
             sources = self.__csv_to_dict(coords_csv_file)
     
             # make all keys lower case to effectively reference case-variants of RA and Dec.
@@ -101,7 +101,7 @@ class SurveyConfig:
     
         targets = list()
         size = config['box_size_armin'] * u.arcmin
-        for coord_csv_file in config['ra_deg_deg_csv_files']:
+        for coord_csv_file in config['ra_dec_deg_csv_files']:
             sources = csv_to_dict(coord_csv_file)
     
             # make all keys lower case to effectively reference case-variants of RA and Dec.

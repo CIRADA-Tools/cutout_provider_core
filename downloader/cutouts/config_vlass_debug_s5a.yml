@@ -1,6 +1,6 @@
 # Basic cutout search parameters
 cutouts:
-    ra_deg_deg_csv_files:
+    ra_dec_deg_csv_files:
         #- BH12_120RA180_minus4DEC16_RC4_targetlist.csv
         #- BH12_multicomponent_zlt0p05_targetlist2.csv
         - targs_for_michelle.csv
