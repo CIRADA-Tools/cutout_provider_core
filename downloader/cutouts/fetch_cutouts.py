@@ -10,6 +10,7 @@ import yaml as yml
 
 # astropy
 from astropy.io import fits
+import astropy.units as u
 
 # threading
 import threading
@@ -84,7 +85,7 @@ def save_cutout(target):
         #msg_str = f"cutout at {target['coord']} returned None"
         #prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
         #print(prefix_msg_str)
-        target['survey'].print(f"cutout at {target['coord']} returned None")
+        target['survey'].print(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.")
 
 
 @click.command()

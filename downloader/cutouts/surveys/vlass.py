@@ -152,7 +152,8 @@ class VLASS(SurveyABC):
 
         tiles = self.intersecting_tiles(position, size)  # the actual file names
         if len(tiles)==0:
-            self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
+            #self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
+            self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
             return list()
         urls = [get_query_url(tile, position, size) for tile in tiles]
         return urls
@@ -173,7 +174,8 @@ class VLASS(SurveyABC):
         else:
             urls = self.__get_vlass_quick_look_image_urls(position,size)
         if len(urls)==0 and self.is_cutout_server:
-            self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
+            #self.print("Cannot find {}, perhaps this hasn't been covered by VLASS".format(position.to_string('hmsdms')), file=sys.stderr)
+            self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
         return urls
 
 

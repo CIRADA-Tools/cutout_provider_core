@@ -45,16 +45,16 @@ class SurveyABC(ABC):
 
 
     def get_ra_dec_string(self, position):
-        return "%f%+f degree" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
+        return "(%f,%+f) degrees" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
 
 
-    def print(self, msg, traceback_msg=None, show_caller=False):
+    def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True):
         my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid     = "" if self.pid is None else f"pid={self.pid}"
         my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
         prefix = f"{my_name}({my_pid}{'' if my_pid=='' or my_filter=='' else ','}{my_filter})"
-        if not (traceback_msg is None):
-            msg_str = msg + "\nTRACEBACK:\n>%s" % "\n> ".join(traceback_msg.splitlines())
+        if not (diagnostic_msg is None):
+            msg_str = msg + ("\nTRACEBACK:" if is_traceback else "") + "\n> %s" % "\n> ".join(diagnostic_msg.splitlines())
         else:
             msg_str = msg
         prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
@@ -153,7 +153,9 @@ class SurveyABC(ABC):
         try:
             hdul = fits.open(fits_file)
         except OSError as e:
-            self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
+            e_s = re.sub(r"\.$","",f"{e}")
+            #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
+            self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...")
             return None
 
         # get/check header field
@@ -161,7 +163,7 @@ class SurveyABC(ABC):
         if ('NAXIS'  in header and header['NAXIS']  <  2) or \
            ('NAXIS1' in header and header['NAXIS1'] == 0) or \
            ('NAXIS2' in header and header['NAXIS2'] == 0):
-            self.print("WARINING: Ill-defined 'NAXIS/i': skipping...")
+            self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...")
             return None
 
         # debug
@@ -503,10 +505,10 @@ class SurveyABC(ABC):
             # Integrated code
             cutout = self.format_fits_hdu(trimmed,position,size)
         except Exception as e:
-            self.print(f"ERROR: {e}",traceback_msg=traceback.format_exc(),show_caller=True)
+            self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
             cutout = None
 
-        self.print(f"Finished processing J{self.get_sexadecimal_string(position)} ({self.get_ra_dec_string(position)}) cutout of size {size}.")
+        self.print(f"Finished processing J{self.get_sexadecimal_string(position)} (i.e., {self.get_ra_dec_string(position)}) cutout of size {size}.")
 
         return cutout
 
