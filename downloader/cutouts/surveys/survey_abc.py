@@ -230,6 +230,7 @@ class SurveyABC(ABC):
         hdu = None
         if len(hdu_tiles) > 1:
             self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexadecimal_string(position)}")
+            #return hdu_tiles[1][0]
             #if type(self).__name__ == 'WISE':
             #    for i in range(len(hdu_tiles)):
             #        self.print(f"TILE{i}:",hdu_tiles[i][0].header)
@@ -251,28 +252,28 @@ class SurveyABC(ABC):
                 self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
         elif len(hdu_tiles) == 1:
                 hdu = hdu_tiles[0]
-        return hdu
+        return hdu[0]
 
 
     def trim_tile(self, hdu, position, size):
         if hdu is None:
             return None
     
-        if 'DATE-OBS' in hdu[0].header:
-            hdu[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdu[0].header['DATE-OBS'])
-        w = WCS(hdu[0].header)
+        if 'DATE-OBS' in hdu.header:
+            hdu.header['DATE-OBS'] = sanitize_fits_date_fields(hdu.header['DATE-OBS'])
+        w = WCS(hdu.header)
     
         # trim to 2d from nd
         naxis = w.naxis
         while naxis > 2:
             w = w.dropaxis(2)
             naxis -= 1
-        img_data = np.squeeze(hdu[0].data)
+        img_data = np.squeeze(hdu.data)
     
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
         #img = fits.PrimaryHDU(stamp.data, header=stamp.wcs.to_header())
-        hdu[0].header.update(stamp.wcs.to_header())
-        img = fits.PrimaryHDU(stamp.data, header=hdu[0].header)
+        hdu.header.update(stamp.wcs.to_header())
+        img = fits.PrimaryHDU(stamp.data, header=hdu.header)
     
         # writing to a pretend file in memory
         mem_file = io.BytesIO()
@@ -393,7 +394,9 @@ class SurveyABC(ABC):
 
         ###add in MJD and radio specific header info
         if survey == 'FIRST':
-            newhead['MJD'] = (Time(yrmon_to_isot(newhead['DATE-OBS'])).mjd,
+            #newhead['MJD'] = (Time(yrmon_to_isot(newhead['DATE-OBS'])).mjd,
+            #                  'Median MJD of obs month (00:00:00 on 15th)')
+            newhead['MJD'] = (Time(newhead['DATE-OBS']).mjd,
                               'Median MJD of obs month (00:00:00 on 15th)')
             ###set up radio specific keys (beamsize etc)
             radkeys = {'BUNIT': ('Jy/beam', 'Pixel flux unit'),
@@ -528,6 +531,7 @@ class SurveyABC(ABC):
             cutout = self.header_write(trimmed,position)
             # Integrated code
 
+            # debugging in progress...
             #cutout = self.format_fits_hdu(trimmed,position,size)
             #cutout = self.format_fits_hdu(tile,position,size)
         except Exception as e:
