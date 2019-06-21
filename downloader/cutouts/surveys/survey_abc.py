@@ -525,10 +525,10 @@ class SurveyABC(ABC):
             tile    = self.paste_tiles(tiles,position,size)
             trimmed = self.trim_tile(tile,position,size)
             # Yjan's code
-            #cutout = self.header_write(trimmed,position)
+            cutout = self.header_write(trimmed,position)
             # Integrated code
 
-            cutout = self.format_fits_hdu(trimmed,position,size)
+            #cutout = self.format_fits_hdu(trimmed,position,size)
             #cutout = self.format_fits_hdu(tile,position,size)
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
