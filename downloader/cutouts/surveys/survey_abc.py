@@ -28,15 +28,21 @@ from astropy.nddata.utils import Cutout2D
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
     def __init__(self,
+        http_pool_manager = None, # thread safe pool manager (i.e., urllib3)
         pid = None # 4 threads
     ):
         super().__init__()
 
         self.pid = None
+        self.http = None
 
 
     def set_pid(self, pid):
         self.pid = pid
+
+
+    def attach_http_pool_manager(self,http_pool_manager):
+        self.http = http_pool_manager
 
 
     def get_sexadecimal_string(self, position):
@@ -54,7 +60,10 @@ class SurveyABC(ABC):
         my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
         prefix = f"{my_name}({my_pid}{'' if my_pid=='' or my_filter=='' else ','}{my_filter})"
         if not (diagnostic_msg is None):
-            msg_str = msg + ("\nTRACEBACK:" if is_traceback else "") + "\n> %s" % "\n> ".join(diagnostic_msg.splitlines())
+            if isinstance(diagnostic_msg,fits.header.Header):
+                msg_str = msg + ("\nHEADER:\n> %s" % "\n>".join(get_header_pretty_string(diagnostic_msg).splitlines()))
+            else:
+                msg_str = msg + ("\nTRACEBACK:" if is_traceback else "") + "\n>%s" % "\n> ".join(diagnostic_msg.splitlines())
         else:
             msg_str = msg
         prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
@@ -64,7 +73,10 @@ class SurveyABC(ABC):
     def pack(self, url, payload=None):
         if payload:
             data = urllib.parse.urlencode(payload).encode('utf-8')
-            request = urllib.request.Request(url, data)
+            if self.http is None:
+                request = urllib.request.Request(url, data)
+            else:
+                request = url+"/post?"+data.decode('utf-8')
         else:
             request = url
         return request
@@ -80,14 +92,20 @@ class SurveyABC(ABC):
         while potential_retries > 0:
 
             try:
-                response = urllib.request.urlopen(request)
+                if self.http is None:
+                    response = urllib.request.urlopen(request)
+                else:
+                    response = self.http.request('GET',request)
             except urllib.error.HTTPError:
                 pass
             except ConnectionResetError:
                 pass
             else:
                 try:
-                    response_data = bytearray(response.read())
+                    if self.http is None:
+                        response_data = bytearray(response.read())
+                    else:
+                        response_data = bytearray(response.data)
                     return response_data
                 except:
                     # E.g., One noted error was 'IncompleteRead'...
@@ -212,6 +230,9 @@ class SurveyABC(ABC):
         hdu = None
         if len(hdu_tiles) > 1:
             self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexadecimal_string(position)}")
+            #if type(self).__name__ == 'WISE':
+            #    for i in range(len(hdu_tiles)):
+            #        self.print(f"TILE{i}:",hdu_tiles[i][0].header)
             try:
                 imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
                 # TODO: this will probably need cleaning up at some point, as the header 
@@ -220,7 +241,10 @@ class SurveyABC(ABC):
                 tiled_fits_file = io.BytesIO(self.mosaic(imgs))
                 tiled_fits_file.seek(0)
                 hdu = fits.open(tiled_fits_file)
+                #self.print(f"HDU ===> {hdu}")
                 hdu[0].header = header_template
+                #if type(self).__name__ == 'WISE':
+                #    self.print(f"MOSAIC:",hdu[0].header)
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",show_caller=True)
             except OSError as e:
@@ -451,8 +475,8 @@ class SurveyABC(ABC):
         x_pixels = len(data[0])
         y_pixels = len(data)
         hdf.update({
-            'CRPIX1': (np.round(x_pixels/2, 1), 'Axis 1 reference pixel'),
-            'CRPIX2': (np.round(y_pixels/2, 1), 'Axis 2 reference pixel')
+            'CRPIX1': (np.round(x_pixels/2.0, 1), 'Axis 1 reference pixel'),
+            'CRPIX2': (np.round(y_pixels/2.0, 1), 'Axis 2 reference pixel')
         })
 
         # set survey name
@@ -503,7 +527,9 @@ class SurveyABC(ABC):
             # Yjan's code
             #cutout = self.header_write(trimmed,position)
             # Integrated code
+
             cutout = self.format_fits_hdu(trimmed,position,size)
+            #cutout = self.format_fits_hdu(tile,position,size)
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
             cutout = None

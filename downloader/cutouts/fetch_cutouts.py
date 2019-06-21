@@ -3,6 +3,11 @@ import os
 import sys
 import signal
 
+# thread-salf version of urllib3
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+http = urllib3.PoolManager(num_pools=25,block=True)
+
 # utilities
 import re
 import click
@@ -114,6 +119,7 @@ def batch_process(
     # toss all the targets into the queue, including for all surveys
     # i.e., some position in both NVSS and VLASS and SDSS, etc.
     for task in cfg.get_procssing_stack():
+        task['survey'].attach_http_pool_manager(http)
         in_q.put(task)
 
     # need this for ctrl-c shutdown
