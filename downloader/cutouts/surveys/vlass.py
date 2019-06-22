@@ -68,7 +68,7 @@ def tile_query():
         if len(results) > 1:
              import re
              sexadecimal = "%02d%02d%02.1f" % coord.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % coord.dec.signed_dms)
-             print(f"VLASS: Mosaicing J{sexadecimal} of Size {coord_size} /w {len(results)} tiles...")
+             print(f"VLASS: Mosaicking J{sexadecimal} of Size {coord_size} /w {len(results)} tiles...")
         elif len(results) == 1:
              print(f"VLASS: Only 1 tile to cut -- I love simplicity!")
         else:
