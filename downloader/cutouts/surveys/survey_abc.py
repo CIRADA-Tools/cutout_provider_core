@@ -61,7 +61,7 @@ class SurveyABC(ABC):
         prefix = f"{my_name}({my_pid}{'' if my_pid=='' or my_filter=='' else ','}{my_filter})"
         if not (diagnostic_msg is None):
             if isinstance(diagnostic_msg,fits.header.Header):
-                msg_str = msg + ("\nHEADER:\n> %s" % "\n>".join(get_header_pretty_string(diagnostic_msg).splitlines()))
+                msg_str = msg + ("\nHEADER:\n>%s" % "\n>".join(get_header_pretty_string(diagnostic_msg).splitlines()))
             else:
                 msg_str = msg + ("\nTRACEBACK:" if is_traceback else "") + "\n>%s" % "\n> ".join(diagnostic_msg.splitlines())
         else:
@@ -184,16 +184,30 @@ class SurveyABC(ABC):
             self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...")
             return None
 
-        # debug
-        #if type(self).__name__ == 'VLASS':
-        #    self.print(f"WCS: {get_header_pretty_string(WCS(header).to_header())}")
-
         # get/check data field
         data = hdul[0].data
         if data.min() == 0 and data.max() == 0:
             self.print("WARNING: Fits file contains no data: skipping...")
             return None
 
+        # sanitize the date-obs field
+        if 'DATE-OBS' in hdul[0].header:
+            hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
+
+        # sanitize the rotation matrix
+        # TODO: check for other antiquated stuff, i.e.,
+        # http://tdc-www.harvard.edu/software/wcstools/cphead.wcs.html
+        rotation_matrix_map = {
+            'PC001001': 'PC1_1',
+            'PC001002': 'PC1_2',
+            'PC002001': 'PC2_1',
+            'PC002002': 'PC2_2'
+        }
+        for key in rotation_matrix_map.keys():
+            if key in hdul[0].header:
+                hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
+                hdul[0].header.remove(key)
+    
         return hdul
 
 
@@ -207,10 +221,10 @@ class SurveyABC(ABC):
     def get_tiles(self, position, size):
         urls = self.get_tile_urls(position,size)
         if len(urls) > 0:
-            hdu_lists = [h for h in [self.get_fits(url,position) for url in urls] if h]
+            hdul_list = [hdul for hdul in [self.get_fits(url,position) for url in urls] if hdul]
         else:
             return None
-        return hdu_lists
+        return hdul_list
 
 
     def get_image(self, hdu):
@@ -223,42 +237,43 @@ class SurveyABC(ABC):
         return mem_file.getvalue()
 
 
-    def paste_tiles(self, hdu_tiles, position, size):
-        if hdu_tiles is None:
+    def paste_tiles(self, hdul_tiles, position, size):
+        if hdul_tiles is None:
             return None
 
         hdu = None
-        if len(hdu_tiles) > 1:
-            self.print(f"Pasting {len(hdu_tiles)} at J{self.get_sexadecimal_string(position)}")
-            #return hdu_tiles[1][0]
+        #if type(self).__name__ == 'PanSTARRS' or type(self).__name__ == 'WISE':
+        #    for i in range(len(hdul_tiles)):
+        #        #self.print(f"TILE{i}:",WCS(hdul_tiles[i][0].header).to_header())
+        #        self.print(f"TILE{i}:",hdul_tiles[i][0].header)
+        if len(hdul_tiles) > 1:
+            self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
+            # debug
             #if type(self).__name__ == 'WISE':
-            #    for i in range(len(hdu_tiles)):
-            #        self.print(f"TILE{i}:",hdu_tiles[i][0].header)
+            #    for i in range(len(hdul_tiles)):
+            #        self.print(f"TILE{i}:",WCS(hdul_tiles[i][0].header).to_header())
+            #if type(self).__name__ == 'PanSTARRS':
+            #    for i in range(len(hdul_tiles)):
+            #        self.print(f"TILE{i}:",WCS(hdul_tiles[i][0].header).to_header())
             try:
-                imgs = [img for img in [self.get_image(tile) for tile in hdu_tiles]]
-                # TODO: this will probably need cleaning up at some point, as the header 
-                #       definitions from the first tile is used for the tile fits...
-                header_template = hdu_tiles[0][0].header
+                imgs = [img for img in [self.get_image(tile) for tile in hdul_tiles]]
+                # TODO: Need to handle multiple COADDID's...
+                header_template = hdul_tiles[0][0].header
                 tiled_fits_file = io.BytesIO(self.mosaic(imgs))
                 tiled_fits_file.seek(0)
                 hdu = fits.open(tiled_fits_file)[0]
-                #self.print("MOSAICED!",hdu.header)
-                #self.print("Updating Keys:")
                 for key in hdu.header:
-                    #self.print(f"> {key}: {hdu.header[key]}")
                     if key != 'COMMENT':
                         header_template[key] = hdu.header[key]
-                #self.print("[done]")
                 hdu.header = header_template
-                #self.print("[done][done]")
-                #if type(self).__name__ == 'WISE':
-                #    self.print(f"MOSAIC:",hdu.header)
+                # debug
+                #self.print("WCS:",WCS(hdu.header).to_header())
             except montage_wrapper.status.MontageError as e:
-                self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",show_caller=True)
+                self.print(f"Mosaicking Failed: {e}: file={sys.stderr}",show_caller=True)
             except OSError as e:
                 self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
-        elif len(hdu_tiles) == 1:
-                hdu = hdu_tiles[0][0]
+        elif len(hdul_tiles) == 1:
+                hdu = hdul_tiles[0][0]
         return hdu
 
 
@@ -266,8 +281,6 @@ class SurveyABC(ABC):
         if hdu is None:
             return None
     
-        if 'DATE-OBS' in hdu.header:
-            hdu.header['DATE-OBS'] = sanitize_fits_date_fields(hdu.header['DATE-OBS'])
         w = WCS(hdu.header)
     
         # trim to 2d from nd
@@ -278,13 +291,14 @@ class SurveyABC(ABC):
         img_data = np.squeeze(hdu.data)
     
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
-        #img = fits.PrimaryHDU(stamp.data, header=stamp.wcs.to_header())
+        # debug
+        #self.print("TRIMMED:",stamp.wcs.to_header())
         hdu.header.update(stamp.wcs.to_header())
         img = fits.PrimaryHDU(stamp.data, header=hdu.header)
     
         # writing to a pretend file in memory
-        mem_file = io.BytesIO()
-        img.writeto(mem_file)
+        #mem_file = io.BytesIO()
+        #img.writeto(mem_file)
         return img
 
 
@@ -535,9 +549,9 @@ class SurveyABC(ABC):
             tile    = self.paste_tiles(tiles,position,size)
             trimmed = self.trim_tile(tile,position,size)
             # Yjan's code
-            cutout = self.header_write(trimmed,position)
+            #cutout = self.header_write(trimmed,position)
             # Integrated code
-            #cutout = self.format_fits_hdu(trimmed,position,size)
+            cutout = self.format_fits_hdu(trimmed,position,size)
 
             # debugging in progress...
             #cutout = self.format_fits_hdu(trimmed,position,size)

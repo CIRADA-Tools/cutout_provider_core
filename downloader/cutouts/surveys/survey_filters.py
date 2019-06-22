@@ -124,6 +124,10 @@ class HeaderFilter:
                 ]}],
                 ['WCSAXES',{'VALUE': '???', 'COMMENT': 'Number of WCS axes'}],
                 ['RADESYS'],
+                ['PC1_1'],
+                ['PC1_2'],
+                ['PC2_1'],
+                ['PC2_2'],
                 [{'WCSAXES_BLOCK': [
                     ['CTYPE1'],
                     ['CUNIT1'],
@@ -171,6 +175,10 @@ class HeaderFilter:
             keep = [
                 'WCSAXES',
                 'RADESYS',
+                'PC1_1',
+                'PC1_2',
+                'PC2_1',
+                'PC2_2',
                 'CTYPE1',
                 'CUNIT1',
                 'CRVAL1',
@@ -192,6 +200,7 @@ class HeaderFilter:
                 if field in keep:
                     self.update({field: (wcs_header[field], wcs_header.comments[field])})
             self.update({'WCSAXES': (2, wcs_header.comments['WCSAXES'])})
+            self.save_keys(keep)
 
         # special header keys
         self.reserved_keys = ['SIMPLE', 'BITPIX','NAXIS','NAXIS1','NAXIS2','EXTEND']
