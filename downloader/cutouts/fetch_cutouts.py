@@ -6,7 +6,7 @@ import signal
 # thread-salf version of urllib3
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-http = urllib3.PoolManager(num_pools=25,block=True)
+http = urllib3.PoolManager(num_pools=60,maxsize=15,block=True)
 
 # utilities
 import re
@@ -109,7 +109,7 @@ def batch_process(
     print(f'Setting target overwrite mode to {overwrite}')
     cfg.set_overwrite(overwrite)
 
-    grabbers = 10
+    grabbers = 60
     savers = 1
 
     # set up i/o queues
