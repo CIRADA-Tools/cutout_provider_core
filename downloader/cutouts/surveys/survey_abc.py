@@ -241,18 +241,25 @@ class SurveyABC(ABC):
                 header_template = hdu_tiles[0][0].header
                 tiled_fits_file = io.BytesIO(self.mosaic(imgs))
                 tiled_fits_file.seek(0)
-                hdu = fits.open(tiled_fits_file)
-                #self.print(f"HDU ===> {hdu}")
-                hdu[0].header = header_template
+                hdu = fits.open(tiled_fits_file)[0]
+                #self.print("MOSAICED!",hdu.header)
+                #self.print("Updating Keys:")
+                for key in hdu.header:
+                    #self.print(f"> {key}: {hdu.header[key]}")
+                    if key != 'COMMENT':
+                        header_template[key] = hdu.header[key]
+                #self.print("[done]")
+                hdu.header = header_template
+                #self.print("[done][done]")
                 #if type(self).__name__ == 'WISE':
-                #    self.print(f"MOSAIC:",hdu[0].header)
+                #    self.print(f"MOSAIC:",hdu.header)
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicing Failed: {e}: file={sys.stderr}",show_caller=True)
             except OSError as e:
                 self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
         elif len(hdu_tiles) == 1:
-                hdu = hdu_tiles[0]
-        return hdu[0]
+                hdu = hdu_tiles[0][0]
+        return hdu
 
 
     def trim_tile(self, hdu, position, size):
@@ -530,10 +537,12 @@ class SurveyABC(ABC):
             # Yjan's code
             cutout = self.header_write(trimmed,position)
             # Integrated code
+            #cutout = self.format_fits_hdu(trimmed,position,size)
 
             # debugging in progress...
             #cutout = self.format_fits_hdu(trimmed,position,size)
             #cutout = self.format_fits_hdu(tile,position,size)
+            #cutout = tile
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
             cutout = None
