@@ -108,7 +108,7 @@ class PanSTARRS(SurveyABC):
         dec    = position.dec.to(u.deg).value
         pixels = int((size / pix_scale).to(u.pix).value)
 
-        url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filter, format='fits')
+        url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filter.name, format='fits')
 
         return url
 
