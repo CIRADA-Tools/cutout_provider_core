@@ -134,7 +134,7 @@ class VLASS(SurveyABC):
         return urls
 
 
-    # Micheal Ramsay's VLASS quick-look image url script...
+    # Michael Ramsay's VLASS quick-look image url script...
     def __get_vlass_quick_look_image_urls(self,position,size):
         def get_query_url(tilename, position, size):
             url = 'http://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout'
