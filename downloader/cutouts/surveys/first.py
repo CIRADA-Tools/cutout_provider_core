@@ -29,6 +29,21 @@ class FIRST(SurveyABC):
             'Download': 1,
             'FITS': 1
         }
+        # TODO: FIRST mosaicking work in progress... consider using SIAP...
+        # MAST I/F notes:
+        # [1] https://third.ucllnl.org/cgi-bin/firstcutout -- FIRST bread crumbs
+        #     http://sundog.stsci.edu/first/images.html
+        #     http://archive.stsci.edu/vlafirst/search.php
+        #     http://archive.stsci.edu/searches.html
+        #     http://archive.stsci.edu/vo/mast_services.html (SCS vs SIAP)
+        # [2] https://astroquery.readthedocs.io/en/latest/mast/mast.html -- Python MAST I/F (appears to have not support for VLA-FIRST)
+        # [3] http://docs.astropy.org/en/stable/io/votable/ -- python VOTable I/F
+        # [4] http://docs.g-vo.org/DaCHS/tutorial.pdf -- ?
+        #str = " ***\n"
+        #str += "%s\n" % url
+        #str += "post_values = %s" % (" {\n>"+",\n> ".join([f"{k}: {post_values[k]}" for k in post_values.keys()])+"\n> }\n")
+        #str += f" ======> {self.pack(url, post_values)}"
+        #print(str)
 
         return [self.pack(url, post_values)]
 
