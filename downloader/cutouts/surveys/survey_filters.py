@@ -96,7 +96,7 @@ def sanitize_fits_date_fields(date_obs_value):
 
 
 class HeaderFilter:
-    """This class is used as header filter tool for modifying, adding, formating, and extracting header infomation
+    """This class is used as a header filter tool for modifying, adding, formating, and extracting header infomation
        intended for the creation of new headers.
 
        method:
