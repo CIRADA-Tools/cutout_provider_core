@@ -29,6 +29,7 @@ from surveys.panstarrs import PanSTARRS
 
 class SurveyConfig:
     def __init__(self,yml_configuration_file):
+        self.relative_path = re.sub(r"[^/]+$","",yml_configuration_file)
         self.config = yml.load(open(yml_configuration_file,'r'))
 
         # define supported_surveys
@@ -59,7 +60,7 @@ class SurveyConfig:
         # set targets
         self.targets = list()
         for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
-            sources = self.__csv_to_dict(coords_csv_file)
+            sources = self.__csv_to_dict(self.relative_path+coords_csv_file)
     
             # make all keys lower case to effectively reference case-variants of RA and Dec.
             sources = [{k.lower(): v for k,v in s.items()} for s in sources]
@@ -72,7 +73,7 @@ class SurveyConfig:
 
         # set the data output dir
         # TODO: Add 'out_dir' (etc?) to yaml config file
-        self.out_dir = "data/out"
+        self.out_dir = self.relative_path+"data/out"
         try:
             os.makedirs(self.out_dir)
         except FileExistsError:
