@@ -1,33 +1,7 @@
-#   This file contains the hierarchy for the remote (CADC/CANFAR), local (local copy), and 
-# dps (data-product-server container copies) data (e.g., catalogues) directory 
-# structures: cf.,
-#
-#     root:(remote|local|dps)/
-#         hierachy:/
-#             catalgoues:(remote|local|dps)/
-#                 data_files(all|configuration=../../dps/docker-compose.yml(catlogue_file's))
-#
-# where the data_files required for the dps containers are extracted from the catlogue_file 
-# parameters in the docker configuration file, '../../dps/docker-compose.yml'.
-#
-# For example the first catolgue data file would be located in
-#
-#    escritoire/catalogues/radio/first/data
-#
-# relative to the root (this) Continuum repo dir.
-root:
+# vospace root directory for catalogues, cutouts, etc.
+vospace_root:
    remote: vos:cirada/continuum/dps_repo/survey_data/
-   local:  escritoire/downloads/
-   dps:    dps/
-   calaran: SourceID/data
-catalogues:
-   remote: catalogues/
-   local:  data/catalogues/
-   dps:    data/
-cutouts:
-   remote: cutouts/claran/
-   local:  data/cutouts/
-   claran: cutouts/
+# vospace/target data directory hierarchy
 hierarchy:
    radio:
       first:
