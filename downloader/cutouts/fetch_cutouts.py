@@ -93,8 +93,12 @@ def save_cutout(target):
         target['survey'].print(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.")
 
 
+# define the default config file with absolute path
+this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
+default_config = this_source_file_dir + 'config_default.yml'
+
 @click.command()
-@click.option('--config-file',default='config_default.yml',help='yaml search parameters configuration file')
+@click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
 @click.option('--overwrite',default=False,help='overwrite existing target files')
 def batch_process(
     config_file,
