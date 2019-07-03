@@ -73,7 +73,14 @@ class SurveyConfig:
 
         # set the data output dir
         # TODO: Add 'out_dir' (etc?) to yaml config file
-        self.out_dir = self.relative_path+"data/out"
+        data_root = self.__sanitize_path(self.config['configuration']['data_root'])
+        if bool(re.match('/',data_root)): # absolute path case
+           self.out_dir = data_root+"data/out"
+        elif bool(re.match('~/',data_root)): # home path case
+           self.out_dir = os.path.expanduser(data_root)+"data/out"
+        else: # relative path case
+           self.out_dir = self.relative_path+data_root+"data/out"
+        print(f"self.out_dir: {self.out_dir}")
         try:
             os.makedirs(self.out_dir)
         except FileExistsError:
@@ -84,6 +91,11 @@ class SurveyConfig:
         # set the overwrite file parameter
         # TODO: Add this setting to the yaml configuration file
         self.overwrite = False
+
+
+    def __sanitize_path(self,path):
+        # clean up repeating '/'s with a trailing '/' convention
+        return re.sub(r"(/+|/*$)",r"/",path)
 
 
     def __csv_to_dict(self,filename):
