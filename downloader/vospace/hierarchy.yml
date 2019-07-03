@@ -1,6 +1,8 @@
 root:
    remote: vos:cirada/continuum/dps_repo/survey_data
-   local: data
+   # TODO: replace data/tree with data after debugging completed...
+   #local: data
+   local: data/tree
 hierarchy:
    radio:
       first:

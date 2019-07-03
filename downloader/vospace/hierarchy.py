@@ -5,7 +5,7 @@ import yaml as yml
 
 
 from abc import ABC, abstractmethod
-class Hierarchy(ABC):
+class HierarchyABC(ABC):
     def __init__(self):
         super().__init__()
 
@@ -56,25 +56,25 @@ class Hierarchy(ABC):
         return [self.get_survey_dir(s) for s in self.surveys]
 
 
-class LocalDirs(Hierarchy):
+class LocalDirs(HierarchyABC):
     def __init__(self):
         super().__init__()
 
 
     def get_survey_dir(self, survey):
-        path = self._Hierarchy__get_base_survey_path(survey)
+        path = self._HierarchyABC__get_base_survey_path(survey)
         if not path is None:
             return self.get_local_root()+path
         return path
 
 
-class RemoteDirs(Hierarchy):
+class RemoteDirs(HierarchyABC):
     def __init__(self):
         super().__init__()
 
 
     def get_survey_dir(self, survey):
-        path = self._Hierarchy__get_base_survey_path(survey)
+        path = self._HierarchyABC__get_base_survey_path(survey)
         if not path is None:
             return self.get_remote_root()+path
         return path
@@ -83,7 +83,7 @@ class RemoteDirs(Hierarchy):
 class LocalCutouts(LocalDirs):
     def __init__(self):
         super().__init__()
-        self.sub_dir = self._Hierarchy__sanitize_path(self.config['catagories']['cutouts']['sub_dir'])
+        self.sub_dir = self._HierarchyABC__sanitize_path(self.config['catagories']['cutouts']['sub_dir'])
 
 
     def get_survey_dir(self, survey):
@@ -96,7 +96,7 @@ class LocalCutouts(LocalDirs):
 class RemoteCutouts(RemoteDirs):
     def __init__(self):
         super().__init__()
-        self.sub_dir = self._Hierarchy__sanitize_path(self.config['catagories']['cutouts']['sub_dir'])
+        self.sub_dir = self._HierarchyABC__sanitize_path(self.config['catagories']['cutouts']['sub_dir'])
 
 
     def get_survey_dir(self, survey):
@@ -108,33 +108,33 @@ class RemoteCutouts(RemoteDirs):
 
 if __name__ == '__main__':
     #print()
-    #print(" *** Hierarchy() Class Test ***")
-    #h = Hierarchy()
+    #print(" *** HierarchyABC() Class Test ***")
+    #h = HierarchyABC()
     #print(f"DATA_ROOT: {h.get_local_root()}")
     #print(f"VOSPACE_ROOT: {h.get_remote_root()}")
     #print(f"Has FirSt: {h.has_survey('FirSt')}")
     #print(f"Has Bart: {h.has_survey('Bart')}")
 
     print()
-    print(" *** LocalDirs(Hierarchy) Class Test ***")
+    print(" *** LocalDirs(HierarchyABC) Class Test ***")
     local = LocalDirs()
     print(f"get_survey_dir('First'): {local.get_survey_dir('First')}")
     print("get_survey_dirs(): \n> "+"\n> ".join(local.get_survey_dirs()))
 
     print()
-    print(" *** RemoteDirs(Hierarchy) Class Test ***")
+    print(" *** RemoteDirs(HierarchyABC) Class Test ***")
     remote = RemoteDirs()
     print(f"get_survey_dir('PanSTARRS'): {remote.get_survey_dir('PanSTARRS')}")
     print("get_survey_dirs(): \n> "+"\n> ".join(remote.get_survey_dirs()))
 
     print()
-    print(" *** LocalCutouts(LocalDirs(Hierarchy)) Class Test ***")
+    print(" *** LocalCutouts(LocalDirs(HierarchyABC)) Class Test ***")
     local_cutouts = LocalCutouts()
     print(f"get_survey_dir('SDss'): {local_cutouts.get_survey_dir('SDss')}")
     print("get_survey_dirs(): \n> "+"\n> ".join(local_cutouts.get_survey_dirs()))
 
     print()
-    print(" *** RemoteCutouts(RemoteDirs(Hierarchy)) Class Test ***")
+    print(" *** RemoteCutouts(RemoteDirs(HierarchyABC)) Class Test ***")
     remote_cutouts = RemoteCutouts()
     print("get_survey_dirs(): \n> "+"\n> ".join(remote_cutouts.get_survey_dirs()))
 

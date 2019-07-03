@@ -2,10 +2,17 @@
 import os
 import sys
 
-from random import shuffle
-
 # utilities
 import re
+
+# add module paths that are two levels up from here
+this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
+sys.path.append(this_source_file_dir+"../..")
+
+# import the vospace space module to get the data-subdir configuration
+from vospace.hierarchy import LocalCutouts
+
+from random import shuffle
 
 # configuration
 import csv
@@ -74,13 +81,15 @@ class SurveyConfig:
         # set the data output dir
         # TODO: Add 'out_dir' (etc?) to yaml config file
         data_root = self.__sanitize_path(self.config['configuration']['data_root'])
+        self.local_dirs = LocalCutouts()
         if bool(re.match('/',data_root)): # absolute path case
-           self.out_dir = data_root+"data/out"
+           self.out_dir = data_root+self.local_dirs.get_local_root()
         elif bool(re.match('~/',data_root)): # home path case
-           self.out_dir = os.path.expanduser(data_root)+"data/out"
+           self.out_dir = os.path.expanduser(data_root)+self.local_dirs.get_local_root()
         else: # relative path case
-           self.out_dir = self.relative_path+data_root+"data/out"
+           self.out_dir = self.relative_path+data_root+self.local_dirs.get_local_root()
         print(f"self.out_dir: {self.out_dir}")
+        exit()
         try:
             os.makedirs(self.out_dir)
         except FileExistsError:
