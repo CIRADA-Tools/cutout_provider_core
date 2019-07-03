@@ -1,5 +1,5 @@
 root:
-   remote: vos:cirada/continuum/dps_repo//survey_data
+   remote: vos:cirada/continuum/dps_repo/survey_data
    local: data
 hierarchy:
    radio:
