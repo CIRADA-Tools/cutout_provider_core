@@ -1,7 +1,6 @@
-# vospace root directory for catalogues, cutouts, etc.
-vospace_root:
-   remote: vos:cirada/continuum/dps_repo/survey_data/
-# vospace/target data directory hierarchy
+root:
+   remote: vos:cirada/continuum/dps_repo//survey_data
+   local: data
 hierarchy:
    radio:
       first:
@@ -23,3 +22,8 @@ hierarchy:
    gray:
       fermilat:
       hess:
+catagories:
+   catalogues: 
+       sub_dir: 'catalogues'
+   cutouts: 
+       sub_dir: 'cutouts'
