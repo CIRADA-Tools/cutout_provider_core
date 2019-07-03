@@ -89,7 +89,6 @@ class SurveyConfig:
         else: # relative path case
            self.out_dir = self.relative_path+data_root+self.local_dirs.get_local_root()
         print(f"self.out_dir: {self.out_dir}")
-        exit()
         try:
             os.makedirs(self.out_dir)
         except FileExistsError:
