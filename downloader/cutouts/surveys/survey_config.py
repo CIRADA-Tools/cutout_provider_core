@@ -179,6 +179,7 @@ class SurveyConfig:
                         supported.append(supported_survey)
                         break
             else:
+                # TODO: This should really be done in init to prevent the potential of repeated message...
                 self.__print(f"WARNING: Survey '{survey}' is not supported!")
         return supported
 
@@ -213,10 +214,11 @@ class SurveyConfig:
             if found:
                 matched.append(supported_filter)
                 found = False
-            else:
-                self.__print(f"WARNING: '{survey}' filter '{filter}' is not supported!")
+            # TODO: we need to do this test in init, otherwise the message repeats
+            #else:
+            #    self.__print(f"WARNING: '{survey}' filter '{filter}' is not supported!")
         
-        return matched
+        return set(matched)
 
 
     def has_survey(self,survey):
@@ -269,38 +271,6 @@ class SurveyConfig:
 
 
     def get_survey_class_stack(self):
-        # TODO: Fix the repeating message,
-        #
-        #         > In [354]: cfg = SurveyConfig("config_debug.yml") 
-        #         > ...
-        #         > In [355]: cfg.get_survey_instance_stack()
-        #         > 
-        #         > SurveyConfig: INSTANTIATING: FIRST()
-        #         > SurveyConfig: INSTANTIATING: NVSS()
-        #         > SurveyConfig: WARNING: 'VLASS' filter 'foo' is not supported!
-        #         > SurveyConfig: INSTANTIATING: VLASS()
-        #         > VLASS: => Using CADC cutout server!
-        #         > SurveyConfig: INSTANTIATING: WISE(filter=wise_filters.w1)
-        #         > SurveyConfig: WARNING: 'PanSTARRS' filter 'k' is not supported!
-        #         > SurveyConfig: WARNING: 'PanSTARRS' filter 'k' is not supported!
-        #         > SurveyConfig: WARNING: 'PanSTARRS' filter 'k' is not supported!
-        #         > SurveyConfig: INSTANTIATING: PanSTARRS(filter=grizy_filters.i)
-        #         > SurveyConfig: INSTANTIATING: SDSS(filter=grizy_filters.g)
-        #         > SurveyConfig: INSTANTIATING: SDSS(filter=grizy_filters.r)
-        #         > SurveyConfig: INSTANTIATING: SDSS(filter=grizy_filters.i)
-        #         > Out[355]:
-        #         > [<surveys.first.FIRST at 0x11a76acc0>,
-        #         >  <surveys.nvss.NVSS at 0x11a76af28>,
-        #         >  <surveys.vlass.VLASS at 0x11a76a860>,
-        #         >  <surveys.wise.WISE at 0x11a76ac50>,
-        #         >  <surveys.panstarrs.PanSTARRS at 0x11a76af98>,
-        #         >  <surveys.sdss.SDSS at 0x11a76ada0>,
-        #         >  <surveys.sdss.SDSS at 0x11a76a7b8>,
-        #         >  <surveys.sdss.SDSS at 0x11a76a9b0>]
-        #         > 
-        #         > In [356]:
-        #
-        #       problem.
         class_stack = list()
         for survey_name in self.get_survey_names():
             if self.has_filters(survey_name):
