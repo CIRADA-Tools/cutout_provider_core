@@ -99,10 +99,13 @@ class VLASS(SurveyABC):
 
         self.intersecting_tiles = intersecting_tiles
 
-        if self.is_cutout_server:
-            self.print("=> Using CADC cutout server!")
-        else:
-            self.print("=> Using VLASS quick-look images!")
+        # TODO: This gets printed for each instance... mabye add a method and call it once... 
+        #       hmmm... get_init_message_string()...? ... can use in survey_config... 
+        #       avec try ... except ...
+        #if self.is_cutout_server:
+        #    self.print("=> Using CADC cutout server!")
+        #else:
+        #    self.print("=> Using VLASS quick-look images!")
 
 
     # Greg Sivakoff's CADC cutout server url script...

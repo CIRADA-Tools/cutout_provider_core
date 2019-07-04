@@ -98,11 +98,8 @@ class SurveyConfig:
            out_dir = os.path.expanduser(data_root)
         else: # relative path case
            out_dir = relative_path+data_root
-        #print(f"out_dir: {out_dir}")
         self.local_dirs.set_local_root(out_dir)
         self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
-        #print("self.out_dirs: \n> "+"\n> ".join([f"{k} => {self.out_dirs[k]}" for k in self.out_dirs.keys()]))
-        #exit() # debug
         for out_dir in self.out_dirs.values():
             try:
                 os.makedirs(out_dir)
@@ -368,6 +365,5 @@ class SurveyConfig:
         shuffle(procssing_stack)
 
         self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
-        #exit() # debug
         return procssing_stack
 
