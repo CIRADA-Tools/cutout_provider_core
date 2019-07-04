@@ -102,7 +102,7 @@ class SurveyConfig:
         self.local_dirs.set_local_root(self.out_dir)
         self.out_dirs = set([self.local_dirs.get_survey_dir(s) for s in self.survey_names])
         print("self.out_dirs: \n> "+"\n> ".join(self.out_dirs))
-        exit()
+        #exit()
         try:
             os.makedirs(self.out_dir)
         except FileExistsError:
