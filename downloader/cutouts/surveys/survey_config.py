@@ -113,7 +113,7 @@ class SurveyConfig:
         self.overwrite = False
 
         # TODO: will probably want to overide this in a config file/cmd-line-arg
-        self.no_class_instances_per_survey = 100
+        self.no_class_instances_per_survey = 15
 
 
     def __sanitize_path(self,path):
