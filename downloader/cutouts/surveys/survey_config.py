@@ -91,7 +91,7 @@ class SurveyConfig:
             } for x in sources])
 
         # set the data output dir
-        data_root = self.__sanitize_path(self.config['configuration']['data_root'])
+        data_root = self.__sanitize_path(self.config['configuration']['local_root'])
         if bool(re.match('/',data_root)): # absolute path case
            out_dir = data_root
         elif bool(re.match('~/',data_root)): # home path case
