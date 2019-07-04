@@ -185,7 +185,7 @@ class SurveyABC(ABC):
         sys.stdout = old_stdout
 
         # *** IO_WRAPPER ***
-        Now we can print the output from montage
+        # Now we can print the output from montage
         self.print(out)
 
         return merged
