@@ -4,7 +4,7 @@ root:
 hierarchy:
    radio:
       first:
-      lotss: 
+      lotss:
       nvss:
       vlass:
    ir:
@@ -25,11 +25,11 @@ hierarchy:
 data_subdir:
     # NB: Please do not change this name.
     #     It's added to .gitignore files
-    #     to keep large data files out 
+    #     to keep large data files out
     #     of repos.
     data
 catagories:
-   catalogues: 
+   catalogues:
        sub_dir: 'catalogues'
-   cutouts: 
+   cutouts:
        sub_dir: 'cutouts'
