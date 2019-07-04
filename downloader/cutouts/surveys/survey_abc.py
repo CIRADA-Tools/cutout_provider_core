@@ -5,6 +5,10 @@ import traceback
 import tempfile
 import shutil
 
+# *** IO_WRAPPER ***
+# Notes: https://stackoverflow.com/questions/1218933/can-i-redirect-the-stdout-in-python-into-some-sort-of-string-buffer/33979942#33979942
+from io import TextIOWrapper, BytesIO
+
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -147,6 +151,14 @@ class SurveyABC(ABC):
         output_dir = '{directory}/output'.format(directory=td)
         self.__make_dir(input_dir)
 
+        # *** IO_WRAPPER ***
+        # TODO: [1] Stream this
+        #       [2] Make a decorator
+        #       [3] Check if thread-safe
+        # setup the environment
+        old_stdout = sys.stdout
+        sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
+
         try:
             for i, c in enumerate(cutouts):
                 with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
@@ -161,6 +173,20 @@ class SurveyABC(ABC):
             shutil.rmtree(output_dir)
             shutil.rmtree(input_dir)
             shutil.rmtree(td)
+
+        # *** IO_WRAPPER ***
+        # get output
+        sys.stdout.seek(0)      # jump to the start
+        out = sys.stdout.read() # read output
+
+        # *** IO_WRAPPER ***
+        # restore stdout
+        sys.stdout.close()
+        sys.stdout = old_stdout
+
+        # *** IO_WRAPPER ***
+        Now we can print the output from montage
+        self.print(out)
 
         return merged
 
