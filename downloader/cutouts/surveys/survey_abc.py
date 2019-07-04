@@ -8,6 +8,7 @@ import shutil
 import urllib.request
 import urllib.parse
 import urllib.error
+from time import sleep
 
 import re
 
@@ -96,43 +97,12 @@ class SurveyABC(ABC):
                     response = urllib.request.urlopen(request)
                 else:
                     response = self.http.request('GET',request)
-            except urllib.error.HTTPError:
+            except urllib.error.HTTPError as e:
                 pass
-            except ConnectionResetError:
+            except ConnectionResetError as e:
                 pass
-            #except urllib3.exceptions.MaxRetryError as e:
-            #    # TODO: working on error handling for timeouts...
-            #    # VLASS(pid=0): Fetching: https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:VLASS/VLASS1.1.ql.T26t06.J072827%2B633000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits&cutout=Circle+ICRS+113.19583333+63.39666667+0.035355339059327376
-            #    # VLASS[get_cutout](pid=0): ERROR: HTTPSConnectionPool(host='www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca', port=443): Max retries exceeded with url: https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T26t06.J072827+633000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?cutout=%5B0%5D%5B1%3A248%2C1374%3A1634%2C*%2C*%5D&fail=UVIC (Caused by ResponseError('too many redirects',))
-            #    # VLASS[get_cutout](pid=0): TRACEBACK:
-            #    # VLASS[get_cutout](pid=0): >Traceback (most recent call last):
-            #    # VLASS[get_cutout](pid=0): >   File "/Users/susy/cirada/Continuum_common/downloader/cutouts/surveys/survey_abc.py", line 548, in get_cutout
-            #    # VLASS[get_cutout](pid=0): >     tiles   = self.get_tiles(position,size)
-            #    # VLASS[get_cutout](pid=0): >   File "/Users/susy/cirada/Continuum_common/downloader/cutouts/surveys/survey_abc.py", line 224, in get_tiles
-            #    # VLASS[get_cutout](pid=0): >     hdul_list = [hdul for hdul in [self.get_fits(url,position) for url in urls] if hdul]
-            #    # VLASS[get_cutout](pid=0): >   File "/Users/susy/cirada/Continuum_common/downloader/cutouts/surveys/survey_abc.py", line 224, in <listcomp>
-            #    # VLASS[get_cutout](pid=0): >     hdul_list = [hdul for hdul in [self.get_fits(url,position) for url in urls] if hdul]
-            #    # VLASS[get_cutout](pid=0): >   File "/Users/susy/cirada/Continuum_common/downloader/cutouts/surveys/survey_abc.py", line 216, in get_fits
-            #    # VLASS[get_cutout](pid=0): >     response = self.__send_request(url, payload)
-            #    # VLASS[get_cutout](pid=0): >   File "/Users/susy/cirada/Continuum_common/downloader/cutouts/surveys/survey_abc.py", line 98, in __send_request
-            #    # VLASS[get_cutout](pid=0): >     response = self.http.request('GET',request)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/request.py", line 68, in request
-            #    # VLASS[get_cutout](pid=0): >     **urlopen_kw)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/request.py", line 89, in request_encode_url
-            #    # VLASS[get_cutout](pid=0): >     return self.urlopen(method, url, **extra_kw)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/poolmanager.py", line 358, in urlopen
-            #    # VLASS[get_cutout](pid=0): >     return self.urlopen(method, redirect_location, **kw)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/poolmanager.py", line 358, in urlopen
-            #    # VLASS[get_cutout](pid=0): >     return self.urlopen(method, redirect_location, **kw)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/poolmanager.py", line 358, in urlopen
-            #    # VLASS[get_cutout](pid=0): >     return self.urlopen(method, redirect_location, **kw)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/poolmanager.py", line 348, in urlopen
-            #    # VLASS[get_cutout](pid=0): >     retries = retries.increment(method, url, response=response, _pool=conn)
-            #    # VLASS[get_cutout](pid=0): >   File "/anaconda3/envs/py3/lib/python3.6/site-packages/urllib3/util/retry.py", line 398, in increment
-            #    # VLASS[get_cutout](pid=0): >     raise MaxRetryError(_pool, url, error or ResponseError(cause))
-            #    # VLASS[get_cutout](pid=0): > urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca', port=443): Max retries exceeded with url: https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T26t06.J072827+633000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?cutout=%5B0%5D%5B1%3A248%2C1374%3A1634%2C*%2C*%5D&fail=UVIC (Caused by ResponseError('too many redirects',))
-            #    exc_type, exc_value = sys.exc_info()[0:2]
-            #    self.print(f"{e}: {exc_type}: {exc_value}")
+            except urllib3.exceptions.MaxRetryError as e:
+                pass
             else:
                 try:
                     if self.http is None:
@@ -150,6 +120,12 @@ class SurveyABC(ABC):
                     # in astropy.wcs (cf., http://docs.astropy.org/en/stable/wcs/); hence this try..except wrapping.
                     #
                     pass
+
+            # TODO: clean this up, as well as, retries, for configuration...
+            duration_s = 60 if self.http else 25
+            self.print(f"{e}: Taking a {duration_s}s nap...")
+            sleep(duration_s)
+            self.print("OK, lest trying fetching the cutout -- again!")
 
             potential_retries -= 1
 
