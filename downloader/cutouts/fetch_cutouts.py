@@ -6,7 +6,14 @@ import signal
 # thread-salf version of urllib3
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-http = urllib3.PoolManager(num_pools=60,maxsize=15,block=True)
+http = urllib3.PoolManager(
+    num_pools = 60,
+    maxsize   = 15,
+    timeout   = 30.0,
+    retries   = 10,
+    redirect  = 5,
+    block     = True
+)
 
 # utilities
 import re
