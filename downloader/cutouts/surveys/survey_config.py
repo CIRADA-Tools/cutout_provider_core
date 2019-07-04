@@ -112,8 +112,11 @@ class SurveyConfig:
         # TODO: Add this setting to the yaml configuration file
         self.overwrite = False
 
-        # TODO: will probably want to overide this in a config file/cmd-line-arg
-        self.no_class_instances_per_survey = 15
+        # TODO: This method is not thread safe: i.e., the number of instances must
+        #       equal no_surveys * no_targets, otherwise, there could be a collision
+        #       in the threading-queue in fetch_cutouts.py
+        ## TODO: will probably want to overide this in a config file/cmd-line-arg
+        #self.no_class_instances_per_survey = 100
 
 
     def __sanitize_path(self,path):
@@ -305,9 +308,10 @@ class SurveyConfig:
         pid = 0 # task tracking id
         procssing_stack = list()
         for survey_class in survey_classes:
-            survey_instances = [eval(survey_class) for _ in range(self.no_class_instances_per_survey)]
+            #survey_instances = [eval(survey_class) for _ in range(self.no_class_instances_per_survey)]
             for n, survey_target in enumerate(survey_targets):
-                    survey_instance = survey_instances[n % self.no_class_instances_per_survey]
+                    #survey_instance = survey_instances[n % self.no_class_instances_per_survey]
+                    survey_instance = eval(survey_class)
 
                     # ra-dec-size cutout target
                     task = dict(survey_target)

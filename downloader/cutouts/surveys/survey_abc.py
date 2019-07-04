@@ -12,6 +12,7 @@ from io import TextIOWrapper, BytesIO
 import urllib.request
 import urllib.parse
 import urllib.error
+import urllib3
 from time import sleep
 
 import re

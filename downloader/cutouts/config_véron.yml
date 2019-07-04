@@ -15,8 +15,8 @@ cutouts:
               filters: w1
         - PanSTARRS:
               filters: [i]
-        - SDSS:
-              filters: [g,r,i]
+        #- SDSS:
+        #      filters: [g,r,i]
 
 # Processing output parameters
 configuration:
