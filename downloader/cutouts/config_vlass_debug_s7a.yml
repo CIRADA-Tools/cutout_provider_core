@@ -11,3 +11,7 @@ cutouts:
     surveys:
         - VLASS
 
+# Processing output parameters
+configuration:
+    # data root relative/absolute path defn
+    data_root: data/vlass_s7a_debug

@@ -35,7 +35,7 @@ cutouts:
         - SDSS:
               filters: [g,r,i]
 
-# Processing output paramters
+# Processing output parameters
 configuration:
     # data root relative/absolute path defn
     data_root: data/tree

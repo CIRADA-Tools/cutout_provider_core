@@ -93,22 +93,23 @@ class SurveyConfig:
         # set the data output dir
         data_root = self.__sanitize_path(self.config['configuration']['data_root'])
         if bool(re.match('/',data_root)): # absolute path case
-           self.out_dir = data_root
+           out_dir = data_root
         elif bool(re.match('~/',data_root)): # home path case
-           self.out_dir = os.path.expanduser(data_root)
+           out_dir = os.path.expanduser(data_root)
         else: # relative path case
-           self.out_dir = relative_path+data_root
-        print(f"self.out_dir: {self.out_dir}")
-        self.local_dirs.set_local_root(self.out_dir)
-        self.out_dirs = set([self.local_dirs.get_survey_dir(s) for s in self.survey_names])
-        print("self.out_dirs: \n> "+"\n> ".join(self.out_dirs))
-        #exit()
-        try:
-            os.makedirs(self.out_dir)
-        except FileExistsError:
-            print(f"Using FITS output dir: {self.out_dir}")
-        else:
-            print(f"Created FITS output dir: {self.out_dir}")
+           out_dir = relative_path+data_root
+        print(f"out_dir: {out_dir}")
+        self.local_dirs.set_local_root(out_dir)
+        self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
+        print("self.out_dirs: \n> "+"\n> ".join([f"{k} => {self.out_dirs[k]}" for k in self.out_dirs.keys()]))
+        #exit() # debug
+        for out_dir in self.out_dirs.values():
+            try:
+                os.makedirs(out_dir)
+            except FileExistsError:
+                print(f"Using FITS output dir: {out_dir}")
+            else:
+                print(f"Created FITS output dir: {out_dir}")
 
         # set the overwrite file parameter
         # TODO: Add this setting to the yaml configuration file
@@ -346,7 +347,7 @@ class SurveyConfig:
                 size = re.sub(r"\.?0+$","","%f" % task['size'].value)
                 survey = type(task['survey']).__name__
                 filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                task['filename'] = f"{self.out_dir}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                task['filename'] = f"{self.out_dirs[survey]}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
                 if self.overwrite or (not os.path.isfile(task['filename'])):
                     # push the task onto the processing stack
@@ -362,5 +363,6 @@ class SurveyConfig:
             shuffle(procssing_stack)
 
         self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
+        #exit() # debug
         return procssing_stack
 

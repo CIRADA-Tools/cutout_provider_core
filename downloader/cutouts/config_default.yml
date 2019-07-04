@@ -1,7 +1,3 @@
-# TODO: Envtually there will be a command interface option.
-#       This is good for now, as it makes the development process
-#       go a little smoother...
-
 # Basic cutout search parameters
 cutouts:
     # list of csv files of ra-dec's.
@@ -24,13 +20,7 @@ cutouts:
         - SDSS:
               filters: [g,r,i]
 
-# TODO: Implement below...
-# Processing output paramters
+# Processing output parameters
 configuration:
-    # Note: all output is put under a "data" at data_root.
-    # NB: The "data" dir is in .gitignore.
-    data_root: .
-
-    flush: True
-
-    force_overwrite: True
+    # data root relative/absolute path defn
+    data_root: data/out
