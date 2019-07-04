@@ -44,6 +44,7 @@ class SurveyABC(ABC):
 
     def set_pid(self, pid):
         self.pid = pid
+        return self
 
 
     def attach_http_pool_manager(self,http_pool_manager):
@@ -151,13 +152,14 @@ class SurveyABC(ABC):
         output_dir = '{directory}/output'.format(directory=td)
         self.__make_dir(input_dir)
 
-        # *** IO_WRAPPER ***
-        # TODO: [1] Stream this
-        #       [2] Make a decorator
-        #       [3] Check if thread-safe
-        # setup the environment
-        old_stdout = sys.stdout
-        sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
+        # TODO: So much for thread safe!
+        ## *** IO_WRAPPER ***
+        ## TODO: [1] Stream this
+        ##       [2] Make a decorator
+        ##       [3] Check if thread-safe
+        ## setup the environment
+        #old_stdout = sys.stdout
+        #sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
 
         try:
             for i, c in enumerate(cutouts):
@@ -174,19 +176,19 @@ class SurveyABC(ABC):
             shutil.rmtree(input_dir)
             shutil.rmtree(td)
 
-        # *** IO_WRAPPER ***
-        # get output
-        sys.stdout.seek(0)      # jump to the start
-        out = sys.stdout.read() # read output
+        ## *** IO_WRAPPER ***
+        ## get output
+        #sys.stdout.seek(0)      # jump to the start
+        #out = sys.stdout.read() # read output
 
-        # *** IO_WRAPPER ***
-        # restore stdout
-        sys.stdout.close()
-        sys.stdout = old_stdout
+        ## *** IO_WRAPPER ***
+        ## restore stdout
+        #sys.stdout.close()
+        #sys.stdout = old_stdout
 
-        # *** IO_WRAPPER ***
-        # Now we can print the output from montage
-        self.print(out)
+        ## *** IO_WRAPPER ***
+        ## Now we can print the output from montage
+        #self.print(out)
 
         return merged
 

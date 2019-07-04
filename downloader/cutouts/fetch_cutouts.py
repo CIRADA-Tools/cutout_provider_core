@@ -83,7 +83,7 @@ class WorkerThread(threading.Thread):
 
 # grab a FITS hdu from some survey
 def get_cutout(target):
-    target['hdu'] = target['survey'].get_cutout(target['coord'], target['size'])
+    target['hdu'] = target['survey'].set_pid(target['pid']).get_cutout(target['coord'], target['size'])
     return target
 
 

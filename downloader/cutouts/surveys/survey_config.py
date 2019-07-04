@@ -59,7 +59,7 @@ class SurveyConfig:
         # make sure supported_surveys are defined in the hierarchy class
         for survey in self.supported_surveys:
             if not self.local_dirs.has_survey(survey):
-                print(f"{type(self).__name__}: WARNING: '{survey}' not in {type(self.local_dirs).__name__}() class configuration: removing from list...")
+                self.__print(f"WARNING: '{survey}' not in {type(self.local_dirs).__name__}() class configuration: removing from list...")
                 self.supported_surveys = tuple(s for s in self.supported_surveys if s != survey)
 
         # set the filters
@@ -98,18 +98,18 @@ class SurveyConfig:
            out_dir = os.path.expanduser(data_root)
         else: # relative path case
            out_dir = relative_path+data_root
-        print(f"out_dir: {out_dir}")
+        #print(f"out_dir: {out_dir}")
         self.local_dirs.set_local_root(out_dir)
         self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
-        print("self.out_dirs: \n> "+"\n> ".join([f"{k} => {self.out_dirs[k]}" for k in self.out_dirs.keys()]))
+        #print("self.out_dirs: \n> "+"\n> ".join([f"{k} => {self.out_dirs[k]}" for k in self.out_dirs.keys()]))
         #exit() # debug
         for out_dir in self.out_dirs.values():
             try:
                 os.makedirs(out_dir)
             except FileExistsError:
-                print(f"Using FITS output dir: {out_dir}")
+                self.__print(f"Using FITS output dir: {out_dir}")
             else:
-                print(f"Created FITS output dir: {out_dir}")
+                self.__print(f"Created FITS output dir: {out_dir}")
 
         # set the overwrite file parameter
         # TODO: Add this setting to the yaml configuration file
@@ -271,7 +271,7 @@ class SurveyConfig:
         return self.targets
 
 
-    def get_survey_instance_stack(self):
+    def get_survey_class_stack(self):
         # TODO: Fix the repeating message,
         #
         #         > In [354]: cfg = SurveyConfig("config_debug.yml") 
@@ -304,16 +304,16 @@ class SurveyConfig:
         #         > In [356]:
         #
         #       problem.
-        processing_stack = list()
+        class_stack = list()
         for survey_name in self.get_survey_names():
             if self.has_filters(survey_name):
                 for filter in self.get_supported_filters(survey_name):
-                    self.__print(f"INSTANTIATING: {survey_name}(filter={filter})")
-                    processing_stack.append(eval(f"{survey_name}(filter={filter})"))
+                    self.__print(f"USING_SUVERY_CLASS: {survey_name}(filter={filter})")
+                    class_stack.append(f"{survey_name}(filter={filter})")
             else:
-                self.__print(f"INSTANTIATING: {survey_name}()")
-                processing_stack.append(eval(f"{survey_name}()"))
-        return processing_stack 
+                self.__print(f"USING_SUVERY_CLASS: {survey_name}()")
+                class_stack.append(f"{survey_name}()")
+        return class_stack 
 
 
     def set_overwrite(self,overwrite=True):
@@ -328,39 +328,44 @@ class SurveyConfig:
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
 
-        # survey-target processing intances
-        survey_instances = self.get_survey_instance_stack()
+        # survey-class stack
+        survey_classes = self.get_survey_class_stack()
 
         # ok, let's build the cutout-fetching processing stack
         pid = 0 # task tracking id
         procssing_stack = list()
-        for survey_target in survey_targets:
-            for survey_instance in survey_instances:
-                # ra-dec-size cutout target
-                task = dict(survey_target)
+        for survey_class in survey_classes:
+            survey_instance = eval(survey_class)
+            for survey_target in survey_targets:
+                    # ra-dec-size cutout target
+                    task = dict(survey_target)
 
-                # add survey instance for processing stack
-                task['survey'] = survey_instance
+                    # add survey instance for processing stack
+                    task['survey'] = survey_instance
 
-                # define the fits output filename
-                coords = survey_instance.get_sexadecimal_string(task['coord'])
-                size = re.sub(r"\.?0+$","","%f" % task['size'].value)
-                survey = type(task['survey']).__name__
-                filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                    # define the fits output filename
+                    coords = survey_instance.get_sexadecimal_string(task['coord'])
+                    size = re.sub(r"\.?0+$","","%f" % task['size'].value)
+                    survey = type(task['survey']).__name__
+                    filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
+                    task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
-                if self.overwrite or (not os.path.isfile(task['filename'])):
-                    # push the task onto the processing stack
-                    procssing_stack.append(task)
+                    # set task pid
+                    task['pid'] = pid
 
-                    # set the task id ...
-                    survey_instance.set_pid(pid)
-                    pid += 1
-                else:
-                    self.__print(f"File '{task['filename']}' exists; overwrite={self.overwrite}, skipping...")
+                    if self.overwrite or (not os.path.isfile(task['filename'])):
+                        # push the task onto the processing stack
+                        procssing_stack.append(task)
+
+                        ## set the task id ...
+                        #survey_instance.set_pid(pid)
+                        # increment task pid
+                        pid += 1
+                    else:
+                        self.__print(f"File '{task['filename']}' exists; overwrite={self.overwrite}, skipping...")
 
             # randomize to processing stack to minimize server hits...
-            shuffle(procssing_stack)
+        shuffle(procssing_stack)
 
         self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
         #exit() # debug
