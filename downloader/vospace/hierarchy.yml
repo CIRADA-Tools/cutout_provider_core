@@ -23,6 +23,10 @@ hierarchy:
       fermilat:
       hess:
 data_subdir:
+    # NB: Please do not change this name.
+    #     It's added to .gitignore files
+    #     to keep large data files out 
+    #     of repos.
     data
 catagories:
    catalogues: 
