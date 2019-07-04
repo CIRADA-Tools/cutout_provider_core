@@ -112,6 +112,9 @@ class SurveyConfig:
         # TODO: Add this setting to the yaml configuration file
         self.overwrite = False
 
+        # TODO: will probably want to overide this in a config file/cmd-line-arg
+        self.no_class_instances_per_survey = 100
+
 
     def __sanitize_path(self,path):
         # clean up repeating '/'s with a trailing '/' convention
@@ -302,8 +305,10 @@ class SurveyConfig:
         pid = 0 # task tracking id
         procssing_stack = list()
         for survey_class in survey_classes:
-            survey_instance = eval(survey_class)
-            for survey_target in survey_targets:
+            survey_instances = [eval(survey_class) for _ in range(self.no_class_instances_per_survey)]
+            for n, survey_target in enumerate(survey_targets):
+                    survey_instance = survey_instances[n % self.no_class_instances_per_survey]
+
                     # ra-dec-size cutout target
                     task = dict(survey_target)
 
