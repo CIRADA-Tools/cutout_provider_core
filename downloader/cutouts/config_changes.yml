@@ -14,4 +14,4 @@ cutouts:
 # Processing output parameters
 configuration:
     # data root relative/absolute path defn
-    data_root: data/changes
+    local_root: data/changes

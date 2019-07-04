@@ -38,7 +38,10 @@ cutouts:
 # Processing output parameters
 configuration:
     # data root relative/absolute path defn
-    data_root: data/debug
+    local_root: data/debug
+
+    # remote vospace workspace root
+    remote_root: cutout_testing/debug
 
     # TODO: Implement
     flush: True
