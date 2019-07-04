@@ -347,7 +347,7 @@ class SurveyConfig:
                 size = re.sub(r"\.?0+$","","%f" % task['size'].value)
                 survey = type(task['survey']).__name__
                 filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                task['filename'] = f"{self.out_dirs[survey]}/J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
                 if self.overwrite or (not os.path.isfile(task['filename'])):
                     # push the task onto the processing stack
