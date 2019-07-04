@@ -36,8 +36,14 @@ from surveys.panstarrs import PanSTARRS
 
 class SurveyConfig:
     def __init__(self,yml_configuration_file):
-        self.relative_path = re.sub(r"[^/]+$","",yml_configuration_file)
+        # get config file
         self.config = yml.load(open(yml_configuration_file,'r'))
+
+        # get relative path to config file
+        relative_path = re.sub(r"[^/]+$","",yml_configuration_file)
+
+        # get cutout dir hierarchy class
+        self.local_dirs = LocalCutouts()
 
         # define supported_surveys
         self.supported_surveys = (
@@ -49,6 +55,12 @@ class SurveyConfig:
             SDSS.__name__,
             # TODO: Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
+
+        # make sure supported_surveys are defined in the hierarchy class
+        for survey in self.supported_surveys:
+            if not self.local_dirs.has_survey(survey):
+                print(f"{type(self).__name__}: WARNING: '{survey}' not in {type(self.local_dirs).__name__}() class configuration: removing from list...")
+                self.supported_surveys = tuple(s for s in self.supported_surveys if s != survey)
 
         # set the filters
         self.survey_filter_sets = list()
@@ -67,7 +79,7 @@ class SurveyConfig:
         # set targets
         self.targets = list()
         for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
-            sources = self.__csv_to_dict(self.relative_path+coords_csv_file)
+            sources = self.__csv_to_dict(relative_path+coords_csv_file)
     
             # make all keys lower case to effectively reference case-variants of RA and Dec.
             sources = [{k.lower(): v for k,v in s.items()} for s in sources]
@@ -79,15 +91,13 @@ class SurveyConfig:
             } for x in sources])
 
         # set the data output dir
-        # TODO: Add 'out_dir' (etc?) to yaml config file
         data_root = self.__sanitize_path(self.config['configuration']['data_root'])
-        self.local_dirs = LocalCutouts()
         if bool(re.match('/',data_root)): # absolute path case
            self.out_dir = data_root+self.local_dirs.get_local_root()
         elif bool(re.match('~/',data_root)): # home path case
            self.out_dir = os.path.expanduser(data_root)+self.local_dirs.get_local_root()
         else: # relative path case
-           self.out_dir = self.relative_path+data_root+self.local_dirs.get_local_root()
+           self.out_dir = relative_path+data_root+self.local_dirs.get_local_root()
         print(f"self.out_dir: {self.out_dir}")
         try:
             os.makedirs(self.out_dir)
