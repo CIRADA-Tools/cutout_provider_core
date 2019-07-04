@@ -17,6 +17,8 @@ class HierarchyABC(ABC):
         self.local_root  = self.__sanitize_path(self.config['root']['local'])
         self.remote_root = self.__sanitize_path(self.config['root']['remote'])
 
+        self.data_subdir = self.__sanitize_path(self.config['data_subdir'])
+
         # get the base data directory hierarchy
         self.hierarchy = self.config['hierarchy']
 
@@ -27,12 +29,18 @@ class HierarchyABC(ABC):
         # clean up repeating '/'s with a trailing '/' convention
         return re.sub(r"(/+|/*$)",r"/",path)
 
+
     def __get_base_survey_path(self, survey):
         if self.has_survey(survey):
             for band in self.hierarchy.keys():
                 if survey.lower() in self.hierarchy[band]:
-                    return self.__sanitize_path(band+'/'+survey.lower())
+                    return self.__sanitize_path(band+'/'+survey.lower()+'/'+self.data_subdir)
         return None
+
+
+    def set_local_root(self,local_root):
+        self.local_root = self.__sanitize_path(local_root)
+        return self
 
 
     def get_local_root(self):
@@ -80,7 +88,7 @@ class RemoteDirs(HierarchyABC):
         return path
 
 
-class LocalCutouts(LocalDirs):
+class LocalCutoutDirs(LocalDirs):
     def __init__(self):
         super().__init__()
         self.sub_dir = self._HierarchyABC__sanitize_path(self.config['catagories']['cutouts']['sub_dir'])
@@ -128,8 +136,8 @@ if __name__ == '__main__':
     print("get_survey_dirs(): \n> "+"\n> ".join(remote.get_survey_dirs()))
 
     print()
-    print(" *** LocalCutouts(LocalDirs(HierarchyABC)) Class Test ***")
-    local_cutouts = LocalCutouts()
+    print(" *** LocalCutoutDirs(LocalDirs(HierarchyABC)) Class Test ***")
+    local_cutouts = LocalCutoutDirs()
     print(f"get_survey_dir('SDss'): {local_cutouts.get_survey_dir('SDss')}")
     print("get_survey_dirs(): \n> "+"\n> ".join(local_cutouts.get_survey_dirs()))
 

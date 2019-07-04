@@ -20,30 +20,29 @@ cutouts:
     
     # ClaRAN: Requires, FIRST, VLASS, WISE, and PanSTARRS.
     surveys:
-        #- FIRST      # Faint Images of the Radio Sky at Twenty-Centimeters
+        - FIRST      # Faint Images of the Radio Sky at Twenty-Centimeters
         - NVSS
-        #- VLASS:     # * claran
+        - VLASS:     # * claran
         # TODO: Debug mosaicing for WISE
         #   - J105915+051731_s3arcmin_WISE-w1.fits
         #   - (RA,Dec) = (164.811020,+5.292027)
         # TODO: I believe above is fixed now! Wait for validation.
-        #- WISE:      # * claran
-        #      filters: w1
-        #- PanSTARRS: # * claran
-        #      # TODO: Make it handle cases like i,z instead of [i,z]
-        #      filters: i 
-        #- SDSS:
-        #      filters: [g,r,i]
+        - WISE:      # * claran
+              filters: w1
+        - PanSTARRS: # * claran
+              # TODO: Make it handle cases like i,z instead of [i,z]
+              filters: i 
+        - SDSS:
+              filters: [g,r,i]
 
-# TODO: Implement below...
 # Processing output paramters
 configuration:
     # data root relative/absolute path defn
-    # Note: all output is put under a "data" at data_root.
-    # NB: The "data" dir is in .gitignore.
-    data_root: .
+    data_root: data/tree
 
+    # TODO: Implement
     flush: True
 
+    # TODO: Implement
     force_overwrite: True
 

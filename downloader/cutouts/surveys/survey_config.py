@@ -10,7 +10,7 @@ this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
 sys.path.append(this_source_file_dir+"../..")
 
 # import the vospace space module to get the data-subdir configuration
-from vospace.hierarchy import LocalCutouts
+from vospace.hierarchy import LocalCutoutDirs
 
 from random import shuffle
 
@@ -43,7 +43,7 @@ class SurveyConfig:
         relative_path = re.sub(r"[^/]+$","",yml_configuration_file)
 
         # get cutout dir hierarchy class
-        self.local_dirs = LocalCutouts()
+        self.local_dirs = LocalCutoutDirs()
 
         # define supported_surveys
         self.supported_surveys = (
@@ -93,12 +93,16 @@ class SurveyConfig:
         # set the data output dir
         data_root = self.__sanitize_path(self.config['configuration']['data_root'])
         if bool(re.match('/',data_root)): # absolute path case
-           self.out_dir = data_root+self.local_dirs.get_local_root()
+           self.out_dir = data_root
         elif bool(re.match('~/',data_root)): # home path case
-           self.out_dir = os.path.expanduser(data_root)+self.local_dirs.get_local_root()
+           self.out_dir = os.path.expanduser(data_root)
         else: # relative path case
-           self.out_dir = relative_path+data_root+self.local_dirs.get_local_root()
+           self.out_dir = relative_path+data_root
         print(f"self.out_dir: {self.out_dir}")
+        self.local_dirs.set_local_root(self.out_dir)
+        self.out_dirs = set([self.local_dirs.get_survey_dir(s) for s in self.survey_names])
+        print("self.out_dirs: \n> "+"\n> ".join(self.out_dirs))
+        exit()
         try:
             os.makedirs(self.out_dir)
         except FileExistsError:

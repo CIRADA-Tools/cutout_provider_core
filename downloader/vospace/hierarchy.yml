@@ -1,8 +1,6 @@
 root:
    remote: vos:cirada/continuum/dps_repo/survey_data
-   # TODO: replace data/tree with data after debugging completed...
-   #local: data
-   local: data/tree
+   local: survey_data
 hierarchy:
    radio:
       first:
@@ -24,6 +22,8 @@ hierarchy:
    gray:
       fermilat:
       hess:
+data_subdir:
+    data
 catagories:
    catalogues: 
        sub_dir: 'catalogues'
