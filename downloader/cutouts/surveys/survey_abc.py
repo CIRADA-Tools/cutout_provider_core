@@ -164,7 +164,7 @@ class SurveyABC(ABC):
 
             # TODO: clean this up, as well as, retries, for configuration...
             duration_s = 60 if self.http else 25
-            self.print(f"{e}: Taking a {duration_s}s nap...")
+            self.print(f"Taking a {duration_s}s nap...")
             sleep(duration_s)
             self.print("OK, lest trying fetching the cutout -- again!")
 
