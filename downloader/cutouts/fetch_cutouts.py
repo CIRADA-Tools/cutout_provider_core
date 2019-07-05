@@ -92,7 +92,6 @@ def get_cutout(target):
         'msg': fetched['message'],
         'sts': fetched['status']
     }
-    target['survey'].print(f"DEBUGGING: {fetched['status'].name} => {target['log']['sts'].name}")
     return target
 
 
