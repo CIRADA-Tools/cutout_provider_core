@@ -257,14 +257,14 @@ class SurveyABC(ABC):
         if ('NAXIS'  in header and header['NAXIS']  <  2) or \
            ('NAXIS1' in header and header['NAXIS1'] == 0) or \
            ('NAXIS2' in header and header['NAXIS2'] == 0):
-            self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...")
+            self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...",header)
             self.processing_status = processing_status.corrupted
             return None
 
         # get/check data field
         data = hdul[0].data
         if data.min() == 0 and data.max() == 0:
-            self.print("WARNING: Fits file contains no data: skipping...")
+            self.print("WARNING: Fits file contains no data: skipping...",header)
             self.processing_status = processing_status.corrupted
             return None
 

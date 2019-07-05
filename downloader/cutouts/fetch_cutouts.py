@@ -3,7 +3,7 @@ import os
 import sys
 import signal
 
-# thread-salf version of urllib3
+# thread-salf version of urllib
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 http = urllib3.PoolManager(
