@@ -30,6 +30,16 @@ from astropy import units as u
 import montage_wrapper
 from astropy.nddata.utils import Cutout2D
 
+from enum import Enum
+class processing_status(Enum):
+    idle      = 0
+    none      = 1
+    fetching  = 2
+    corrupted = 3
+    error     = 4
+    bailed    = 5
+    done      = 6
+
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
@@ -39,8 +49,18 @@ class SurveyABC(ABC):
     ):
         super().__init__()
 
+        self.processing_status = processing_status.idle
+
         self.pid = None
         self.http = None
+
+        self.message_buffer = ""
+
+
+    def __pop_processing_status(self):
+        status = self.processing_status
+        self.processing_status = processing_status.idle
+        return status
 
 
     def set_pid(self, pid):
@@ -61,7 +81,17 @@ class SurveyABC(ABC):
         return "(%f,%+f) degrees" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
 
 
-    def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True):
+    def __push_message_buffer(self,msg):
+        self.message_buffer += msg+"\n"
+
+
+    def __pop_message_buffer(self):
+        msg = self.message_buffer
+        self.message_buffer = ""
+        return msg
+
+
+    def sprint(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True):
         my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid     = "" if self.pid is None else f"pid={self.pid}"
         my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
@@ -74,7 +104,12 @@ class SurveyABC(ABC):
         else:
             msg_str = msg
         prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
-        print(prefixed_output)
+        self.__push_message_buffer(prefixed_output)
+        return prefixed_output
+
+
+    def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True):
+        print(self.sprint(msg,diagnostic_msg,show_caller,is_traceback))
 
 
     def pack(self, url, payload=None):
@@ -136,6 +171,8 @@ class SurveyABC(ABC):
             potential_retries -= 1
 
         self.print(f"WARNING: Bailed on fetch '{url}'")
+        self.processing_status = processing_status.bailed
+        return None
 
 
     # make the directory structure if it doesn't exist
@@ -212,6 +249,7 @@ class SurveyABC(ABC):
             e_s = re.sub(r"\.$","",f"{e}")
             #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
             self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...")
+            self.processing_status = processing_status.corrupted
             return None
 
         # get/check header field
@@ -220,12 +258,14 @@ class SurveyABC(ABC):
            ('NAXIS1' in header and header['NAXIS1'] == 0) or \
            ('NAXIS2' in header and header['NAXIS2'] == 0):
             self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...")
+            self.processing_status = processing_status.corrupted
             return None
 
         # get/check data field
         data = hdul[0].data
         if data.min() == 0 and data.max() == 0:
             self.print("WARNING: Fits file contains no data: skipping...")
+            self.processing_status = processing_status.corrupted
             return None
 
         # sanitize the date-obs field
@@ -261,6 +301,7 @@ class SurveyABC(ABC):
         if len(urls) > 0:
             hdul_list = [hdul for hdul in [self.get_fits(url,position) for url in urls] if hdul]
         else:
+            self.processing_status = processing_status.none
             return None
         return hdul_list
 
@@ -280,19 +321,8 @@ class SurveyABC(ABC):
             return None
 
         hdu = None
-        #if type(self).__name__ == 'PanSTARRS' or type(self).__name__ == 'WISE':
-        #    for i in range(len(hdul_tiles)):
-        #        #self.print(f"TILE{i}:",WCS(hdul_tiles[i][0].header).to_header())
-        #        self.print(f"TILE{i}:",hdul_tiles[i][0].header)
         if len(hdul_tiles) > 1:
             self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
-            # debug
-            #if type(self).__name__ == 'WISE':
-            #    for i in range(len(hdul_tiles)):
-            #        self.print(f"TILE{i}:",WCS(hdul_tiles[i][0].header).to_header())
-            #if type(self).__name__ == 'PanSTARRS':
-            #    for i in range(len(hdul_tiles)):
-            #        self.print(f"TILE{i}:",WCS(hdul_tiles[i][0].header).to_header())
             try:
                 imgs = [img for img in [self.get_image(tile) for tile in hdul_tiles]]
                 # TODO: Need to handle multiple COADDID's...
@@ -304,12 +334,12 @@ class SurveyABC(ABC):
                     if key != 'COMMENT':
                         header_template[key] = hdu.header[key]
                 hdu.header = header_template
-                # debug
-                #self.print("WCS:",WCS(hdu.header).to_header())
             except montage_wrapper.status.MontageError as e:
                 self.print(f"Mosaicking Failed: {e}: file={sys.stderr}",show_caller=True)
+                self.processing_status = processing_status.error
             except OSError as e:
                 self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
+                self.processing_status = processing_status.error
         elif len(hdul_tiles) == 1:
                 hdu = hdul_tiles[0][0]
         return hdu
@@ -329,8 +359,6 @@ class SurveyABC(ABC):
         img_data = np.squeeze(hdu.data)
     
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
-        # debug
-        #self.print("TRIMMED:",stamp.wcs.to_header())
         hdu.header.update(stamp.wcs.to_header())
         img = fits.PrimaryHDU(stamp.data, header=hdu.header)
     
@@ -582,26 +610,37 @@ class SurveyABC(ABC):
 
 
     def get_cutout(self, position, size):
+        self.processing_status = processing_status.fetching
         try:
             tiles   = self.get_tiles(position,size)
             tile    = self.paste_tiles(tiles,position,size)
             trimmed = self.trim_tile(tile,position,size)
+            # TODO: Remove this code, once vetted...
             # Yjan's code
             #cutout = self.header_write(trimmed,position)
             # Integrated code
             cutout = self.format_fits_hdu(trimmed,position,size)
-
-            # debugging in progress...
-            #cutout = self.format_fits_hdu(trimmed,position,size)
-            #cutout = self.format_fits_hdu(tile,position,size)
-            #cutout = tile
+            self.processing_status = processing_status.done
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
+            self.processing_status = processing_status.error
             cutout = None
 
-        self.print(f"Finished processing J{self.get_sexadecimal_string(position)} (i.e., {self.get_ra_dec_string(position)}) cutout of size {size}.")
+        #self.print(f"Finished processing J{self.get_sexadecimal_string(position)} (i.e., {self.get_ra_dec_string(position)}) cutout of size {size}.")
+        self.print(f"J{self.get_sexadecimal_string(position)}[{self.get_ra_dec_string(position)} at {size}]: Procssing Status = '{self.processing_status.name}'.")
 
-        return cutout
+        ## debug -- testing
+        #for proc in processing_status:
+        #    if proc.value == self.pid:
+        #        self.print(f"DEBUGGING: setting status to {proc.name}...")
+        #        self.processing_status = proc
+        #        cutout = None
+
+        return {
+            'cutout':  cutout,
+            'message': self.__pop_message_buffer(),
+            'status':  self.__pop_processing_status()
+        }
 
 
     @staticmethod

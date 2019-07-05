@@ -30,6 +30,9 @@ import queue
 # configuration
 from surveys.survey_config import SurveyConfig
 
+# processing
+from surveys.survey_abc import processing_status as ProcStatus
+
 
 def set_sig_handler(threads):
     def sig_handler(sig, frame):
@@ -83,20 +86,55 @@ class WorkerThread(threading.Thread):
 
 # grab a FITS hdu from some survey
 def get_cutout(target):
-    target['hdu'] = target['survey'].set_pid(target['pid']).get_cutout(target['coord'], target['size'])
+    fetched = target['survey'].set_pid(target['pid']).get_cutout(target['coord'], target['size'])
+    target['hdu'] = fetched['cutout']
+    target['log'] = {
+        'msg': fetched['message'],
+        'sts': fetched['status']
+    }
+    target['survey'].print(f"DEBUGGING: {fetched['status'].name} => {target['log']['sts'].name}")
     return target
 
 
 # save an HDU into a file
 def save_cutout(target):
+    def pack_message(msg,msg_log):
+        p="\nLOG: "
+        return ((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}"
+
+    def touch_file(filename,status,msg):
+        f_msg = "" 
+        suffix = f"{status.name}"
+        if status == ProcStatus.none:
+            f_msg = f"It's likely the cutout doesn't exist...\n{msg}"
+        elif status == ProcStatus.corrupted:
+            f_msg = f"It's likely the header is corrupted...\n{msg}"
+        elif status == ProcStatus.error:
+            f_msg = f"It's likely there's a software bug...\n{msg}"
+        else:
+            suffix = None
+        if not suffix is None:
+            fn = re.sub(r"\.fits$",f".{suffix}",filename)
+            try:
+                file = open(fn,"w")
+                file.write(f_msg)
+                file.close()
+            except:
+                target['survey'].print(f"Failed to write to {filename}:\n> "+"\n> ".join(f_msg.splitlines()))
+        else:
+            fn = None
+        return fn
+
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
+        # TODO: need target['survey'].sprint(...) /w flag (or detect extern call) to print without buffering... 
+        msg = target['survey'].sprint(f"{target['filename']} done!")
     else:
-        #survey = type(target['survey']).__name__
-        #msg_str = f"cutout at {target['coord']} returned None"
-        #prefix_msg_str = "\n".join([f"{survey}: {s}" for s in msg_str.splitlines()])
-        #print(prefix_msg_str)
-        target['survey'].print(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.")
+        msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.")
+        log_msg = pack_message(msg,target['log']['msg'])
+        touch_file(f"{target['filename']}",target['log']['sts'],msg)
+        msg += log_msg
+    print(msg)
 
 
 # define the default config file with absolute path
