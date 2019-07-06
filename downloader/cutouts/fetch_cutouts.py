@@ -122,9 +122,11 @@ default_config = this_source_file_dir + 'config_default.yml'
 @click.command()
 @click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
 @click.option('--overwrite',default=False,help='overwrite existing target files')
+@click.option('--flush',default=False,help='flush existing target files (supersedes --overwrite)')
 def batch_process(
     config_file,
-    overwrite
+    overwrite,
+    flush
 ):
     """Survey Cutout fetching script (cf., config_default.yml)"""
 
@@ -134,6 +136,9 @@ def batch_process(
 
     print(f'Setting target overwrite mode to {overwrite}')
     cfg.set_overwrite(overwrite)
+
+    print(f'Setting target flush mode to {flush}')
+    cfg.set_flush(flush)
 
     grabbers = 60
     savers = 1

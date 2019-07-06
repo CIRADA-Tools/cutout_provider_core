@@ -115,6 +115,10 @@ class SurveyConfig:
         # TODO: Add this setting to the yaml configuration file
         self.overwrite = False
 
+        # set the flush file parameter
+        # TODO: Add this setting to the yaml configuration file
+        self.flush = False
+
         # TODO: This method is not thread safe: i.e., the number of instances must
         #       equal no_surveys * no_targets, otherwise, there could be a collision
         #       in the threading-queue in fetch_cutouts.py
@@ -302,6 +306,14 @@ class SurveyConfig:
         return self.overwrite
 
 
+    def set_flush(self,flush=True):
+        self.flush = flush
+
+
+    def get_flush(self):
+        return self.flush
+
+
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
@@ -334,7 +346,7 @@ class SurveyConfig:
                     # set task pid
                     task['pid'] = pid
 
-                    if self.overwrite or (not ProcStatus.is_processed(task['filename'])):
+                    if self.overwrite or self.flush or (not ProcStatus.is_processed(task['filename'])):
                         # push the task onto the processing stack
                         procssing_stack.append(task)
 
@@ -343,9 +355,10 @@ class SurveyConfig:
                         # increment task pid
                         pid += 1
 
-                        if self.overwrite:
+                        # TODO: move the self.flush feature to a seperate method call, so it can be use for maintenance...
+                        if self.overwrite or self.flush:
                             # flush unreprocessable files
-                            self.__print(ProcStatus.flush(task['filename']))
+                            self.__print(ProcStatus.flush(task['filename'],self.flush))
                     else:
                         files = ProcStatus.get_file_listing(task['filename'])
                         self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
