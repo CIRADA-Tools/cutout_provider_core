@@ -99,40 +99,19 @@ def get_cutout(target):
 def save_cutout(target):
     def pack_message(msg,msg_log):
         p="\nLOG: "
-        return ((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}"
-
-    def touch_file(filename,status,msg):
-        f_msg = "" 
-        suffix = f"{status.name}"
-        if status == ProcStatus.none:
-            f_msg = f"It's likely the cutout doesn't exist...\n{msg}"
-        elif status == ProcStatus.corrupted:
-            f_msg = f"It's likely the header is corrupted...\n{msg}"
-        elif status == ProcStatus.error:
-            f_msg = f"It's likely there's a software bug...\n{msg}"
-        else:
-            suffix = None
-        if not suffix is None:
-            fn = re.sub(r"\.fits$",f".{suffix}",filename)
-            try:
-                file = open(fn,"w")
-                file.write(f_msg)
-                file.close()
-            except:
-                target['survey'].print(f"Failed to write to {filename}:\n> "+"\n> ".join(f_msg.splitlines()))
-        else:
-            fn = None
-        return fn
+        return re.sub(r"^\n","",((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}")
 
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
-        # TODO: need target['survey'].sprint(...) /w flag (or detect extern call) to print without buffering... 
-        msg = target['survey'].sprint(f"{target['filename']} done!")
+        msg = target['survey'].sprint(f"{target['filename']} done!",buffer=False)
     else:
-        msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.")
+        msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
         log_msg = pack_message(msg,target['log']['msg'])
-        touch_file(f"{target['filename']}",target['log']['sts'],msg)
-        msg += log_msg
+        if not ProcStatus.touch_file(f"{target['filename']}",target['log']['sts'],log_msg):
+            target['survey'].print("Failed to dump %s with log info...\n%s" % (
+                re.sub(r"\.fits$",f".{target['log']['sts'].name}",target['filename']),
+                log_msg
+            ), buffer=False)
     print(msg)
 
 

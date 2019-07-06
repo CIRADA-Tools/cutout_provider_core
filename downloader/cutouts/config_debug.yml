@@ -29,11 +29,11 @@ cutouts:
         # TODO: I believe above is fixed now! Wait for validation.
         - WISE:      # * claran
               filters: w1
-        #- PanSTARRS: # * claran
-        #      # TODO: Make it handle cases like i,z instead of [i,z]
-        #      filters: i 
-        #- SDSS:
-        #      filters: [g,r,i]
+        - PanSTARRS: # * claran
+              # TODO: Make it handle cases like i,z instead of [i,z]
+              filters: i
+        - SDSS:
+              filters: [g,r,i]
 
 # Processing output parameters
 configuration:

@@ -32,13 +32,62 @@ from astropy.nddata.utils import Cutout2D
 
 from enum import Enum
 class processing_status(Enum):
-    idle      = 0
-    none      = 1
-    fetching  = 2
-    corrupted = 3
-    error     = 4
-    bailed    = 5
-    done      = 6
+    idle      = "Waiting for fetching request"
+    none      = "Cutout doesn't exit"
+    fetching  = "Cutout fetching and processing"
+    corrupted = "Header corrupted"
+    error     = "Programming error"
+    bailed    = "Fetching aborted"
+    done      = "Cutout processed"
+
+    @classmethod
+    def __get_unreprocessable_list(self):
+        return [self.none, self.corrupted, self.error]
+
+    @classmethod
+    def __get_unreprocessable_file_names(self,filename):
+        prefix   = re.sub(r"\.\w+?$",".",filename)
+        suffixes = [f"{s.name}" for s in self.__get_unreprocessable_list()]
+        return [prefix+suffix for suffix in suffixes]
+
+    @classmethod
+    def touch_file(self, filename, status, msg):
+        for unreprocessable in self.__get_unreprocessable_list():
+            if status == unreprocessable:
+                try:
+                    handle = open(re.sub(r"\.fits$",f".{status.name}",filename),'w')
+                    handle.write(unreprocessable.value+"...\n"+msg)
+                    handle.close()
+                except:
+                    return False
+                break
+        return True
+
+    @classmethod
+    def is_processed(self,filename):
+        files = [filename]+self.__get_unreprocessable_file_names(filename)
+        for file in files:
+            if os.path.isfile(file):
+                return True
+        return False
+
+    @classmethod
+    def get_file_listing(self,filename):
+        file_listing = list()
+        for file in [filename]+self.__get_unreprocessable_file_names(filename):
+            if os.path.exists(file):
+                file_listing.append(file)
+        return file_listing
+
+    @classmethod
+    def flush(self,filename,is_all=False):
+        msgs = list()
+        for file in ([filename] if is_all else [])+self.__get_unreprocessable_file_names(filename): 
+            if os.path.exists(file):
+                msgs.append(f"Flushed: {file}")
+                os.remove(file)
+        return "\n".join(msgs) if len(msgs) > 0 else None
+
 
 # abstract class for a survey
 from abc import ABC, abstractmethod
@@ -91,7 +140,7 @@ class SurveyABC(ABC):
         return msg
 
 
-    def sprint(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True):
+    def sprint(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True):
         my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid     = "" if self.pid is None else f"pid={self.pid}"
         my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
@@ -104,12 +153,13 @@ class SurveyABC(ABC):
         else:
             msg_str = msg
         prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
-        self.__push_message_buffer(prefixed_output)
+        if buffer:
+            self.__push_message_buffer(prefixed_output)
         return prefixed_output
 
 
-    def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True):
-        print(self.sprint(msg,diagnostic_msg,show_caller,is_traceback))
+    def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True):
+        print(self.sprint(**{key: value for key, value in locals().items() if key not in 'self'}))
 
 
     def pack(self, url, payload=None):
@@ -139,11 +189,11 @@ class SurveyABC(ABC):
                 else:
                     response = self.http.request('GET',request)
             except urllib.error.HTTPError as e:
-                pass
+                self.print(f"{e}",is_traceback=True)
             except ConnectionResetError as e:
-                pass
+                self.print(f"{e}",is_traceback=True)
             except urllib3.exceptions.MaxRetryError as e:
-                pass
+                self.print(f"{e}",is_traceback=True)
             else:
                 try:
                     if self.http is None:
@@ -151,16 +201,8 @@ class SurveyABC(ABC):
                     else:
                         response_data = bytearray(response.data)
                     return response_data
-                except:
-                    # E.g., One noted error was 'IncompleteRead'...
-                    #
-                    # Note: this apperently caused an FITSFixedWarning, e.g.,
-                    #
-                    #    WARNING: FITSFixedWarning: 'datfix' made the change 'Changed '' to '2013-05-16T18:02:48.842''. [astropy.wcs.wcs]
-                    #
-                    # in astropy.wcs (cf., http://docs.astropy.org/en/stable/wcs/); hence this try..except wrapping.
-                    #
-                    pass
+                except Exception as e:
+                    self.print(f"{e}",is_traceback=True)
 
             # TODO: clean this up, as well as, retries, for configuration...
             duration_s = 60 if self.http else 25
@@ -630,8 +672,8 @@ class SurveyABC(ABC):
         self.print(f"J{self.get_sexadecimal_string(position)}[{self.get_ra_dec_string(position)} at {size}]: Procssing Status = '{self.processing_status.name}'.")
 
         ## debug -- testing
-        #for proc in processing_status:
-        #    if proc.value == self.pid:
+        #for n,proc in enumerate(processing_status):
+        #    if n == self.pid:
         #        self.print(f"DEBUGGING: setting status to {proc.name}...")
         #        self.processing_status = proc
         #        cutout = None

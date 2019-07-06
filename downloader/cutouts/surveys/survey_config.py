@@ -18,6 +18,9 @@ from random import shuffle
 import csv
 import yaml as yml
 
+# processing
+from surveys.survey_abc import processing_status as ProcStatus
+
 # astropy libs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -158,6 +161,8 @@ class SurveyConfig:
 
 
     def __print(self,string,show_caller=False):
+        if string is None:
+            return
         prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
         prefixed_string = "\n".join([f"{prefix}: {s}" for s in string.splitlines()])
         print(prefixed_string)
@@ -329,7 +334,7 @@ class SurveyConfig:
                     # set task pid
                     task['pid'] = pid
 
-                    if self.overwrite or (not os.path.isfile(task['filename'])):
+                    if self.overwrite or (not ProcStatus.is_processed(task['filename'])):
                         # push the task onto the processing stack
                         procssing_stack.append(task)
 
@@ -337,10 +342,15 @@ class SurveyConfig:
                         #survey_instance.set_pid(pid)
                         # increment task pid
                         pid += 1
-                    else:
-                        self.__print(f"File '{task['filename']}' exists; overwrite={self.overwrite}, skipping...")
 
-            # randomize to processing stack to minimize server hits...
+                        if self.overwrite:
+                            # flush unreprocessable files
+                            self.__print(ProcStatus.flush(task['filename']))
+                    else:
+                        files = ProcStatus.get_file_listing(task['filename'])
+                        self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
+
+        # randomize processing stack to minimize server hits...
         shuffle(procssing_stack)
 
         self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
