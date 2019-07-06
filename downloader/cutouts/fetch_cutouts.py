@@ -119,6 +119,11 @@ def save_cutout(target):
 this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
 default_config = this_source_file_dir + 'config_default.yml'
 
+# TODO: Need a way of determining if a flag is set, so as not to override the defaults... 
+#       then we can add --overwrite and --flush flags as options to the config.yml files (i.e., 
+#       the command line flags would override these if set)... with the defaults defined
+#       in survey_config.py (i.e., if not defined in config.yml)...
+# Notes: http://click.palletsprojects.com/en/5.x/options/
 @click.command()
 @click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
 @click.option('--overwrite',default=False,help='overwrite existing target files')
