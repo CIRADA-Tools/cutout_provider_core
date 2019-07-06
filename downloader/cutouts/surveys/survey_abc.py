@@ -217,62 +217,6 @@ class SurveyABC(ABC):
         return None
 
 
-    # make the directory structure if it doesn't exist
-    def __make_dir(self, dirname):
-        try:
-            os.makedirs(dirname)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-
-
-    def mosaic(self, cutouts):
-        td = tempfile.mkdtemp()
-        input_dir = '{directory}/input'.format(directory=td)
-        output_dir = '{directory}/output'.format(directory=td)
-        self.__make_dir(input_dir)
-
-        # TODO: So much for thread safe!
-        ## *** IO_WRAPPER ***
-        ## TODO: [1] Stream this
-        ##       [2] Make a decorator
-        ##       [3] Check if thread-safe
-        ## setup the environment
-        #old_stdout = sys.stdout
-        #sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
-
-        try:
-            for i, c in enumerate(cutouts):
-                with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
-                    tmp.write(bytes(c))
-
-            os.listdir(td)
-            montage_wrapper.mosaic(input_dir, output_dir)
-
-            with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
-                merged = f.read()
-        finally:
-            shutil.rmtree(output_dir)
-            shutil.rmtree(input_dir)
-            shutil.rmtree(td)
-
-        ## *** IO_WRAPPER ***
-        ## get output
-        #sys.stdout.seek(0)      # jump to the start
-        #out = sys.stdout.read() # read output
-
-        ## *** IO_WRAPPER ***
-        ## restore stdout
-        #sys.stdout.close()
-        #sys.stdout = old_stdout
-
-        ## *** IO_WRAPPER ***
-        ## Now we can print the output from montage
-        #self.print(out)
-
-        return merged
-
-
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf., 'https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html'.
         return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",sanitize_fits_date_fields(date_obs_value)) 
@@ -348,10 +292,67 @@ class SurveyABC(ABC):
         return hdul_list
 
 
-    def get_image(self, hdu):
+    # make the directory structure if it doesn't exist
+    def __make_dir(self, dirname):
+        try:
+            os.makedirs(dirname)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+
+    def mosaic(self, cutouts):
+        td = tempfile.mkdtemp()
+        input_dir = '{directory}/input'.format(directory=td)
+        output_dir = '{directory}/output'.format(directory=td)
+        self.__make_dir(input_dir)
+
+        # TODO: So much for thread safe!
+        ## *** IO_WRAPPER ***
+        ## TODO: [1] Stream this
+        ##       [2] Make a decorator
+        ##       [3] Check if thread-safe
+        ## setup the environment
+        #old_stdout = sys.stdout
+        #sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
+
+        try:
+            for i, c in enumerate(cutouts):
+                with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
+                    tmp.write(bytes(c))
+
+            os.listdir(td)
+            montage_wrapper.mosaic(input_dir, output_dir)
+
+            with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
+                merged = f.read()
+        finally:
+            shutil.rmtree(output_dir)
+            shutil.rmtree(input_dir)
+            shutil.rmtree(td)
+
+        ## *** IO_WRAPPER ***
+        ## get output
+        #sys.stdout.seek(0)      # jump to the start
+        #out = sys.stdout.read() # read output
+
+        ## *** IO_WRAPPER ***
+        ## restore stdout
+        #sys.stdout.close()
+        #sys.stdout = old_stdout
+
+        ## *** IO_WRAPPER ***
+        ## Now we can print the output from montage
+        #self.print(out)
+
+        return merged
+
+
+    def __get_image(self, hdu):
         img_data = np.squeeze(hdu[0].data)
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
+        # TODO: I suspect his can be cleaned up
         # writing to a pretend file in memory
         mem_file = io.BytesIO()
         img.writeto(mem_file)
@@ -366,7 +367,7 @@ class SurveyABC(ABC):
         if len(hdul_tiles) > 1:
             self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
-                imgs = [img for img in [self.get_image(tile) for tile in hdul_tiles]]
+                imgs = [img for img in [self.__get_image(tile) for tile in hdul_tiles]]
                 # TODO: Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
                 tiled_fits_file = io.BytesIO(self.mosaic(imgs))
