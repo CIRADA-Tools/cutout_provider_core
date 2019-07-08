@@ -54,3 +54,13 @@ You'll need to install <a target=_blank href="https://montage-wrapper.readthedoc
  * Got into the `Montage_v5.0` and type `make` to build.
  * Move the `Montage_v5.0` to `~/.montage/Montage_v5.0`, say, and add `~/.montage/Montage_v5.0/bin` to `$PATH`.
  * To test, run `mAdd` and you should see something like,<br>```[struct stat="ERROR", msg="Usage: mAdd [-d level] [-p imgdir] [-n(o-areas)] [-a mean|median|count] [-e(xact-size)] [-s statusfile] images.tbl template.hdr out.fits"]```<br>indicating it is installed correctly.
+
+
+## NOTE: if you get pyopenssl ssl.SSLError('bad handshake....
+Check which version of requests you are using.    
+`import requests`    
+`print(requests.__version__)`    
+Try downgrading to version 2.11.1. It worked as seen from https://stackoverflow.com/questions/40741361/python-requests-gives-me-bad-handshake-error/40741362    
+    
+`pip3 uninstall requests`    
+`pip3 install requests==2.11.1`     
