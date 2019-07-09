@@ -220,6 +220,8 @@ class SurveyABC(ABC):
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf., 'https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html'.
         return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",sanitize_fits_date_fields(date_obs_value)) 
+        # TODO: consider replacing above with and replacing sanitize_fits_date_fields in this code with this (standardize_fits_header_DATE_and_DATE_OBS_fields)
+        #return sanitize_fits_date_fields(date_obs_value)
 
     # tries to create a fits file from bytes.
     # on fail it returns None
@@ -257,6 +259,8 @@ class SurveyABC(ABC):
         # sanitize the date-obs field
         if 'DATE-OBS' in hdul[0].header:
             hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
+        elif 'MJD-OBS' in hdul[0].header:
+            hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
 
         # sanitize the rotation matrix
         # TODO: check for other antiquated stuff, i.e.,
