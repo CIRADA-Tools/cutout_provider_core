@@ -82,7 +82,7 @@ def tile_query():
     return query
 
 
-# TODO: No longer thread safe -- fix!
+# TODO (Issue #11): No longer thread safe -- fix!
 # instatiate the title_query() function
 intersecting_tiles = tile_query()
 
@@ -99,7 +99,7 @@ class VLASS(SurveyABC):
 
         self.intersecting_tiles = intersecting_tiles
 
-        # TODO: This gets printed for each instance... mabye add a method and call it once... 
+        # TODO (Issue #11): This gets printed for each instance... mabye add a method and call it once... 
         #       hmmm... get_init_message_string()...? ... can use in survey_config... 
         #       avec try ... except ...
         #if self.is_cutout_server:
