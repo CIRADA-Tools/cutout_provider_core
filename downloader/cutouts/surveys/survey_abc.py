@@ -6,6 +6,7 @@ import tempfile
 import shutil
 
 # *** IO_WRAPPER ***
+# TODO (Issue #11): ...
 # Notes: https://stackoverflow.com/questions/1218933/can-i-redirect-the-stdout-in-python-into-some-sort-of-string-buffer/33979942#33979942
 from io import TextIOWrapper, BytesIO
 
@@ -204,7 +205,7 @@ class SurveyABC(ABC):
                 except Exception as e:
                     self.print(f"{e}",is_traceback=True)
 
-            # TODO: clean this up, as well as, retries, for configuration...
+            # TODO (Issue #11): clean this up, as well as, retries, for configuration...
             duration_s = 60 if self.http else 25
             self.print(f"Taking a {duration_s}s nap...")
             sleep(duration_s)
@@ -311,9 +312,9 @@ class SurveyABC(ABC):
         output_dir = '{directory}/output'.format(directory=td)
         self.__make_dir(input_dir)
 
-        # TODO: So much for thread safe!
+        # TODO (Issue #11): So much for thread safe!
         ## *** IO_WRAPPER ***
-        ## TODO: [1] Stream this
+        ## TODO (Issue #11): [1] Stream this
         ##       [2] Make a decorator
         ##       [3] Check if thread-safe
         ## setup the environment
@@ -356,7 +357,7 @@ class SurveyABC(ABC):
         img_data = np.squeeze(hdu[0].data)
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
-        # TODO: I suspect his can be cleaned up
+        # TODO (Issue #11): I suspect his can be cleaned up
         # writing to a pretend file in memory
         mem_file = io.BytesIO()
         img.writeto(mem_file)

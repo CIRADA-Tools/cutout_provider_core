@@ -50,7 +50,7 @@ class PoisonPill:
     def __init__(self):
         pass
 
-
+# TODO (Issue #11): Need to vet this for thread-saftey -- tricky!
 class WorkerThread(threading.Thread):
     def __init__(self, worker, input_q, output_q=None, *args, **kwargs):
         self.input_q = input_q
