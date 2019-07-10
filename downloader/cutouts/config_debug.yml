@@ -23,10 +23,10 @@ cutouts:
         #- FIRST      # Faint Images of the Radio Sky at Twenty-Centimeters
         #- NVSS
         #- VLASS:     # * claran
-        # TODO: Debug mosaicing for WISE
+        # TODO (Issue #12): Debug mosaicing for WISE
         #   - J105915+051731_s3arcmin_WISE-w1.fits
         #   - (RA,Dec) = (164.811020,+5.292027)
-        # TODO: I believe above is fixed now! Wait for validation.
+        # TODO (Issue #12): I believe above is fixed now! Wait for validation.
         - WISE:      # * claran
               filters: w1
         - PanSTARRS: # * claran
