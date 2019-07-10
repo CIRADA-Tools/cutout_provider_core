@@ -88,7 +88,7 @@ class PanSTARRS(SurveyABC):
         self.filter = filter
 
 
-    # TODO: Determine if useful.
+    # TODO (Issue #6): Determine if useful.
     #   * * * D E P R E C A T E D * * *
     #def __combine_bands(self,bands):
     #    hdus = [b[0] for b in bands]
@@ -120,7 +120,7 @@ class PanSTARRS(SurveyABC):
 
         print(f"URL: {url}")
 
-        # TODO: notes...
+        # TODO (Issue #6): notes...
         # [1] https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service
         # [2] https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns#PS1Skytessellationpatterns-Skycells
         table = Table.read(url, format='ascii')
