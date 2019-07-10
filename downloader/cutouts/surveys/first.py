@@ -29,7 +29,7 @@ class FIRST(SurveyABC):
             'Download': 1,
             'FITS': 1
         }
-        # TODO: FIRST mosaicking work in progress... consider using SIAP...
+        # TODO (Issue #9): FIRST mosaicking work in progress... consider using SIAP...
         # MAST I/F notes:
         # [1] https://third.ucllnl.org/cgi-bin/firstcutout -- FIRST bread crumbs
         #     http://sundog.stsci.edu/first/images.html
