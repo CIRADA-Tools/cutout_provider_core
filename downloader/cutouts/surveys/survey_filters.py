@@ -112,8 +112,8 @@ class HeaderFilter:
         # Notes: 
         #    [1] Not in this list are placed between TOP_KEYS and BOTTOM_KEYS.
         #    [2] The default (i.e., if none) COMMENT fields have not been implemented.
-        # TODO: Determine if default COMMENT are still required; if yes, implement.
-        # TODO: Remove default VALUE field -- only second guessing... so...
+        # TODO (Issue #6): Determine if default COMMENT are still required; if yes, implement.
+        # TODO (Issue #6): Remove default VALUE field -- only second guessing... so...
         self.header_layout = {
             'TOP_KEYS': [
                 ['SIMPLE'],
@@ -237,7 +237,7 @@ class HeaderFilter:
         top_keys    = get_keys(self.header_layout['TOP_KEYS'])
         bottom_keys = get_keys(self.header_layout['BOTTOM_KEYS'])
         if len(list(set(top_keys) & set(bottom_keys))) > 0:
-            # TODO: Make into warning...
+            # TODO (Issue #6): Make into warning...
             print("Whoops!")
             return self.saved_keys
         top_set    = list(set(top_keys) & set(self.saved_keys))
@@ -310,8 +310,8 @@ class HeaderFilter:
         return self.saved_keys
 
 
-    ## TODO: *** DEPRECATED ***
-    ##       Appears to be of now value... consider removing...
+    ## TODO (Issue #6): *** DEPRECATED ***
+    ##       Appears to be of no value... consider removing...
     #def get_updates(self):
     #    """The will return a dict of updates."""
     #    return self.updates
