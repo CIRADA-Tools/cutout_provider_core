@@ -119,7 +119,7 @@ class SurveyConfig:
         # TODO (Issue #13): Add this setting to the yaml configuration file
         self.flush = False
 
-        # TODO: This method is not thread safe: i.e., the number of instances must
+        # TODO (Issue #11): This method is not thread safe: i.e., the number of instances must
         #       equal no_surveys * no_targets, otherwise, there could be a collision
         #       in the threading-queue in fetch_cutouts.py
         ## TODO (Issue #13): will probably want to overide this in a config file/cmd-line-arg
