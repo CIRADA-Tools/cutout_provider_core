@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 '''
 Grab FITS files from /out, process into JPGs and save to /processed
 
-TODO:
-Should probably be refactored into the Survey objects
+TODO (Issue #15): Should probably be refactored so that it can easily integrated
+     with fetch_cutouts.py or become part of a fetch-fits-create-png pipeline script...
 '''
 
 
