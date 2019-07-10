@@ -70,7 +70,7 @@ class WISE(SurveyABC):
         header_updates = {
             'BAND':     (f'{self.filter.name.upper()}', 'Filter used in observation'),
             'DATE-OBS': (header['MIDOBS'], 'Median observation date of stack'),
-             # TODO: 'IMFILE' inadequate for mosaics...
+             # TODO (Issue #6): 'IMFILE' inadequate for mosaics...
             'IMFILE':   (header['COADDID'], 'ATLAS image identifier')
         }
         return header_updates
