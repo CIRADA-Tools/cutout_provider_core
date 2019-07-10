@@ -59,7 +59,7 @@ class PS1SkyTessellationPatterns:
         ra_cells = self.row_cells[self.zones.index(zone)]
         d_ra = 360.0*u.deg/ra_cells
         for i in range(ra_cells):
-            # TODO: shift so ra_i is a centered:i.e., i=0 => (-2.5,2.5) instead of (0,5) for the zone 13 case.
+            # TODO (Issue #6): shift so ra_i is a centered:i.e., i=0 => (-2.5,2.5) instead of (0,5) for the zone 13 case.
             #ra_i = i * d_ra - d_ra/2.0
             ra_i = i * d_ra
             if ra_i <= ra and ra < ra_i+d_ra:
@@ -85,7 +85,6 @@ class PanSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
         super().__init__()
 
-        # TODO: Housecleaning: change self.filter to self.filter
         self.filter = filter
 
 
