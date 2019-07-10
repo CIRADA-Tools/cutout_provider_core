@@ -30,7 +30,7 @@ cutouts:
         - WISE:      # * claran
               filters: w1
         - PanSTARRS: # * claran
-              # TODO: Make it handle cases like i,z instead of [i,z]
+              # TODO (Issue #13): Make it handle cases like i,z instead of [i,z]
               filters: i
         - SDSS:
               filters: [g,r,i]
@@ -43,9 +43,9 @@ configuration:
     # remote vospace workspace root
     remote_root: cutout_testing/debug
 
-    # TODO: Implement
+    # TODO (Issue #13): Implement
     flush: True
 
-    # TODO: Implement
+    # TODO (Issue #13): Implement
     force_overwrite: True
 

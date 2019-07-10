@@ -56,7 +56,7 @@ class SurveyConfig:
             WISE.__name__,
             PanSTARRS.__name__,
             SDSS.__name__,
-            # TODO: Handle 2MASS case (i.e., number prefixed name -- python no like)
+            # TODO (Issue #13): Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
 
         # make sure supported_surveys are defined in the hierarchy class
@@ -112,17 +112,17 @@ class SurveyConfig:
                 self.__print(f"Created FITS output dir: {out_dir}")
 
         # set the overwrite file parameter
-        # TODO: Add this setting to the yaml configuration file
+        # TODO (Issue #13): Add this setting to the yaml configuration file
         self.overwrite = False
 
         # set the flush file parameter
-        # TODO: Add this setting to the yaml configuration file
+        # TODO (Issue #13): Add this setting to the yaml configuration file
         self.flush = False
 
         # TODO: This method is not thread safe: i.e., the number of instances must
         #       equal no_surveys * no_targets, otherwise, there could be a collision
         #       in the threading-queue in fetch_cutouts.py
-        ## TODO: will probably want to overide this in a config file/cmd-line-arg
+        ## TODO (Issue #13): will probably want to overide this in a config file/cmd-line-arg
         #self.no_class_instances_per_survey = 100
 
 
@@ -182,7 +182,7 @@ class SurveyConfig:
                     survey_names.append(list(survey.keys())[0])
                 else:
                     # Whoops!
-                    # TODO: Add output indicating a corrupt yml cfg file and 'raise'
+                    # TODO (Issue #13): Add output indicating a corrupt yml cfg file and 'raise'
                     pass
             return survey_names
         surveys = extract_surveys_names_from_config_surveys_block(config_surveys_block)
@@ -194,7 +194,7 @@ class SurveyConfig:
                         supported.append(supported_survey)
                         break
             else:
-                # TODO: This should really be done in init to prevent the potential of repeated message...
+                # TODO (Issue #13): This should really be done in init to prevent the potential of repeated message...
                 self.__print(f"WARNING: Survey '{survey}' is not supported!")
         return supported
 
@@ -229,7 +229,7 @@ class SurveyConfig:
             if found:
                 matched.append(supported_filter)
                 found = False
-            # TODO: we need to do this test in init, otherwise the message repeats
+            # TODO (Issue #13): we need to do this test in init, otherwise the message repeats
             #else:
             #    self.__print(f"WARNING: '{survey}' filter '{filter}' is not supported!")
         
@@ -355,7 +355,7 @@ class SurveyConfig:
                         # increment task pid
                         pid += 1
 
-                        # TODO: move the self.flush feature to a seperate method call, so it can be use for maintenance...
+                        # TODO (Issue #13): move the self.flush feature to a seperate method call, so it can be use for maintenance...
                         if self.overwrite or self.flush:
                             # flush unreprocessable files
                             self.__print(ProcStatus.flush(task['filename'],self.flush))
