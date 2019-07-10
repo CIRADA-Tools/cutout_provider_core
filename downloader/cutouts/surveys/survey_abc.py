@@ -221,7 +221,7 @@ class SurveyABC(ABC):
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf., 'https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html'.
         return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",sanitize_fits_date_fields(date_obs_value)) 
-        # TODO: consider replacing above with and replacing sanitize_fits_date_fields in this code with this (standardize_fits_header_DATE_and_DATE_OBS_fields)
+        # TODO (Issue #6): consider replacing above with and replacing sanitize_fits_date_fields in this code with this (standardize_fits_header_DATE_and_DATE_OBS_fields)
         #return sanitize_fits_date_fields(date_obs_value)
 
     # tries to create a fits file from bytes.
@@ -264,7 +264,7 @@ class SurveyABC(ABC):
             hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
 
         # sanitize the rotation matrix
-        # TODO: check for other antiquated stuff, i.e.,
+        # TODO (Issue #6): check for other antiquated stuff, i.e.,
         # http://tdc-www.harvard.edu/software/wcstools/cphead.wcs.html
         rotation_matrix_map = {
             'PC001001': 'PC1_1',
@@ -373,7 +373,7 @@ class SurveyABC(ABC):
             self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
                 imgs = [img for img in [self.__get_image(tile) for tile in hdul_tiles]]
-                # TODO: Need to handle multiple COADDID's...
+                # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
                 tiled_fits_file = io.BytesIO(self.mosaic(imgs))
                 tiled_fits_file.seek(0)
@@ -628,7 +628,7 @@ class SurveyABC(ABC):
             'BAND': 'na',
         }, is_overwrite_existing=False)
 
-        # TODO: Same thing as EQUINOX ... depricate.
+        # TODO (Issue #6): Same thing as EQUINOX ... depricate.
         ## set epoch
         #hdf.update({
         #    'EPOCH': (2000.0, 'Julian epoch of observation')
@@ -663,7 +663,7 @@ class SurveyABC(ABC):
             tiles   = self.get_tiles(position,size)
             tile    = self.paste_tiles(tiles,position,size)
             trimmed = self.trim_tile(tile,position,size)
-            # TODO: Remove this code, once vetted...
+            # TODO (Issue #6): Remove this code, once vetted...
             # Yjan's code
             #cutout = self.header_write(trimmed,position)
             # Integrated code
