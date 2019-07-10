@@ -59,7 +59,7 @@ class PS1SkyTessellationPatterns:
         ra_cells = self.row_cells[self.zones.index(zone)]
         d_ra = 360.0*u.deg/ra_cells
         for i in range(ra_cells):
-            # TODO (Issue #6): shift so ra_i is a centered:i.e., i=0 => (-2.5,2.5) instead of (0,5) for the zone 13 case.
+            # TODO (Issue #8): shift so ra_i is a centered:i.e., i=0 => (-2.5,2.5) instead of (0,5) for the zone 13 case.
             #ra_i = i * d_ra - d_ra/2.0
             ra_i = i * d_ra
             if ra_i <= ra and ra < ra_i+d_ra:
@@ -88,7 +88,7 @@ class PanSTARRS(SurveyABC):
         self.filter = filter
 
 
-    # TODO (Issue #6): Determine if useful.
+    # TODO (Issue #8): Determine if useful.
     #   * * * D E P R E C A T E D * * *
     #def __combine_bands(self,bands):
     #    hdus = [b[0] for b in bands]
@@ -120,7 +120,7 @@ class PanSTARRS(SurveyABC):
 
         print(f"URL: {url}")
 
-        # TODO (Issue #6): notes...
+        # TODO (Issue #8): notes...
         # [1] https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service
         # [2] https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns#PS1Skytessellationpatterns-Skycells
         table = Table.read(url, format='ascii')
