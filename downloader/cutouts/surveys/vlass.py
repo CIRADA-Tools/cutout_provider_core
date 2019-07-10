@@ -195,15 +195,15 @@ class VLASS(SurveyABC):
             'BAND': ('2-4 GHz', 'Frequency coverage of observation'),
             'RADESYS':  (header['RADESYS'], 'Coordinate system used'),
             'DATE-OBS': (header['DATE-OBS'], 'Obs. date'),
-            # TODO: same as MJD-OB... depricate.
+            # TODO (Issue #6): same as MJD-OB... depricate.
             #'MJD': (Time(header['DATE-OBS']).mjd, 'MJD of the observation date'),
             'BUNIT': ('Jy/beam', 'Pixel flux unit'),
             'BMAJ':  (header['BMAJ'], 'Beam major axis [deg]'),
             'BMIN':  (header['BMIN'], 'Beam minor axis [deg]'),
             'BPA':   (header['BPA'], 'Beam position angle'),
-            # TODO: might be already in wcs part of header...
+            # TODO (Issue #6): might be already in wcs part of header...
             'STOKES': (header['BTYPE'], 'Stokes polarisation'),
-            # TODO: Tiling issue and based on quick-look images -- I think...
+            # TODO (Issue #6): Tiling issue and based on quick-look images -- I think...
             'IMFILE': (vfile, 'VLASS image file'),
         }
         return header_updates
