@@ -119,15 +119,11 @@ def save_cutout(target):
 this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
 default_config = this_source_file_dir + 'config_default.yml'
 
-# TODO (Issue #13): Need a way of determining if a flag is set, so as not to override the defaults... 
-#       then we can add --overwrite and --flush flags as options to the config.yml files (i.e., 
-#       the command line flags would override these if set)... with the defaults defined
-#       in survey_config.py (i.e., if not defined in config.yml)...
 # Notes: http://click.palletsprojects.com/en/5.x/options/
 @click.command()
 @click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
-@click.option('--overwrite',default=False,help='overwrite existing target files')
-@click.option('--flush',default=False,help='flush existing target files (supersedes --overwrite)')
+@click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
+@click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
 def batch_process(
     config_file,
     overwrite,
@@ -135,15 +131,11 @@ def batch_process(
 ):
     """Survey Cutout fetching script (cf., config_default.yml)"""
 
-    # load yaml configuration file
+    # load the configuration
     print(f"Using Configuration: {config_file}")
     cfg = SurveyConfig(config_file)
-
-    print(f'Setting target overwrite mode to {overwrite}')
-    cfg.set_overwrite(overwrite)
-
-    print(f'Setting target flush mode to {flush}')
-    cfg.set_flush(flush)
+    print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
+    print(f'Flush Mode: {cfg.set_flush(flush)}')
 
     grabbers = 60
     savers = 1

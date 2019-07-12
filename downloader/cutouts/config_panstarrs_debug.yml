@@ -2,8 +2,8 @@
 cutouts:
     # list of csv files of ra-dec's.
     ra_dec_deg_csv_files:
-        - BAD_image_coords.csv
-        #- panstarrs_debug.csv
+        #- BAD_image_coords.csv
+        - panstarrs_debug.csv
 
     # Note: box size in csv's overidde this one.
     box_size_armin: 3
@@ -16,3 +16,7 @@ cutouts:
 configuration:
     # data root relative/absolute path defn
     local_root: data/panstarrs_debug
+
+    overwrite: False
+
+    flush: True

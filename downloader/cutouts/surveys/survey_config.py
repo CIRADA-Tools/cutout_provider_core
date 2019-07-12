@@ -112,12 +112,16 @@ class SurveyConfig:
                 self.__print(f"Created FITS output dir: {out_dir}")
 
         # set the overwrite file parameter
-        # TODO (Issue #13): Add this setting to the yaml configuration file
-        self.overwrite = False
+        if 'overwrite' in self.config['configuration']:
+            self.overwrite = self.config['configuration']['overwrite']
+        else:
+            self.overwrite = False
 
         # set the flush file parameter
-        # TODO (Issue #13): Add this setting to the yaml configuration file
-        self.flush = False
+        if 'flush' in self.config['configuration']:
+            self.flush = self.config['configuration']['flush']
+        else:
+            self.flush = False
 
         # TODO (Issue #11): This method is not thread safe: i.e., the number of instances must
         #       equal no_surveys * no_targets, otherwise, there could be a collision
@@ -299,7 +303,9 @@ class SurveyConfig:
 
 
     def set_overwrite(self,overwrite=True):
-        self.overwrite = overwrite
+        if isinstance(overwrite, bool):
+            self.overwrite = overwrite
+        return self.overwrite
 
 
     def get_overwrite(self):
@@ -307,7 +313,9 @@ class SurveyConfig:
 
 
     def set_flush(self,flush=True):
-        self.flush = flush
+        if isinstance(flush, bool):
+            self.flush = flush
+        return self.flush
 
 
     def get_flush(self):
