@@ -48,8 +48,9 @@ class SurveyConfig:
         # get cutout dir hierarchy class
         self.local_dirs = LocalCutoutDirs()
 
+
         #
-        # T A R G E T   C O N F I G U R A T I O N   B L O C K
+        # S U V E R Y   S E T U P
         #
 
         # define supported_surveys
@@ -83,6 +84,11 @@ class SurveyConfig:
         # set the cutout size
         self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
 
+
+        #
+        # T A R G E T   C O N F I G U R A T I O N
+        #
+
         # set targets
         self.targets = list()
         for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
@@ -99,7 +105,7 @@ class SurveyConfig:
 
 
         #
-        # E N V I R O N M E N T   C O N F I G U R A T I O N   B L O C K
+        # E N V I R O N M E N T   C O N F I G U R A T I O N
         #
 
         # get the configuration block
