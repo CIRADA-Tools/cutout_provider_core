@@ -6,9 +6,11 @@ import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.time import Time
-from astropy.table import Table
 from astropy import units as u
+from astropy.table import Table
+from astropy.table import vstack
 from astropy.units import Quantity
+from astropy.coordinates import SkyCoord
 
 class PS1SkyTessellationPatterns:
     # cf., https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns
@@ -28,21 +30,26 @@ class PS1SkyTessellationPatterns:
         self.max_decs = [d*u.deg for d in ps1grid['DEC_MAX']]
 
         self.pix_scale = 0.25 * (u.arcsec/u.pix)
+        self.sub_cells = 10
+
 
     def __sanitize_ra(self,ra):
         if not isinstance(ra,Quantity):
             ra = (ra % 360.0) * u.deg
         return ra
 
+
     def __sanitize_dec(self,dec):
         if not isinstance(dec,Quantity):
             dec = dec * u.deg
         return dec
 
+
     def dec(self, zone):
         if not zone in self.zones:
             return None
         return self.decs[self.zones.index(zone)]
+
 
     def zone(self,dec):
         dec = self.__sanitize_dec(dec)
@@ -50,6 +57,7 @@ class PS1SkyTessellationPatterns:
             if self.min_decs[i] <= dec and dec < self.max_decs[i]:
                  return zone
         return None
+
 
     def projcell(self,ra,dec):
         zone = self.zone(dec)
@@ -59,25 +67,50 @@ class PS1SkyTessellationPatterns:
         ra_cells = self.row_cells[self.zones.index(zone)]
         d_ra = 360.0*u.deg/ra_cells
         for i in range(ra_cells):
-            # TODO (Issue #8): shift so ra_i is a centered:i.e., i=0 => (-2.5,2.5) instead of (0,5) for the zone 13 case.
-            #ra_i = i * d_ra - d_ra/2.0
-            ra_i = i * d_ra
-            if ra_i <= ra and ra < ra_i+d_ra:
+            ra_i = ((i * d_ra - d_ra/2.0).value % 360.0) * u.deg
+            if (i == 0 and ((ra_i <= ra and ra < 0*u.deg) or (0*u.deg <= ra and ra < d_ra/2.0))) or (ra_i <= ra and ra < ra_i+d_ra):
                 return i+self.proj_cells[self.zones.index(zone)]
         return None
+
+
+    def projcell_center(self,ra,dec):
+        projcell = self.projcell(ra,dec)
+        if projcell is None:
+            return None
+        zone_i = self.zones.index(self.zone(dec))
+        dec_center = self.decs[zone_i]
+        ra_center = (projcell-self.proj_cells[zone_i])*360.0*u.deg/self.row_cells[zone_i]
+        return SkyCoord(ra_center,dec_center)
+
+    # debug
+    def __get_tile_hieght(self,dec):
+        zone_i = self.zones.index(self.zone(dec))
+        return self.max_decs[zone_i]-self.min_decs[zone_i]
+    def __gvstacket_tangent_plane_dec(self,ra,dec):
+        return np.arctan(np.tan((dec+self.__get_tile_hieght(dec)/2.0).to(u.rad).value)*np.cos(ra.to(u.rad).value))*180.0*u.deg/np.pi
 
     def skycell(self,ra,dec):
         projcell = self.projcell(ra,dec)
         if projcell is None:
             return None
-        zone_i = self.zones.index(self.zone(dec))
-        projcell_0 = self.proj_cells[zone_i]
-        ra_cells = self.row_cells[zone_i]
+        #r = SkyCoord(self.__sanitize_ra(ra),self.__sanitize_dec(dec))
+        #r_0 = self.projcell_center(ra,dec)
         ra = self.__sanitize_ra(ra)
-        #ra_offset=ra-(projcell-projcell_0)*360.0*u.deg/ra_cells
-        ra_offset=ra-(projcell-projcell_0+0.5)*360.0*u.deg/ra_cells
-        print(f"zone_i: {zone_i}, projcell: {projcell}, projcell_0: {projcell_0}, ra_cells: {ra_cells}, ra: {ra}, ra_offset: {ra_offset}")
+        dec = self.__sanitize_dec(dec)
+        zone_i = self.zones.index(self.zone(dec))
+        d_dec = (self.max_decs[zone_i]-self.min_decs[zone_i])/(self.sub_cells-1)
+        min_dec = self.min_decs[zone_i]
+        si_dec = None
+        # TODO: cat seem to get xy to make table query
+        for i in range(self.sub_cells):
+            dec_i = i * d_dec + min_dec
+            print(f"{dec}: ({dec_i},{dec_i+d_dec})")
+            if dec_i <= dec and dec < dec_i+d_dec:
+                 si_dec = i
+                 break
+        print(f"si_dec={si_dec}")
         return projcell
+
 
 from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
@@ -85,90 +118,44 @@ class PanSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
         super().__init__()
 
+        self.pixel_scale = 0.25 * (u.arcsec/u.pix)
         self.filter = filter
 
 
-    # TODO (Issue #8): Determine if useful.
-    #   * * * D E P R E C A T E D * * *
-    #def __combine_bands(self,bands):
-    #    hdus = [b[0] for b in bands]
-    #    wcs = WCS(hdus[0].header)
-    #    header = wcs.to_header()
-    #
-    #    data = np.stack(reversed([h.data for h in hdus]))
-    #
-    #    img = fits.PrimaryHDU(data, header=header)
-    #
-    #    return img
-
-    # The following two helper functions were taken essentially in full from:
-    # https://ps1images.stsci.edu/ps1image.html
-
-    def __getimages(self,ra, dec, size=240, filters="grizy"):
-        """Query ps1filenames.py service to get a list of images
-
-           ra, dec = position in degrees
-           size = image size in pixels (0.25 arcsec/pixel)
-           filters = string with filters to include
-           Returns a table with the results
-        """
-
+    def get_skycells(self,position,size):
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
-        #url = (f"{service}?ra={ra}&dec={dec}&size={size}&format=fits&filters={filters}")
-        url = ("{service}?ra={ra}&dec={dec}&size={size}&format=fits"
-               "&filters={filters}").format(**locals())
+        def make_url(a,d):
+            return f"{service}?ra={a.to(u.deg).value}&dec={d.to(u.deg).value}&format=fits&filters={self.filter.name}"
 
-        print(f"URL: {url}")
+        # extract ra/dec's
+        ra = position.ra
+        dec = position.dec
 
-        # TODO (Issue #8): notes...
-        # [1] https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service
-        # [2] https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns#PS1Skytessellationpatterns-Skycells
-        table = Table.read(url, format='ascii')
-        print(f"TALBE: {table}")
-        return table
+        # the skycell at input (ra,dec)
+        url = make_url(ra,dec)
+        skycells = Table.read(url, format='ascii')
 
-
-    def __geturl(self,ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
-        """Get URL for images in the table
-
-        ra, dec = position in degrees
-        size = extracted image size in pixels (0.25 arcsec/pixel)
-        output_size = output (display) image size in pixels (default = size).
-                      output_size has no effect for fits format images.
-        filters = string with filters to include
-        format = data format (options are "jpg", "png" or "fits")
-        color = if True, creates a color image (only for jpg or png format).
-                Default is return a list of URLs for single-filter grayscale images.
-        Returns a string with the URL
-        """
-
-        if color and format == "fits":
-            raise ValueError("color images are available only for jpg or png formats")
-        if format not in ("jpg", "png", "fits"):
-            raise ValueError("format must be one of jpg, png, fits")
-        table = self.__getimages(ra, dec, size=size, filters=filters)
-        #url = (f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={ra}&dec={dec}&size={size}&format={format}")
-        url = ("https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?"
-               "ra={ra}&dec={dec}&size={size}&format={format}").format(**locals())
-
-        if output_size:
-            url = url + "&output_size={}".format(output_size)
-        # sort filters from red to blue
-        flist = ["yzirg".find(x) for x in table['filter']]
-        table = table[np.argsort(flist)]
-        if color:
-            if len(table) > 3:
-                # pick 3 filters
-                table = table[[0, len(table) // 2, len(table) - 1]]
-            for i, param in enumerate(["red", "green", "blue"]):
-                url = url + "&{}={}".format(param, table['filename'][i])
-        else:
-            urlbase = url + "&red="
-            url = []
-            for filename in table['filename']:
-                url.append(urlbase + filename)
-
-        return url
+        # TODO (Issue #8): kludge: this is a really bad way of finding the neigbhoring skeyscells...
+        # Notes: https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns
+        urls = list()
+        r = size/2.0
+        urls.append(make_url(ra-r,dec-r))
+        urls.append(make_url(ra-r,dec+r))
+        urls.append(make_url(ra+r,dec+r))
+        urls.append(make_url(ra+r,dec-r))
+        urls.append(make_url(ra-r,dec))
+        urls.append(make_url(ra+r,dec))
+        urls.append(make_url(ra,dec-r))
+        urls.append(make_url(ra,dec+r))
+        for url in urls:
+            sc = Table.read(url, format='ascii')
+            is_in_skycells = False
+            for skycell in skycells:
+                if sc['projcell'] == skycell['projcell'] and sc['subcell'] == skycell['subcell']:
+                    is_in_skycells = True
+            if not is_in_skycells:
+                skycells = vstack([skycells,sc])
+        return skycells
 
 
     @staticmethod
@@ -181,15 +168,11 @@ class PanSTARRS(SurveyABC):
 
 
     def get_tile_urls(self,position,size):
-        pix_scale = 0.25 * (u.arcsec/u.pix)
-
-        ra     = position.ra.to(u.deg).value
-        dec    = position.dec.to(u.deg).value
-        pixels = int(np.ceil((size / pix_scale).to(u.pix).value))
-
-        url = self.__geturl(ra=ra, dec=dec, size=pixels, filters=self.filter.name, format='fits')
-
-        return url
+        urls = list()
+        size_pixels = int(np.ceil((size/self.pixel_scale).to(u.pix).value))
+        for skycell in self.get_skycells(position,size):
+            urls.append(f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
+        return urls
 
 
     def get_fits_header_updates(self,header,position,size):
