@@ -28,7 +28,7 @@ from .survey_filters import sanitize_fits_date_fields
 
 from astropy import units as u
 
-import montage_wrapper
+import montage_wrapper as montage
 from astropy.nddata.utils import Cutout2D
 
 from enum import Enum
@@ -327,8 +327,20 @@ class SurveyABC(ABC):
                 with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
                     tmp.write(bytes(c))
 
-            os.listdir(td)
-            montage_wrapper.mosaic(input_dir, output_dir)
+            #os.listdir(td)
+
+            # ok, let's mosaic!
+            #montage.mosaic(input_dir, output_dir, bitpix=-64)
+            montage.mosaic(input_dir, output_dir)
+
+            #fits_metadata_file = f"{output_dir}/metadata.txt"
+            #montage.commands.mImgtbl(input_dir,fits_metadata_file)
+            #
+            #header_template_file = f"{output_dir}/header.fits"
+            #montage.mMakeHdr(fits_metadata_file,header_template_file)
+            #with open(header_template_file,'r') as f:
+            #    header_template = f.read()
+            #self.print("HEADER_TEMPLATE:",header_template)
 
             with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
                 merged = f.read()
@@ -351,7 +363,19 @@ class SurveyABC(ABC):
         ## Now we can print the output from montage
         #self.print(out)
 
-        return merged
+        fits_file = io.BytesIO(merged)
+        hdul = fits.open(fits_file)
+
+        # TODO (Issue #8): Still require investigation... 
+        #      but much better -- I think.
+        mosiacked_header = hdul[0].header
+        wcs_header = WCS(hdul[0].header).to_header()
+        hdul[0].header = wcs_header
+        #if type(self).__name__ == 'PanSTARRS':
+        #    self.print("MOSAICKED:",mosiacked_header)
+        #    self.print("\n\n\n\nWCS:",wcs_header)
+         
+        return hdul
 
 
     def __get_image(self, hdu):
@@ -376,18 +400,16 @@ class SurveyABC(ABC):
                 imgs = [img for img in [self.__get_image(tile) for tile in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
-                tiled_fits_file = io.BytesIO(self.mosaic(imgs))
-                tiled_fits_file.seek(0)
-                hdu = fits.open(tiled_fits_file)[0]
+                hdu = self.mosaic(imgs)[0]
                 for key in hdu.header:
                     if key != 'COMMENT':
                         header_template[key] = hdu.header[key]
                 hdu.header = header_template
-            except montage_wrapper.status.MontageError as e:
-                self.print(f"Mosaicking Failed: {e}: file={sys.stderr}",show_caller=True)
+            except montage.status.MontageError as e:
+                self.print(f"Mosaicking Failed: {e}:",diagnostic_msg=traceback.format_exc(),show_caller=True)
                 self.processing_status = processing_status.error
             except OSError as e:
-                self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
+                self.print(f"Badly formatted FITS file: {e}:",diagnostic_msg=traceback.format_exc(),show_caller=True)
                 self.processing_status = processing_status.error
         elif len(hdul_tiles) == 1:
                 hdu = hdul_tiles[0][0]
