@@ -93,8 +93,16 @@ class SurveyConfig:
                 'size':  self.size_arcmin
             } for x in sources])
 
+
+        #
+        # C O N F I G U R A T I O N   B L O C K
+        #
+
+        # get the configuration block
+        configuration = self.config['configuration']
+
         # set the data output dir
-        data_root = self.__sanitize_path(self.config['configuration']['local_root'])
+        data_root = self.__sanitize_path(configuration['local_root'])
         if bool(re.match('/',data_root)): # absolute path case
            out_dir = data_root
         elif bool(re.match('~/',data_root)): # home path case
@@ -112,14 +120,14 @@ class SurveyConfig:
                 self.__print(f"Created FITS output dir: {out_dir}")
 
         # set the overwrite file parameter
-        if 'overwrite' in self.config['configuration']:
-            self.overwrite = self.config['configuration']['overwrite']
+        if 'overwrite' in configuration:
+            self.overwrite = configuration['overwrite']
         else:
             self.overwrite = False
 
         # set the flush file parameter
-        if 'flush' in self.config['configuration']:
-            self.flush = self.config['configuration']['flush']
+        if 'flush' in configuration:
+            self.flush = configuration['flush']
         else:
             self.flush = False
 
