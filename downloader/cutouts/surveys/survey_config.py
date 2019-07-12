@@ -48,6 +48,10 @@ class SurveyConfig:
         # get cutout dir hierarchy class
         self.local_dirs = LocalCutoutDirs()
 
+        #
+        # T A R G E T   C O N F I G U R A T I O N   B L O C K
+        #
+
         # define supported_surveys
         self.supported_surveys = (
             FIRST.__name__,
@@ -77,7 +81,7 @@ class SurveyConfig:
         self.survey_names = self.__extract_surveys_names(self.survey_block)
 
         # set the cutout size
-        self.size_arcmin = self.config['cutouts']['box_size_armin'] * u.arcmin
+        self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
 
         # set targets
         self.targets = list()
@@ -95,7 +99,7 @@ class SurveyConfig:
 
 
         #
-        # C O N F I G U R A T I O N   B L O C K
+        # E N V I R O N M E N T   C O N F I G U R A T I O N   B L O C K
         #
 
         # get the configuration block
@@ -158,7 +162,7 @@ class SurveyConfig:
         config  = yml.load(open(config_file,'r'))['cutouts']
     
         targets = list()
-        size = config['box_size_armin'] * u.arcmin
+        size = config['box_size_arcmin'] * u.arcmin
         for coord_csv_file in config['ra_dec_deg_csv_files']:
             sources = csv_to_dict(coord_csv_file)
     

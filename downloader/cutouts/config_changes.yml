@@ -5,8 +5,8 @@ cutouts:
         - changes.csv
 
     # Note: box size in csv's overidde this one.
-    #box_size_armin: 11.53
-    box_size_armin: 30.0
+    #box_size_arcmin: 11.53
+    box_size_arcmin: 30.0
     
     surveys:
         - VLASS
