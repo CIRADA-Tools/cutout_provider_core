@@ -151,6 +151,8 @@ class SurveyABC(ABC):
                 msg_str = msg + ("\nHEADER:\n>%s" % "\n>".join(get_header_pretty_string(diagnostic_msg).splitlines()))
             else:
                 msg_str = msg + ("\nTRACEBACK:" if is_traceback else "") + "\n>%s" % "\n> ".join(diagnostic_msg.splitlines())
+        elif isinstance(msg,fits.header.Header):
+            msg_str = "HEADER:\n>%s" % "\n>".join(get_header_pretty_string(msg).splitlines())
         else:
             msg_str = msg
         prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
@@ -416,178 +418,6 @@ class SurveyABC(ABC):
         return img
 
 
-    def header_write(self, hdu, position):
-        def yrmon_to_isot(yrmon):
-            ###converts obs date of form 'yyyymm' to 'yyyy-mm-ddT00:00:00.000'
-            ###allows atropy time to be used
-            yr = yrmon[:4]
-            mon = yrmon[4:6] ###set to assume str len == 6 accounts for some FIRST FITS adding dd at end
-            ##can make more complex later to use dd info, at moment good enough as yyyymm will assume dd==15 T==00:00:00 for MJD
-            isottime = yr+'-'+mon+'-15T00:00:00.000'
-            return(isottime)
-
-        if hdu is None:
-            return None
-
-        head = hdu.header
-        data = hdu.data
-        survey = type(self).__name__
-        a = position.ra.to(u.deg).value
-        d = position.dec.to(u.deg).value
-        #head['DATE-OBS'] = self.standardize_fits_header_DATE_OBS_field(head['DATE-OBS']) if 'DATE-OBS' in head else 'na'
-
-        ###data = cutout image data array
-        ###head = original header from survey image - i.e. preserved old header
-        ###survey =  survey image taken from
-        ###a = target RA - not the image RA from the survey main image, this can be different
-        ###d = target Dec - as RA, target RA/Dec should be obtained from the target input file
-        ##round a, d to 5dp (more than good enough)
-        a, d = np.round(a, 5), np.round(d, 5)
-        
-        ####remove superfluous nesting
-        if data.ndim > 2:
-            data = data[0]
-        
-        #set up pole_longitude
-        if a>90 and a<=270:
-            p_lon = 180.0
-        else:
-            p_lon = 0.0
-
-        ##set up survey specific info
-        if survey == 'PanSTARRS':
-            sdict = {'BAND': ('i-band', 'Filter used in observation'),
-                     'pos_units': 'deg',
-                     'RADESYS': (head['RADESYS'], 'Coordinate system used'),
-                     'DATE-OBS': (Time(head['MJD-OBS'], format='mjd').isot, 'Obs. date')}
-        elif survey == 'WISE':
-                sdict = {'BAND': ('W1', 'Filter used in observation'),
-                         'pos_units': 'deg',
-                         'RADESYS': ('FK5', 'Coordinate system used'),
-                         'DATE-OBS': (head['MIDOBS'], 'Median observation date of stack')}
-        elif survey == 'FIRST':
-            sdict = {'BAND': ('1.4 GHz', 'Frequency of observation'),
-                     'pos_units': 'deg',
-                     'RADESYS': ('FK5', 'Coordinate system used'),
-                     'DATE-OBS': (head['DATE-OBS'], 'Obs. date (yearmonth)'),
-                     'FNAME': (head['FIELDNAM'], 'FIRST coadded image')}
-        elif survey == 'VLASS': # michelle was here!
-            ###complex file name - extract from header info
-            fpartkeys = ['FILNAM01', 'FILNAM02', 'FILNAM03', 'FILNAM04', 'FILNAM05', 'FILNAM06',
-                         'FILNAM07', 'FILNAM08', 'FILNAM09', 'FILNAM10', 'FILNAM11', 'FILNAM12']
-            nameparts = [head[key] for key in fpartkeys]
-            ###create single string - FILNAM12 goes after a constant
-            vfile = nameparts[0]
-            for i in range(len(nameparts)-2):
-                vfile = vfile + '.' + nameparts[i+1]
-            vfile = vfile + '.pbcor.' + nameparts[len(nameparts)-1] + '.subim.fits'
-                             
-            sdict = {'BAND': ('2-4 GHz', 'Frequency coverage of observation'),
-                     'pos_units': head['CUNIT1'],
-                     'RADESYS': (head['RADESYS'], 'Coordinate system used'),
-                     'DATE-OBS': (head['DATE-OBS'], 'Obs. date'),
-                     'STOKES': (head['BTYPE'], 'Stokes polarisation'),
-                     'FNAME': (vfile, 'VLASS image file')}
-        else:
-            sdict = {'BAND': 'na', 'pos_units': 'deg', 'RADESYS': ('FK5', 'assumed'), 'DATE-OBS': 'na'}
-        
-        ###set up naxis len - vlass QL image headers bugger up just extracting this from header
-        #####take from data instead - fixed by YG (12 Jun 2019 - 11:01)
-        xlen = len(data[0])
-        ylen = len(data)
-
-        ### set up main header keys for all surveys
-        ####add in FUNIT (z-axis unit, flux)?
-        hkeys = {'WCSAXES': (2, 'Number of WCS axes'),
-                 'CRVAL1': (a, 'RA at reference pixel'),
-                 'CRVAL2': (d, 'Dec at reference pixel'),
-                 'CRPIX1': (np.round(xlen/2, 1), 'Axis 1 reference pixel'),
-                 'CRPIX2': (np.round(ylen/2, 1), 'Axis 2 reference pixel'),
-                 'CDELT1': (-abs(head['CDELT1']), 'Axis 1 step size per pixel'),
-                 'CDELT2': (head['CDELT2'], 'Axis 2 step size per pixel'),
-                 'CUNIT1': (sdict['pos_units'], 'Unit for CDELT1'),
-                 'CUNIT2': (sdict['pos_units'], 'Unit for CDELT2'),
-                 'CTYPE1': (head['CTYPE1'], 'RA projection'),
-                 'CTYPE2': (head['CTYPE2'], 'Dec projection'),
-                 'LATPOLE': (d, 'Native latitude of celestial pole'),
-                 'LONPOLE': (p_lon, 'Native longitude of celestial pole'),
-                 'RADESYS': sdict['RADESYS'],
-                 'SURVEY': (survey, 'Survey image obtained from'),
-                 'BAND': sdict['BAND'],
-                 'EPOCH': (2000.0, 'Julian epoch of observation'),
-                 'DATE-OBS': sdict['DATE-OBS']}
-
-        keylist = list(hkeys.keys())
-        
-        
-        ##set up new header
-        newhead = fits.PrimaryHDU(data).header
-        
-        ##append main keys+info to header
-        for key in hkeys:
-            newhead[key] = hkeys[key]
-
-        ###add in MJD and radio specific header info
-        if survey == 'FIRST':
-            #newhead['MJD'] = (Time(yrmon_to_isot(newhead['DATE-OBS'])).mjd,
-            #                  'Median MJD of obs month (00:00:00 on 15th)')
-            newhead['MJD'] = (Time(newhead['DATE-OBS']).mjd,
-                              'Median MJD of obs month (00:00:00 on 15th)')
-            ###set up radio specific keys (beamsize etc)
-            radkeys = {'BUNIT': ('Jy/beam', 'Pixel flux unit'),
-                       'BMAJ': (head['BMAJ'], 'Beam major axis [deg]'),
-                       'BMIN': (head['BMIN'], 'Beam minor axis [deg]'),
-                       'BPA': (head['BPA'], 'Beam position angle')}
-            rklist = list(radkeys.keys())
-            ##append to header
-            for key in rklist:
-                newhead[key] = radkeys[key]
-            
-            ##add image filename (original image from survey not cutout)
-            newhead['IMFILE'] = sdict['FNAME']
-
-        elif survey == 'VLASS':
-            newhead['MJD'] = (Time(newhead['DATE-OBS']).mjd, 'MJD of the observation date')
-            
-            ###set up radio specific keys (beamsize etc)
-            radkeys = {'BUNIT': ('Jy/beam', 'Pixel flux unit'),
-                       'BMAJ': (head['BMAJ'], 'Beam major axis [deg]'),
-                       'BMIN': (head['BMIN'], 'Beam minor axis [deg]'),
-                       'BPA': (head['BPA'], 'Beam position angle')}
-            rklist = list(radkeys.keys())
-            ##append to header
-            for key in rklist:
-                newhead[key] = radkeys[key]
-
-            ##include polarisation info
-            newhead['STOKES'] = sdict['STOKES']
-
-            ### add original image filename
-            newhead['IMFILE'] = sdict['FNAME']
-
-        ### PanSTARRS/WISE specifics
-        elif survey == 'PanSTARRS':
-            newhead['STK_TYPE'] = (head['STK_TYPE'], 'PanSTARRS image stack type')
-            newhead['STK_ID'] = (head['STK_ID'], 'PanSTARRS image stack ID')
-            newhead['SKYCELL'] = (head['SKYCELL'], 'PanSTARRS image sky cell')
-            newhead['TESS_ID'] = (head['TESS_ID'], 'PanSTARRS tesselation')
-        
-        ##wise specifics
-        elif survey == 'WISE':
-            newhead['IMFILE'] = (head['COADDID'], 'ATLAS image identifier')
-
-        ## add comments to header
-        newhead['Comment'] = ('This cutout was by the VLASS cross-ID ' +
-                              'working group within the CIRADA project (www.cirada.ca)')
-
-        ##DONE - return new header for use in output cutout fits file
-
-        img = fits.PrimaryHDU(data,header=newhead)
-        mem_file = io.BytesIO()
-        img.writeto(mem_file)
-        return img
-
-
     def format_fits_hdu(self, hdu, position, size):
         if hdu is None:
             return None
@@ -663,18 +493,13 @@ class SurveyABC(ABC):
             tiles   = self.get_tiles(position,size)
             tile    = self.paste_tiles(tiles,position,size)
             trimmed = self.trim_tile(tile,position,size)
-            # TODO (Issue #6): Remove this code, once vetted...
-            # Yjan's code
-            #cutout = self.header_write(trimmed,position)
-            # Integrated code
-            cutout = self.format_fits_hdu(trimmed,position,size)
+            cutout  = self.format_fits_hdu(trimmed,position,size)
             self.processing_status = processing_status.done
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
             self.processing_status = processing_status.error
             cutout = None
 
-        #self.print(f"Finished processing J{self.get_sexadecimal_string(position)} (i.e., {self.get_ra_dec_string(position)}) cutout of size {size}.")
         self.print(f"J{self.get_sexadecimal_string(position)}[{self.get_ra_dec_string(position)} at {size}]: Procssing Status = '{self.processing_status.name}'.")
 
         ## debug -- testing
