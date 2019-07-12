@@ -228,7 +228,7 @@ class SurveyABC(ABC):
 
     # tries to create a fits file from bytes.
     # on fail it returns None
-    def create_fits(self, data, position):
+    def create_fits(self, data):
         # a pretend file in memory
         fits_file = io.BytesIO(data)
         fits_file.seek(0)
@@ -282,17 +282,16 @@ class SurveyABC(ABC):
         return hdul
 
 
-    def get_fits(self, url, position, payload=None):
+    def get_fits(self, url, payload=None):
         self.print(f"Fetching: {url}")
         response = self.__send_request(url, payload)
-        # note that it returns None if the response isn't a valid fits
-        return self.create_fits(response, position)
+        return self.create_fits(response)
 
 
     def get_tiles(self, position, size):
         urls = self.get_tile_urls(position,size)
         if len(urls) > 0:
-            hdul_list = [hdul for hdul in [self.get_fits(url,position) for url in urls] if hdul]
+            hdul_list = [hdul for hdul in [self.get_fits(url) for url in urls] if hdul]
         else:
             self.processing_status = processing_status.none
             return None
