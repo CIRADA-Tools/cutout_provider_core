@@ -366,6 +366,9 @@ class SurveyABC(ABC):
         fits_file = io.BytesIO(merged)
         hdul = fits.open(fits_file)
 
+        # debug
+        #self.print("\n\n\n\nMOSAIKED:",hdul[0].header)
+
         # TODO (Issue #8): Still require investigation... 
         #      but much better -- I think.
         mosiacked_header = hdul[0].header
@@ -374,6 +377,9 @@ class SurveyABC(ABC):
         #if type(self).__name__ == 'PanSTARRS':
         #    self.print("MOSAICKED:",mosiacked_header)
         #    self.print("\n\n\n\nWCS:",wcs_header)
+
+        # debug
+        #self.print("\n\n\n\nWCS'd:",hdul[0].header)
          
         return hdul
 
@@ -382,8 +388,6 @@ class SurveyABC(ABC):
         img_data = np.squeeze(hdu[0].data)
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
-        # TODO (Issue #11): I suspect his can be cleaned up
-        # writing to a pretend file in memory
         mem_file = io.BytesIO()
         img.writeto(mem_file)
         return mem_file.getvalue()
@@ -400,6 +404,10 @@ class SurveyABC(ABC):
                 imgs = [img for img in [self.__get_image(tile) for tile in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
+                # debug
+                #for i,hdul in enumerate(hdul_tiles):
+                #    #self.print(f"HEADER{i}:",WCS(hdul[0].header).to_header())
+                #    self.print(f"HEADER{i}:",hdul[0].header)
                 hdu = self.mosaic(imgs)[0]
                 for key in hdu.header:
                     if key != 'COMMENT':
