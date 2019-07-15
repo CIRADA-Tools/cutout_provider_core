@@ -2,8 +2,9 @@
 cutouts:
     # list of csv files of ra-dec's.
     ra_dec_deg_csv_files:
-        - BAD_image_coords.csv
+        #- BAD_image_coords.csv
         #- panstarrs_debug.csv
+        - panstarrs_debug_5.csv
 
     # Note: box size in csv's overidde this one.
     box_size_arcmin: 3
