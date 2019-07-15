@@ -431,12 +431,9 @@ class SurveyABC(ABC):
     
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
         hdu.header.update(stamp.wcs.to_header())
-        img = fits.PrimaryHDU(stamp.data, header=hdu.header)
+        trimmed = fits.PrimaryHDU(stamp.data, header=hdu.header)
     
-        # writing to a pretend file in memory
-        #mem_file = io.BytesIO()
-        #img.writeto(mem_file)
-        return img
+        return trimmed
 
 
     def format_fits_hdu(self, hdu, position, size):
