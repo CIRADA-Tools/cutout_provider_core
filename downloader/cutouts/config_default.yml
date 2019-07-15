@@ -2,10 +2,10 @@
 cutouts:
     # list of csv files of ra-dec's.
     ra_dec_deg_csv_files:
-        #- BH12_120RA180_minus4DEC16_RC4_targetlist.csv
-        #- BH12_multicomponent_zlt0p05_targetlist2.csv
-        #- targs_for_michelle.csv
-        - panstarrs_debug.csv
+        #- testing/BH12_120RA180_minus4DEC16_RC4_targetlist.csv
+        #- testing/BH12_multicomponent_zlt0p05_targetlist2.csv
+        #- targets_default.csv
+        - testing/panstarrs_debug.csv
 
     # Note: box size in csv's overidde this one.
     box_size_arcmin: 3
@@ -24,7 +24,7 @@ cutouts:
 # Processing output parameters
 configuration:
     # data root relative/absolute path defn
-    local_root: data/out
+    local_root: testing/data/out
 
     # overwrite existing files on download
     overwrite: False
