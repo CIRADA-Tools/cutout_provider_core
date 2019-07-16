@@ -380,7 +380,7 @@ class SurveyABC(ABC):
         #    self.print("\n\n\n\nWCS:",wcs_header)
 
         # debug
-        self.print("\n\n\n\nWCS'd:",hdul[0].header)
+        #self.print("\n\n\n\nWCS'd:",hdul[0].header)
          
         return hdul
 
@@ -388,13 +388,14 @@ class SurveyABC(ABC):
     def __get_image(self, hdu, position, size):
         img_data = np.squeeze(hdu[0].data)
 
+        # we need to center the pixel ref's so as to reduce rotations during mosaicking
         hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
-            'CRVAL1': (position.ra.to(u.deg).value, 'RA at reference pixel'),
-            'CRVAL2': (position.dec.to(u.deg).value, 'Dec at reference pixel')
-        }).update({
-            'CRPIX1': (np.round(len(hdu[0].data[0])/2.0, 1), 'Axis 1 reference pixel'),
-            'CRPIX2': (np.round(len(hdu[0].data)/2.0, 1), 'Axis 2 reference pixel')
+            'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
+            'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
         }).get_header()
+
+        # debug
+        #self.print(WCS(hdu[0].header).to_header())
 
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
@@ -414,16 +415,8 @@ class SurveyABC(ABC):
                 imgs = [img for img in [self.__get_image(tile,position,size) for tile in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
-                # debug
-                for i,hdul in enumerate(hdul_tiles):
-                    self.print(f"HEADER{i}:",WCS(hdul[0].header).to_header())
-                    #self.print(f"HEADER{i}:",hdul[0].header)
                 hdu = self.mosaic(imgs)[0]
-                #for key in hdu.header:
-                #    if key != 'COMMENT':
-                #        header_template[key] = hdu.header[key]
-                #hdu.header = header_template
-                self.print(f"{'*' * 50}")
+                # TODO: This requires vetting
                 new_keys = set([k for k in hdu.header.keys()]+['PC1_1','PC1_2','PC2_1','PC2_2'])
                 old_keys = set([k for k in header_template.keys()])
                 for key in new_keys:
@@ -432,6 +425,14 @@ class SurveyABC(ABC):
                 for key in hdu.header:
                     if key != 'COMMENT':
                         header_template[key] = hdu.header[key]
+                # we need to have the header properly centered for trimming
+                header_template = HeaderFilter(header_template,is_add_wcs=True).update({
+                    'CRVAL1': (position.ra.to(u.deg).value, 'RA at reference pixel'),
+                    'CRVAL2': (position.dec.to(u.deg).value, 'Dec at reference pixel')
+                }).update({ 
+                    'CRPIX1': (np.round(len(hdu.data[0])/2.0,1), 'Axis 1 reference pixel'),
+                    'CRPIX2': (np.round(len(hdu.data)/2.0,1), 'Axis 2 reference pixel')
+                }).get_header()
                 hdu.header = header_template
             except montage.status.MontageError as e:
                 self.print(f"Mosaicking Failed: {e}:",diagnostic_msg=traceback.format_exc(),show_caller=True)
