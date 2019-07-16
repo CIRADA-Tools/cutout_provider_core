@@ -372,6 +372,7 @@ class SurveyABC(ABC):
         # TODO (Issue #8): Still require investigation... 
         #      but much better -- I think.
         mosiacked_header = hdul[0].header
+        #wcs_header = HeaderFilter(hdul[0].header,is_add_wcs=True).get_header()
         wcs_header = WCS(hdul[0].header).to_header()
         hdul[0].header = wcs_header
         #if type(self).__name__ == 'PanSTARRS':
@@ -379,13 +380,22 @@ class SurveyABC(ABC):
         #    self.print("\n\n\n\nWCS:",wcs_header)
 
         # debug
-        #self.print("\n\n\n\nWCS'd:",hdul[0].header)
+        self.print("\n\n\n\nWCS'd:",hdul[0].header)
          
         return hdul
 
 
-    def __get_image(self, hdu):
+    def __get_image(self, hdu, position, size):
         img_data = np.squeeze(hdu[0].data)
+
+        hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
+            'CRVAL1': (position.ra.to(u.deg).value, 'RA at reference pixel'),
+            'CRVAL2': (position.dec.to(u.deg).value, 'Dec at reference pixel')
+        }).update({
+            'CRPIX1': (np.round(len(hdu[0].data[0])/2.0, 1), 'Axis 1 reference pixel'),
+            'CRPIX2': (np.round(len(hdu[0].data)/2.0, 1), 'Axis 2 reference pixel')
+        }).get_header()
+
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
 
         mem_file = io.BytesIO()
@@ -401,14 +411,24 @@ class SurveyABC(ABC):
         if len(hdul_tiles) > 1:
             self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
-                imgs = [img for img in [self.__get_image(tile) for tile in hdul_tiles]]
+                imgs = [img for img in [self.__get_image(tile,position,size) for tile in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
                 # debug
-                #for i,hdul in enumerate(hdul_tiles):
-                #    #self.print(f"HEADER{i}:",WCS(hdul[0].header).to_header())
-                #    self.print(f"HEADER{i}:",hdul[0].header)
+                for i,hdul in enumerate(hdul_tiles):
+                    self.print(f"HEADER{i}:",WCS(hdul[0].header).to_header())
+                    #self.print(f"HEADER{i}:",hdul[0].header)
                 hdu = self.mosaic(imgs)[0]
+                #for key in hdu.header:
+                #    if key != 'COMMENT':
+                #        header_template[key] = hdu.header[key]
+                #hdu.header = header_template
+                self.print(f"{'*' * 50}")
+                new_keys = set([k for k in hdu.header.keys()]+['PC1_1','PC1_2','PC2_1','PC2_2'])
+                old_keys = set([k for k in header_template.keys()])
+                for key in new_keys:
+                    if key in old_keys:
+                        header_template.remove(key)
                 for key in hdu.header:
                     if key != 'COMMENT':
                         header_template[key] = hdu.header[key]
