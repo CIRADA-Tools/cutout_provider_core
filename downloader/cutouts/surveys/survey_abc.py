@@ -389,6 +389,22 @@ class SurveyABC(ABC):
         img_data = np.squeeze(hdu[0].data)
 
         # we need to center the pixel ref's so as to reduce rotations during mosaicking
+        # TODO (Issue #8):
+        #      OK, so the scripette below removes the rotation, 
+        #         PC1_1   =     0.99982071950643 / Coordinate transformation matrix element
+        #         PC1_2   =   -0.018934857951454 / Coordinate transformation matrix element
+        #         PC2_1   =    0.018934857951454 / Coordinate transformation matrix element
+        #         PC2_2   =     0.99982071950643 / Coordinate transformation matrix element
+        #      but leaves a slight skew [1],
+        #         PC1_2   = -2.4492935982947E-16 / Coordinate transformation matrix element
+        #         PC2_1   =  2.4492935982947E-16 / Coordinate transformation matrix element
+        #      for the PanSTARRS case (Ra=181.416667 deg, Dec=49.177778 deg, size=3').
+        #      Investigate...
+        #      --
+        #      [1] Similar skewing was observed to be introduced for the WISE case (Ra=164.811020,
+        #          dec=5.292027, size=3'), which did not have small rotation issues. This should,
+        #          therefore, have very little impact on the other -- non-PanSTARRS --  mosaicking
+        #          cases.
         hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
             'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
             'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
