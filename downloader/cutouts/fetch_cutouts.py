@@ -1,6 +1,7 @@
 # system
 import os
 import sys
+import traceback
 import signal
 
 # thread-salf version of urllib
@@ -115,13 +116,74 @@ def save_cutout(target):
     print(msg)
 
 
+# TODO: deprecated
 # define the default config file with absolute path
 this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
 default_config = this_source_file_dir + 'config_default.yml'
 
+
+@click.group()
+def cli():
+    """\b
+       Survey cutout fetching script.
+       Command help: <command> --help
+    """
+    pass
+
+
+@cli.command()
+@click.argument('config-file')
+def status(
+    config_file
+):
+    """
+       Cutout pipeline status command.\n
+       \b
+       For CONFIG_FILE formating help details see:
+          python fetch_cutouts.py batch-process --help\n
+       \b
+                  /\     
+                 /  \    
+                / _o \   
+               / <(\  \  
+              /   />`A \ 
+             '----------`
+    """
+
+
+@cli.command()
+@click.option('--flush',is_flag=True,default=None,help='flush existing target files')
+@click.argument('config-file')
+def maintenance(
+    config_file,
+    flush
+):
+    """
+       Cutout pipeline maintenance command.
+
+          CONFIG_FILE = yaml configuration file
+
+       \b
+       For CONFIG_FILE formating help details see:
+          python fetch_cutouts.py batch-process --help
+    """
+    if flush:
+        # load the configuration
+        click.echo(f"Using Configuration: {config_file}")
+        try:
+            cfg = SurveyConfig(config_file)
+            cfg.force_flush()
+        except Exception as e:
+            click.echo("ERROR: %s\n> %s" % (e, "\n> ".join(traceback.format_exc().splitlines())))
+    else:
+        click.echo("Please enter option flag/s.")
+
+
+
 # Notes: http://click.palletsprojects.com/en/5.x/options/
-@click.command()
-@click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
+@cli.command()
+#@click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
+@click.argument('config-file')
 @click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
 @click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
 def batch_process(
@@ -129,7 +191,37 @@ def batch_process(
     overwrite,
     flush
 ):
-    """Survey Cutout fetching script (cf., config_default.yml)"""
+    """
+       Batch cutout fetching command.
+
+           CONFIG_FILE = yaml configuration file
+
+       The following is an example of a configuration file.\n
+       \b
+          cutouts:
+              ra_dec_deg_csv_files:
+                  - targets.csv
+              box_size_arcmin: 3
+              surveys:
+                  - VLASS
+                  - WISE:
+                        filters: [w1]
+                  - PanSTARRS:
+                        filters: [g,i]
+          configuration:
+              local_root: testing/data/out
+              overwrite: False
+              flush: True
+
+       where targets.csv must at least have columns of ra and dec, e.g.,\n
+       \b
+          id,RA,DEC
+          6,162.33807373,-0.668059408665
+          107,0.417553782463,1.09196579456
+          191,132.387832642,1.7280052900299998
+          777,176.34243774400002,15.4953451157
+          986,208.63735961900002,28.2433853149
+    """
 
     # load the configuration
     print(f"Using Configuration: {config_file}")
@@ -176,4 +268,5 @@ def batch_process(
 
 
 if __name__ == "__main__":
-    batch_process()
+    #batch_process()
+    cli()

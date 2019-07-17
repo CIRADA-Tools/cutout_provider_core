@@ -48,6 +48,9 @@ class SurveyConfig:
         # get cutout dir hierarchy class
         self.local_dirs = LocalCutoutDirs()
 
+        # file flush utility flag
+        self.is_force_flush = False
+
 
         #
         # S U V E R Y   S E T U P
@@ -180,8 +183,8 @@ class SurveyConfig:
         return targets
 
 
-    def __print(self,string,show_caller=False):
-        if string is None:
+    def __print(self,string,show_caller=False,is_suspend_on_force_flush=False):
+        if string is None or (self.is_force_flush and is_suspend_on_force_flush):
             return
         prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
         prefixed_string = "\n".join([f"{prefix}: {s}" for s in string.splitlines()])
@@ -306,10 +309,10 @@ class SurveyConfig:
         for survey_name in self.get_survey_names():
             if self.has_filters(survey_name):
                 for filter in self.get_supported_filters(survey_name):
-                    self.__print(f"USING_SUVERY_CLASS: {survey_name}(filter={filter})")
+                    self.__print(f"USING_SUVERY_CLASS: {survey_name}(filter={filter})",is_suspend_on_force_flush=True)
                     class_stack.append(f"{survey_name}(filter={filter})")
             else:
-                self.__print(f"USING_SUVERY_CLASS: {survey_name}()")
+                self.__print(f"USING_SUVERY_CLASS: {survey_name}()",is_suspend_on_force_flush=True)
                 class_stack.append(f"{survey_name}()")
         return class_stack 
 
@@ -334,6 +337,22 @@ class SurveyConfig:
         return self.flush
 
 
+    def __set_force_flush(self):
+        self.is_force_flush = True
+
+
+    def __unset_force_flush(self):
+        self.is_force_flush = False
+
+
+    def force_flush(self):
+        self.__print("Flushing...")
+        self.__set_force_flush()
+        self.get_procssing_stack()
+        self.__unset_force_flush()
+        self.__print("[done]")
+
+
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
@@ -345,47 +364,48 @@ class SurveyConfig:
         pid = 0 # task tracking id
         procssing_stack = list()
         for survey_class in survey_classes:
-            #survey_instances = [eval(survey_class) for _ in range(self.no_class_instances_per_survey)]
-            for n, survey_target in enumerate(survey_targets):
-                    #survey_instance = survey_instances[n % self.no_class_instances_per_survey]
-                    survey_instance = eval(survey_class)
+            for survey_target in survey_targets:
+                survey_instance = eval(survey_class)
 
-                    # ra-dec-size cutout target
-                    task = dict(survey_target)
+                # ra-dec-size cutout target
+                task = dict(survey_target)
 
-                    # add survey instance for processing stack
-                    task['survey'] = survey_instance
+                # add survey instance for processing stack
+                task['survey'] = survey_instance
 
-                    # define the fits output filename
-                    coords = survey_instance.get_sexadecimal_string(task['coord'])
-                    size = re.sub(r"\.?0+$","","%f" % task['size'].value)
-                    survey = type(task['survey']).__name__
-                    filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                    task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                # define the fits output filename
+                coords = survey_instance.get_sexadecimal_string(task['coord'])
+                size = re.sub(r"\.?0+$","","%f" % task['size'].value)
+                survey = type(task['survey']).__name__
+                filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
+                task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
 
-                    # set task pid
-                    task['pid'] = pid
+                # just flush the file/s if in flush mode
 
-                    if self.overwrite or self.flush or (not ProcStatus.is_processed(task['filename'])):
-                        # push the task onto the processing stack
-                        procssing_stack.append(task)
+                # set task pid
+                task['pid'] = pid
 
-                        ## set the task id ...
-                        #survey_instance.set_pid(pid)
-                        # increment task pid
-                        pid += 1
+                if self.is_force_flush:
+                    self.__print(ProcStatus.flush(task['filename'],is_all=True))
+                elif self.overwrite or self.flush or (not ProcStatus.is_processed(task['filename'])):
+                    # push the task onto the processing stack
+                    procssing_stack.append(task)
 
-                        # TODO (Issue #13): move the self.flush feature to a seperate method call, so it can be use for maintenance...
-                        if self.overwrite or self.flush:
-                            # flush unreprocessable files
-                            self.__print(ProcStatus.flush(task['filename'],self.flush))
-                    else:
-                        files = ProcStatus.get_file_listing(task['filename'])
-                        self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
+                    ## set the task id ...
+                    #survey_instance.set_pid(pid)
+                    # increment task pid
+                    pid += 1
+
+                    if self.overwrite or self.flush:
+                        # flush unreprocessable files
+                        self.__print(ProcStatus.flush(task['filename'],is_all=self.flush))
+                else:
+                    files = ProcStatus.get_file_listing(task['filename'])
+                    self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
 
         # randomize processing stack to minimize server hits...
         shuffle(procssing_stack)
 
-        self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}")
+        self.__print(f"CUTOUT PROCESSNING STACK SIZE: {pid}",is_suspend_on_force_flush=True)
         return procssing_stack
 
