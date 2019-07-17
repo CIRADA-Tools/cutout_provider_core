@@ -116,10 +116,10 @@ def save_cutout(target):
     print(msg)
 
 
-# TODO: deprecated
+# TODO: May not need this...
 # define the default config file with absolute path
 this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
-default_config = this_source_file_dir + 'config_default.yml'
+default_config = this_source_file_dir + 'config.yml'
 
 
 @click.group()
@@ -130,6 +130,20 @@ def cli():
     """
     pass
 
+@cli.command()
+def fetch(
+):
+    """
+        Command line cutout fetching utility.\n
+       \b
+                  /\     
+                 /  \    
+                / _o \   
+               / <(\  \  
+              /   />`A \ 
+             '----------`
+    """
+    pass
 
 @cli.command()
 @click.argument('config-file')
@@ -182,7 +196,6 @@ def maintenance(
 
 # Notes: http://click.palletsprojects.com/en/5.x/options/
 @cli.command()
-#@click.option('--config-file',default=default_config,help='yaml search parameters configuration file')
 @click.argument('config-file')
 @click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
 @click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
