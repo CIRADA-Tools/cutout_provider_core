@@ -10,6 +10,7 @@ cutouts:
     
     surveys:
         - VLASS
+        #- PanSTARRS: i
 
 # Processing output parameters
 configuration:
