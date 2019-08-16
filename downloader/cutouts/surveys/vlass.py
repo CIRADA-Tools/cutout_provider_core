@@ -30,6 +30,14 @@ class VLASS(SurveyABC):
 
 
     def get_tile_urls(self,position,size):
+        # Notes: upgrade to more robust method using JJ's recipe...
+        #    1) pip install https://github.com/astropy/astroquery/archive/master.zip
+        #    2) results = cadc.query_region(coords,
+        #                 radius=value * u.deg,
+        #                 collection='VLASS')
+        #    3) cadc.get_image_list(query_result, coordinates, radius)
+        # where,
+        #    cadc = astroquery.cadc.Cadc()
         def construct_cadc_url(baseurl, position, radius):
             ICRS_position = position.transform_to('icrs')
             basefile = baseurl.split('pub/')[1].split('?')[0]
