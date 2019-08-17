@@ -105,6 +105,7 @@ class SurveyABC(ABC):
         self.http = None
 
         self.message_buffer = ""
+        self.mosaic_hdul_tiles_stack = list()
 
 
     def __pop_processing_status(self):
@@ -142,9 +143,9 @@ class SurveyABC(ABC):
 
 
     def sprint(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True):
-        my_name    = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
-        my_pid     = "" if self.pid is None else f"pid={self.pid}"
-        my_filter  = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
+        my_name   = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
+        my_pid    = "" if self.pid is None else f"pid={self.pid}"
+        my_filter = (lambda f: "" if f is None else f"filter='{f.name}'")(self.get_filter_setting())
         prefix = f"{my_name}({my_pid}{'' if my_pid=='' or my_filter=='' else ','}{my_filter})"
         if not (diagnostic_msg is None):
             if isinstance(diagnostic_msg,fits.header.Header):
@@ -458,6 +459,7 @@ class SurveyABC(ABC):
                 self.processing_status = processing_status.error
         elif len(hdul_tiles) == 1:
                 hdu = hdul_tiles[0][0]
+        self.mosaic_hdul_tiles_stack = hdul_tiles
         return hdu
 
 
@@ -556,6 +558,12 @@ class SurveyABC(ABC):
         return new_hdu
 
 
+    def __pop_mosaic_hdul_tiles_stack(self):
+        mosaic_hdul_tiles_stack = self.mosaic_hdul_tiles_stack
+        self.mosaic_hdul_tiles_stack = list()
+        return mosaic_hdul_tiles_stack
+
+
     def get_cutout(self, position, size):
         self.processing_status = processing_status.fetching
         try:
@@ -579,9 +587,10 @@ class SurveyABC(ABC):
         #        cutout = None
 
         return {
-            'cutout':  cutout,
-            'message': self.__pop_message_buffer(),
-            'status':  self.__pop_processing_status()
+            'cutout':    cutout,
+            'raw_tiles': self.__pop_mosaic_hdul_tiles_stack(),
+            'message':   self.__pop_message_buffer(),
+            'status':    self.__pop_processing_status()
         }
 
 
