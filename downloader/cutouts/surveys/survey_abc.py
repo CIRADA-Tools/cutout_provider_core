@@ -577,7 +577,7 @@ class SurveyABC(ABC):
             self.processing_status = processing_status.error
             cutout = None
 
-        self.print(f"J{self.get_sexadecimal_string(position)}[{self.get_ra_dec_string(position)} at {size}]: Procssing Status = '{self.processing_status.name}'.")
+        self.print(f"J{self.get_sexadecimal_string(position)}[{self.get_ra_dec_string(position)} at {size}]: Processing Status = '{self.processing_status.name}'.")
 
         ## debug -- testing
         #for n,proc in enumerate(processing_status):
