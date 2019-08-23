@@ -34,7 +34,7 @@ from astropy.nddata.utils import Cutout2D
 from enum import Enum
 class processing_status(Enum):
     idle      = "Waiting for fetching request"
-    none      = "Cutout doesn't exit"
+    none      = "Cutout doesn't exist"
     fetching  = "Cutout fetching and processing"
     corrupted = "Header corrupted"
     error     = "Programming error"
