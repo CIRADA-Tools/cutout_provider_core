@@ -3,6 +3,7 @@
 
 import numpy as np, matplotlib.pyplot as plt, aplpy
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 
 
 ###################################################################
@@ -187,6 +188,20 @@ def aplover(image, contour, levs, colmap='Greys', concols='r'):
     fig.show_contour(contour, levels=levs, colors=concols, linewidths=1.5)
     
     return
+
+
+###extract coordinates from target name (of form Jhhmmss±ddmmss)
+###may need adjusting to be more generic, works with target names we've used
+def coords_from_name(names):
+    ###returns astropy catalogue of coords from list of names of form Jhhmmss±ddmmss
+    names = np.array(names)
+    
+    ra = [name[1:3]+'h'+name[3:5]+'m'+name[5:7]+'s' for name in names]
+    dec = [name[7:10]+'d'+name[10:12]+'m'+name[12:]+'s' for name in names]
+    
+    cat = SkyCoord(ra=ra, dec=dec)
+    
+    return cat
 
 ###################################################################
 ###################################################################
