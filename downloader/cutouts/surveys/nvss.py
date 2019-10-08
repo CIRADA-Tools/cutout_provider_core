@@ -29,6 +29,7 @@ class NVSS(SurveyABC):
         pix_scale = max(max_pix_scale, speculative_pix_scale)
 
         position_components = position.to_string('hmsdms', sep=' ').split(' ')
+        #position_components = position.to_string('hmsdms', precision=2, sep=' ').split(' ')
 
         ra = " ".join(position_components[0: 3])
         dec = " ".join(position_components[3: 6])
@@ -44,6 +45,9 @@ class NVSS(SurveyABC):
             'MAPROJ': 'SIN',
             'Type': 'application/octet-stream'
         }
+
+        self.print(f"({position.ra.to(u.deg).value},{position.dec.to(u.deg).value}) => ({post_values['RA']},{post_values['Dec']})")
+        #self.print(f"URL: {self.pack(url, post_values)}")
 
         return [self.pack(url, post_values)]
 
