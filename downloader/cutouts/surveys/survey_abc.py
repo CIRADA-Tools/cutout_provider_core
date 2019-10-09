@@ -105,6 +105,8 @@ class SurveyABC(ABC):
         self.http = None
 
         self.message_buffer = ""
+
+        self.request_urls_stack = list()
         self.mosaic_hdul_tiles_stack = list()
 
 
@@ -290,9 +292,9 @@ class SurveyABC(ABC):
 
 
     def get_tiles(self, position, size):
-        urls = self.get_tile_urls(position,size)
-        if len(urls) > 0:
-            hdul_list = [hdul for hdul in [self.get_fits(url) for url in urls] if hdul]
+        self.request_urls_stack = self.get_tile_urls(position,size)
+        if len(self.request_urls_stack) > 0:
+            hdul_list = [hdul for hdul in [self.get_fits(url) for url in self.request_urls_stack] if hdul]
         else:
             self.processing_status = processing_status.none
             return None
@@ -558,6 +560,12 @@ class SurveyABC(ABC):
         return new_hdu
 
 
+    def __pop_request_urls_stack(self):
+        request_urls_stack = self.request_urls_stack
+        self.request_urls_stack = list()
+        return request_urls_stack
+
+
     def __pop_mosaic_hdul_tiles_stack(self):
         mosaic_hdul_tiles_stack = self.mosaic_hdul_tiles_stack
         self.mosaic_hdul_tiles_stack = list()
@@ -587,10 +595,11 @@ class SurveyABC(ABC):
         #        cutout = None
 
         return {
-            'cutout':    cutout,
-            'raw_tiles': self.__pop_mosaic_hdul_tiles_stack(),
-            'message':   self.__pop_message_buffer(),
-            'status':    self.__pop_processing_status()
+            'cutout':       cutout,
+            'request_urls': self.__pop_request_urls_stack(),
+            'raw_tiles':    self.__pop_mosaic_hdul_tiles_stack(),
+            'message':      self.__pop_message_buffer(),
+            'status':       self.__pop_processing_status()
         }
 
 
