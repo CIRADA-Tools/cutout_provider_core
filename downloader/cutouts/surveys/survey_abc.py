@@ -97,7 +97,7 @@ class SurveyABC(ABC):
         http_pool_manager = None, # thread safe pool manager (i.e., urllib3)
         pid = None # 4 threads
     ):
-        super().__init__()
+        ABC.__init__(self)
 
         self.processing_status = processing_status.idle
 
