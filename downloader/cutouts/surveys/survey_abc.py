@@ -125,7 +125,8 @@ class SurveyABC(ABC):
         self.http = http_pool_manager
 
 
-    def get_sexadecimal_string(self, position):
+    @staticmethod
+    def get_sexadecimal_string(position):
         sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
         return sexadecimal 
 
