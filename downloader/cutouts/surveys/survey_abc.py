@@ -31,6 +31,11 @@ from astropy import units as u
 import montage_wrapper as montage
 from astropy.nddata.utils import Cutout2D
 
+
+def get_sexadecimal_string(position):
+    sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+    return sexadecimal 
+
 from enum import Enum
 class processing_status(Enum):
     idle      = "Waiting for fetching request"
@@ -125,10 +130,8 @@ class SurveyABC(ABC):
         self.http = http_pool_manager
 
 
-    @staticmethod
-    def get_sexadecimal_string(position):
-        sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-        return sexadecimal 
+    def get_sexadecimal_string(self, position):
+        return get_sexadecimal_string(position) 
 
 
     def get_ra_dec_string(self, position):
@@ -623,4 +626,3 @@ class SurveyABC(ABC):
     @abstractmethod
     def get_fits_header_updates(self,hdu,position,size):
         pass
-

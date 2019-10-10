@@ -20,6 +20,7 @@ import yaml as yml
 
 # processing
 from surveys.survey_abc import processing_status as ProcStatus
+from surveys.survey_abc import get_sexadecimal_string
 
 # astropy libs
 from astropy import units as u
@@ -36,6 +37,12 @@ from surveys.wise      import WISE
 from surveys.sdss      import SDSS
 from surveys.vlass     import VLASS
 from surveys.panstarrs import PanSTARRS
+
+def get_cutout_filename(position,size,survey,filter=None,extension=None):
+    coords = get_sexadecimal_string(position)
+    size   = re.sub(r"\.?0+$","","%f" % size.to(u.arcmin).value)
+    filter = (lambda f: '' if f is None else f"-{f.name}")(filter)
+    return f"J{coords}_s{size}arcmin_{survey}{filter}{'.%s' % extension if not extension is None else ''}"
 
 class SurveyConfig:
     def __init__(self,yml_configuration_file):
@@ -353,6 +360,10 @@ class SurveyConfig:
         self.__print("[done]")
 
 
+    def get_cutout_filename(self, position,size,survey,filter=None,extension=None):
+        return get_cutout_filename(position,size,survey,filter,extension)
+
+
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
@@ -374,11 +385,17 @@ class SurveyConfig:
                 task['survey'] = survey_instance
 
                 # define the fits output filename
-                coords = survey_instance.get_sexadecimal_string(task['coord'])
-                size = re.sub(r"\.?0+$","","%f" % task['size'].value)
+                #coords = survey_instance.get_sexadecimal_string(task['coord'])
+                #size = re.sub(r"\.?0+$","","%f" % task['size'].value)
+                #survey = type(task['survey']).__name__
+                #filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
+                #task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                coords = task['coord']
+                size   = task['size']
                 survey = type(task['survey']).__name__
-                filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
+                filter = survey_instance.get_filter_setting()
+                path = self.out_dirs[survey]
+                task['filename'] = f"{path}{self.get_cutout_filename(coords,size,survey,filter,'fits')}"
 
                 # just flush the file/s if in flush mode
 

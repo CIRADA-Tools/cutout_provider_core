@@ -1,5 +1,7 @@
 # abstract base class components
 from .survey_abc import processing_status
+from .survey_abc import get_sexadecimal_string
+from .survey_config import get_sexadecimal_string
 
 # support surveys
 from .first     import FIRST
@@ -9,7 +11,3 @@ from .sdss      import SDSS
 from .vlass     import VLASS
 from .wise      import WISE
 
-# ancillary functions 
-def get_sexadecimal_string(position): 
-    from .survey_abc import SurveyABC
-    return SurveyABC.get_sexadecimal_string(position)
