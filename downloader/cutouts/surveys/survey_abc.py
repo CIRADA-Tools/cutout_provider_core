@@ -566,15 +566,11 @@ class SurveyABC(ABC):
         #    'EPOCH': (2000.0, 'Julian epoch of observation')
         #}, is_overwrite_existing=False)
 
-        #hdf.update({
-        #    'COMMENT': ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
-        #})
-
         # add survey dependent stuff...
         #hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
         header_updates = self.get_fits_header_updates(hdf.get_header(),position,size)
         if 'COMMENT' in header_updates:
-            comment_updates = header_updates['COMMENT']
+            comment_updates = re.sub(r"\s*$"," ",header_updates['COMMENT'])
             del header_updates['COMMENT']
         else:
             comment_updates = ""
@@ -589,7 +585,7 @@ class SurveyABC(ABC):
 
         # add custom comments
         #new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
-        comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)'
+        comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA project (www.cirada.ca)'
         new_hdu.header['COMMENT'] = (comment_updates)
 
         # TODO (Isssue #4): This is a kludge, for now, so as to make
