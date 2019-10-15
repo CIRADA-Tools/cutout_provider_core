@@ -110,9 +110,13 @@ class SurveyABC(ABC):
         self.http = None
 
         self.message_buffer = ""
+        self.print_to_stdout = True
 
         self.request_urls_stack = list()
         self.mosaic_hdul_tiles_stack = list()
+
+        self.http_request_retries = 5
+        self.http_wait_retry_s = 25
 
 
     def __pop_processing_status(self):
@@ -126,8 +130,19 @@ class SurveyABC(ABC):
         return self
 
 
+    def set_http_request_retries(self,retries):
+        self.http_request_retries = retries
+        return self
+
+
+    def set_http_wait_retry_s(self,wait_seconds):
+        self.http_wait_retry_s = wait_seconds
+        return self
+
+
     def attach_http_pool_manager(self,http_pool_manager):
         self.http = http_pool_manager
+        return self
 
 
     def get_sexadecimal_string(self, position):
@@ -168,8 +183,21 @@ class SurveyABC(ABC):
         return prefixed_output
 
 
+    def set_print_to_stdout(self):
+        self.print_to_stdout = True
+        return self
+
+
+    def unset_print_to_stdout(self):
+        self.print_to_stdout = False
+        return self
+
+
     def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True):
-        print(self.sprint(**{key: value for key, value in locals().items() if key not in 'self'}))
+        #print(self.sprint(**{key: value for key, value in locals().items() if key not in 'self'}))
+        message = self.sprint(**{key: value for key, value in locals().items() if key not in 'self'})
+        if self.print_to_stdout:
+            print(message)
 
 
     def pack(self, url, payload=None):
@@ -187,7 +215,8 @@ class SurveyABC(ABC):
     # get data over http post
     def __send_request(self, url, payload=None):
 
-        potential_retries = 5
+        #potential_retries = 5
+        potential_retries = self.http_request_retries
 
         request = self.pack(url,payload)
 
@@ -215,9 +244,11 @@ class SurveyABC(ABC):
                     self.print(f"{e}",is_traceback=True)
 
             # TODO (Issue #11): clean this up, as well as, retries, for configuration...
-            duration_s = 60 if self.http else 25
-            self.print(f"Taking a {duration_s}s nap...")
-            sleep(duration_s)
+            #duration_s = 60 if self.http else 25
+            #self.print(f"Taking a {duration_s}s nap...")
+            #sleep(duration_s)
+            self.print(f"Taking a {self.http_wait_retry_s}s nap...")
+            sleep(self.http_wait_retry_s)
             self.print("OK, lest trying fetching the cutout -- again!")
 
             potential_retries -= 1
@@ -540,7 +571,14 @@ class SurveyABC(ABC):
         #})
 
         # add survey dependent stuff...
-        hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
+        #hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
+        header_updates = self.get_fits_header_updates(hdf.get_header(),position,size)
+        if 'COMMENT' in header_updates:
+            comment_updates = header_updates['COMMENT']
+            del header_updates['COMMENT']
+        else:
+            comment_updates = ""
+        hdf.update(header_updates)
 
         # set up new hdu
         ordered_keys   = hdf.get_saved_keys()
@@ -550,7 +588,9 @@ class SurveyABC(ABC):
             new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
 
         # add custom comments
-        new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
+        #new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
+        comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)'
+        new_hdu.header['COMMENT'] = (comment_updates)
 
         # TODO (Isssue #4): This is a kludge, for now, so as to make
         #       the claRAN machine learning code not bail.

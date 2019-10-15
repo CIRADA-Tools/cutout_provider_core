@@ -90,6 +90,12 @@ class VLASS(SurveyABC):
             'STOKES': (header['BTYPE'], 'Stokes polarisation'),
             # TODO (Issue #6): Tiling issue and based on quick-look images -- I think...
             'IMFILE': (vfile, 'VLASS image file'),
+            'COMMENT': "Quick Look images do not fully sample the PSF, and are cleaned to a threshold " \
+                       " of ~5 sigma (details can be found in the weblogs for individual images). " \
+                       "They are used for Quality Assurance and for transient searches, but should not " \
+                       "be used for any other purpose. In addition to imaging artifacts, source " \
+                       "positions can be off by up to 1-arcsec, and the flux density uncertainties " \
+                       "are ~10-20%.",
         }
         return header_updates
 
