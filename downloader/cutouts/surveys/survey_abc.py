@@ -569,7 +569,7 @@ class SurveyABC(ABC):
         # add survey dependent stuff...
         #hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
         header_updates = self.get_fits_header_updates(hdf.get_header(),position,size)
-        if 'COMMENT' in header_updates:
+        if not header_updates is None and 'COMMENT' in header_updates:
             comment_updates = re.sub(r"\s*$"," ",header_updates['COMMENT'])
             del header_updates['COMMENT']
         else:
