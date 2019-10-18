@@ -42,8 +42,8 @@ class VLASS(SurveyABC):
             ICRS_position = position.transform_to('icrs')
             basefile = baseurl.split('pub/')[1].split('?')[0]
             if (basefile[-10:] == 'subim.fits' and basefile[:6] == 'VLASS/'):
-                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:' 
-                       + urllib.parse.quote(basefile) 
+                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:'
+                       + urllib.parse.quote(basefile)
                        + ('&cutout=Circle+ICRS+{}+{}+{}').format(ICRS_position.ra.degree,
                                                                  ICRS_position.dec.degree,
                                                                  radius.to(u.degree).value))
@@ -52,7 +52,7 @@ class VLASS(SurveyABC):
                 self.print('CADC URL appears to be incorrect: {}'.format(basefile))
                 return None
         cadc = Cadc()
-        radius = size/np.sqrt(2.0)
+        radius = size/2.0
         metadata = cadc.query_region(
             coordinates = position,
             radius      = radius.to(u.deg).value,
@@ -98,4 +98,3 @@ class VLASS(SurveyABC):
                        "are ~10-20%.",
         }
         return header_updates
-

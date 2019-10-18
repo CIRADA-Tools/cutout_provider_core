@@ -34,7 +34,7 @@ from astropy.nddata.utils import Cutout2D
 
 def get_sexadecimal_string(position):
     sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-    return sexadecimal 
+    return sexadecimal
 
 from enum import Enum
 class processing_status(Enum):
@@ -88,7 +88,7 @@ class processing_status(Enum):
     @classmethod
     def flush(self,filename,is_all=False):
         msgs = list()
-        for file in ([filename] if is_all else [])+self.__get_unreprocessable_file_names(filename): 
+        for file in ([filename] if is_all else [])+self.__get_unreprocessable_file_names(filename):
             if os.path.exists(file):
                 msgs.append(f"Flushed: {file}")
                 os.remove(file)
@@ -146,7 +146,7 @@ class SurveyABC(ABC):
 
 
     def get_sexadecimal_string(self, position):
-        return get_sexadecimal_string(position) 
+        return get_sexadecimal_string(position)
 
 
     def get_ra_dec_string(self, position):
@@ -213,7 +213,7 @@ class SurveyABC(ABC):
 
 
     # get data over http post
-    def __send_request(self, url, payload=None):
+    def send_request(self, url, payload=None):
 
         #potential_retries = 5
         potential_retries = self.http_request_retries
@@ -260,7 +260,7 @@ class SurveyABC(ABC):
 
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf., 'https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html'.
-        return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",sanitize_fits_date_fields(date_obs_value)) 
+        return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",sanitize_fits_date_fields(date_obs_value))
         # TODO (Issue #6): consider replacing above with and replacing sanitize_fits_date_fields in this code with this (standardize_fits_header_DATE_and_DATE_OBS_fields)
         #return sanitize_fits_date_fields(date_obs_value)
 
@@ -316,13 +316,13 @@ class SurveyABC(ABC):
             if key in hdul[0].header:
                 hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
                 hdul[0].header.remove(key)
-    
+
         return hdul
 
 
     def get_fits(self, url, payload=None):
         self.print(f"Fetching: {url}")
-        response = self.__send_request(url, payload)
+        response = self.send_request(url, payload)
         return self.create_fits(response)
 
 
@@ -407,7 +407,7 @@ class SurveyABC(ABC):
         # debug
         #self.print("\n\n\n\nMOSAIKED:",hdul[0].header)
 
-        # TODO (Issue #8): Still require investigation... 
+        # TODO (Issue #8): Still require investigation...
         #      but much better -- I think.
         mosiacked_header = hdul[0].header
         #wcs_header = HeaderFilter(hdul[0].header,is_add_wcs=True).get_header()
@@ -419,16 +419,16 @@ class SurveyABC(ABC):
 
         # debug
         #self.print("\n\n\n\nWCS'd:",hdul[0].header)
-         
+
         return hdul
 
 
-    def __get_image(self, hdu, position, size):
-        img_data = np.squeeze(hdu[0].data)
-
+    def get_image(self, hdu):
+        #img_data = np.squeeze(hdu[0].data)
+        img_data = hdu[0].data
         # we need to center the pixel ref's so as to reduce rotations during mosaicking
         # TODO (Issue #8):
-        #      OK, so the scripette below removes the rotation, 
+        #      OK, so the scripette below removes the rotation,
         #         PC1_1   =     0.99982071950643 / Coordinate transformation matrix element
         #         PC1_2   =   -0.018934857951454 / Coordinate transformation matrix element
         #         PC2_1   =    0.018934857951454 / Coordinate transformation matrix element
@@ -443,10 +443,11 @@ class SurveyABC(ABC):
         #          dec=5.292027, size=3'), which did not have small rotation issues. This should,
         #          therefore, have very little impact on the other -- non-PanSTARRS --  mosaicking
         #          cases.
-        hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
-            'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
-            'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
-        }).get_header()
+        
+        # hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
+        #     'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
+        #     'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
+        # }).get_header()
 
         # debug
         #self.print(WCS(hdu[0].header).to_header())
@@ -455,10 +456,11 @@ class SurveyABC(ABC):
 
         mem_file = io.BytesIO()
         img.writeto(mem_file)
+        mem_file.seek(0)
         return mem_file.getvalue()
 
 
-    def paste_tiles(self, hdul_tiles, position, size):
+    def paste_tiles(self, hdul_tiles, position):
         if hdul_tiles is None:
             return None
 
@@ -466,7 +468,7 @@ class SurveyABC(ABC):
         if len(hdul_tiles) > 1:
             self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
-                imgs = [img for img in [self.__get_image(tile,position,size) for tile in hdul_tiles]]
+                imgs = [img for img in [self.get_image(tile) for tile in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
                 hdu = self.mosaic(imgs)[0]
@@ -483,7 +485,7 @@ class SurveyABC(ABC):
                 header_template = HeaderFilter(header_template,is_add_wcs=True).update({
                     'CRVAL1': (position.ra.to(u.deg).value, 'RA at reference pixel'),
                     'CRVAL2': (position.dec.to(u.deg).value, 'Dec at reference pixel')
-                }).update({ 
+                }).update({
                     'CRPIX1': (np.round(len(hdu.data[0])/2.0,1), 'Axis 1 reference pixel'),
                     'CRPIX2': (np.round(len(hdu.data)/2.0,1), 'Axis 2 reference pixel')
                 }).get_header()
@@ -503,20 +505,20 @@ class SurveyABC(ABC):
     def trim_tile(self, hdu, position, size):
         if hdu is None:
             return None
-    
+
         w = WCS(hdu.header)
-    
+
         # trim to 2d from nd
         naxis = w.naxis
         while naxis > 2:
             w = w.dropaxis(2)
             naxis -= 1
         img_data = np.squeeze(hdu.data)
-    
+
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
         hdu.header.update(stamp.wcs.to_header())
         trimmed = fits.PrimaryHDU(stamp.data, header=hdu.header)
-    
+
         return trimmed
 
 
