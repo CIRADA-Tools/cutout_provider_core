@@ -424,7 +424,7 @@ class SurveyABC(ABC):
 
 
     def get_image(self, hdu):
-        #img_data = np.squeeze(hdu[0].data)
+        img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
         img_data = hdu[0].data
         # we need to center the pixel ref's so as to reduce rotations during mosaicking
         # TODO (Issue #8):
@@ -443,7 +443,8 @@ class SurveyABC(ABC):
         #          dec=5.292027, size=3'), which did not have small rotation issues. This should,
         #          therefore, have very little impact on the other -- non-PanSTARRS --  mosaicking
         #          cases.
-        
+
+        # commenting these lines fixed Mosaick issue in webserver
         # hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
         #     'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
         #     'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
@@ -496,7 +497,7 @@ class SurveyABC(ABC):
             except OSError as e:
                 self.print(f"Badly formatted FITS file: {e}:",diagnostic_msg=traceback.format_exc(),show_caller=True)
                 self.processing_status = processing_status.error
-        elif len(hdul_tiles) == 1:
+        elif len(hdul_tiles) == 1: # this shouldn't ever happen with webserver code
                 hdu = hdul_tiles[0][0]
         self.mosaic_hdul_tiles_stack = hdul_tiles
         return hdu
