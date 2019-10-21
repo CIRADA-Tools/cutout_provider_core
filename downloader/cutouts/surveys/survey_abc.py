@@ -424,7 +424,7 @@ class SurveyABC(ABC):
 
 
     def get_image(self, hdu):
-        img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
+        # img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
         img_data = hdu[0].data
         # we need to center the pixel ref's so as to reduce rotations during mosaicking
         # TODO (Issue #8):
