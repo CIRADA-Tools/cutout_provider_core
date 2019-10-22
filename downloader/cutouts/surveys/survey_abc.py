@@ -116,7 +116,7 @@ class SurveyABC(ABC):
         self.mosaic_hdul_tiles_stack = list()
 
         self.http_request_retries = 5
-        self.http_wait_retry_s = 25
+        self.http_wait_retry_s = 5
 
 
     def __pop_processing_status(self):
@@ -619,7 +619,7 @@ class SurveyABC(ABC):
         self.processing_status = processing_status.fetching
         try:
             tiles   = self.get_tiles(position,size)
-            tile    = self.paste_tiles(tiles,position,size)
+            tile    = self.paste_tiles(tiles,position)
             trimmed = self.trim_tile(tile,position,size)
             cutout  = self.format_fits_hdu(trimmed,position,size)
             self.processing_status = processing_status.done

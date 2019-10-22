@@ -53,6 +53,7 @@ class VLASS(SurveyABC):
                 return None
         cadc = Cadc()
         radius = size/2.0
+        print("radius", radius)
         metadata = cadc.query_region(
             coordinates = position,
             radius      = radius.to(u.deg).value,
