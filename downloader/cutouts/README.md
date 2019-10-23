@@ -32,9 +32,10 @@ Grabbing cutouts from various surveys
 
 ### How to run
 
-From the shell:
-
-`python3 fetch_cutouts.py`
+Batch Processing from the shell:  
+1) edit `config.yml` to include the name of the batch script with positions and which surveys to query for    
+2) on the command line from the location of this README run:    
+`python3 fetch_cutouts.py batch_process config.yml`     
 
 This will fill `data/out` with the FITS files
 
