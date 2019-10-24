@@ -533,9 +533,9 @@ class SurveyABC(ABC):
             'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(hdf.get_header()['DATE-OBS'])
         })
 
-        # TODO: Need a cleaner way of centerng on the image, because NVSS truncates result to size of field,
+        # TODO (Issue #22): Need a cleaner way of centerng on the image, because NVSS truncates result to size of field,
         #       voiding the calculation below; however, it comes centered -- I think.
-        #       OK it appears to be a rounding error: calc below gives (x,y)_pixels = (6,6)
+        # TODO: (Issue #23): OK it appears to be a rounding error: calc below gives (x,y)_pixels = (6,6)
         #                                             NVSS server gives (x,y)_pixels = (7,7)
         #                                             @ J085542+112459_s3arcmin_NVSS.fits
         #                                             size is OK...
