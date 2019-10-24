@@ -27,7 +27,7 @@ class NVSS(SurveyABC):
 
         # this could
         speculative_pix_scale = (size / max_image_pixels).to(u.arcsec / u.pix)
-        # TODO: NVSS has a maxium practical size, for the most minimum pix_scale at 15"/pix, so we should mosaick 
+        # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pix_scale at 15"/pix, so we should mosaick 
         #       if speculative_pix_scale > max_pix_scale... if we want to keep the highest resolution.
         pix_scale = max(max_pix_scale, speculative_pix_scale)
 
