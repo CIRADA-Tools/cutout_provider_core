@@ -19,13 +19,16 @@ class NVSS(SurveyABC):
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
 
         # images can't be bigger than this
-        max_image_pixels = 510 * u.pix
+        #max_image_pixels = 510 * u.pix
+        max_image_pixels = 512 * u.pix
         # this is as low a resolution (higher scales being lower resolution) as you can get
         # without losing any info
         max_pix_scale = 15 * (u.arcsec/u.pix)
 
         # this could
         speculative_pix_scale = (size / max_image_pixels).to(u.arcsec / u.pix)
+        # TODO: NVSS has a maxium practical size, for the most minimum pix_scale at 15"/pix, so we should mosaick 
+        #       if speculative_pix_scale > max_pix_scale... if we want to keep the highest resolution.
         pix_scale = max(max_pix_scale, speculative_pix_scale)
 
         position_components = position.to_string('hmsdms', sep=' ').split(' ')
