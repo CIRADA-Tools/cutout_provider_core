@@ -595,7 +595,7 @@ class SurveyABC(ABC):
         comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA project (www.cirada.ca)'
         new_hdu.header['COMMENT'] = (comment_updates)
 
-        # TODO (Isssue #4): This is a kludge, for now, so as to make
+        # TODO (Issue #4): This is a kludge, for now, so as to make
         #       the claRAN machine learning code not bail.
         for field in ['LATPOLE','LONPOLE']:
             if field in new_hdu.header:
