@@ -1,3 +1,4 @@
+from math import log10, floor
 from astropy import units as u
 
 from .survey_abc import SurveyABC
@@ -16,25 +17,38 @@ class NVSS(SurveyABC):
 
 
     def get_tile_urls(self,position,size):
+        def round_sig(x, sig=3):
+            """Rounds x to nearest sigificant figure, sig > 2."""
+            if sig < 3:
+               # NB: Code bails otherwise, probably to do with min_pixel_scale sig figs.
+               sig = 3
+            return round(x.value,sig-int(floor(log10(abs(x.value))))-1)*x.unit
+
+        # base url
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
 
         # images can't be bigger than this
         #max_image_pixels = 510 * u.pix
         max_image_pixels = 512 * u.pix
-        # this is as low a resolution (higher scales being lower resolution) as you can get
-        # without losing any info
-        max_pix_scale = 15 * (u.arcsec/u.pix)
 
-        # this could
-        speculative_pix_scale = (size / max_image_pixels).to(u.arcsec / u.pix)
-        # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pix_scale at 15"/pix, so we should mosaick 
-        #       if speculative_pix_scale > max_pix_scale... if we want to keep the highest resolution.
-        pix_scale = max(max_pix_scale, speculative_pix_scale)
+        # max pixel scale without information lose
+        max_pixel_scale = 15*u.arcsec/u.pix
 
+        # min allow pixel scale
+        min_pixel_scale = 0.001*u.arcsec/u.pix
+
+        # calculate/desire pixel scale
+        desired_pixel_scale = round_sig((size/max_image_pixels).to(u.arcsec/u.pix),4)
+
+        # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pixel_scale at 15"/pix, so we should mosaick 
+        #       if desired_pixel_scale > max_pixel_scale... if we want to keep the highest resolution.
+        #pixel_scale = max(max_pixel_scale, desired_pixel_scale)
+        pixel_scale = min(max_pixel_scale,max(desired_pixel_scale,min_pixel_scale))
+
+        # convert position to url query string
         position_components = position.to_string('hmsdms', sep=' ').split(' ')
         #position_components = position.to_string('hmsdms', precision=2, sep=' ').split(' ')
-
-        ra = " ".join(position_components[0: 3])
+        ra  = " ".join(position_components[0: 3])
         dec = " ".join(position_components[3: 6])
 
         # what data to send in POST request
@@ -44,7 +58,7 @@ class NVSS(SurveyABC):
             'RA': ra,
             'Dec': dec,
             'Size': '{0:.5f} {0:.5f}'.format(size.to(u.deg).value),
-            'Cells': '{0:.5f} {0:.5f}'.format(pix_scale.value),  # pixel size in arc seconds
+            'Cells': '{0:.5f} {0:.5f}'.format(pixel_scale.value),  # pixel size in arc seconds
             'MAPROJ': 'SIN',
             'Type': 'application/octet-stream'
         }
