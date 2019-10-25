@@ -19,10 +19,7 @@ class NVSS(SurveyABC):
     def get_tile_urls(self,position,size):
         def round_sig(x, sig=3):
             """Rounds x to nearest sigificant figure, sig > 2."""
-            if sig < 3:
-               # NB: Code bails otherwise, probably to do with min_pixel_scale sig figs.
-               sig = 3
-            return round(x.value,sig-int(floor(log10(abs(x.value))))-1)*x.unit
+            return round(x.value,(sig if sig > 2 else 3)-int(floor(log10(abs(x.value))))-1)*x.unit
 
         # base url
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
