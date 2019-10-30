@@ -1,0 +1,24 @@
+from astroquery.cadc import Cadc 
+
+cadc = Cadc()
+
+In [43]: metadata = cadc.query_region(coord,radius=1,collection="VLASS")                                                                                                                                                                
+
+In [44]: urls=cadc.get_data_urls(metadata)                                                                                                                                                                                              
+
+In [45]: urls                                                                                                                                                                                                                           
+Out[45]: 
+['https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J105402+043000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=w17w792w8xql42ls',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J105403+053000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=kfavzx6vmd8aoq8b',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J105802+043000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=m58w3weswg6auzz5',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J105804+053000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=s2x40047sy45im2a',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J105805+063000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=prqcq7pavkkx0ay2',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J110203+043000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=tourfebtrknugjl9',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J110205+053000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=hj4ssd6itc27uhwi',
+ 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/VLASS/VLASS1.1.ql.T12t17.J110207+063000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits?RUNID=ahpbw4uxwlvmmjq5']
+
+In [46]:
+
+============
+2.5 arcmin radius:
+metadata = cadc.query_region(coord,radius=0.041666666666666664,collection="VLASS") 

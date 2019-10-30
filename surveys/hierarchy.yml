@@ -1,0 +1,35 @@
+root:
+   remote: vos:cirada/continuum/dps_repo/survey_data
+   local: survey_data
+hierarchy:
+   radio:
+      first:
+      lotss:
+      nvss:
+      vlass:
+   ir:
+      akari:
+      wise:
+   optical:
+      boss:
+      panstarrs:
+      sdss:
+   uv:
+      galex:
+   xray:
+      3xmmrlqso:
+      rass:
+   gray:
+      fermilat:
+      hess:
+data_subdir:
+    # NB: Please do not change this name.
+    #     It's added to .gitignore files
+    #     to keep large data files out
+    #     of repos.
+    data
+catagories:
+   catalogues:
+       sub_dir: 'catalogues'
+   cutouts:
+       sub_dir: 'cutouts'
