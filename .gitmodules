@@ -1,0 +1,3 @@
+[submodule "downloader/cutouts/cutout_core_libs"]
+	path = downloader/cutouts/cutout_core_libs
+	url = git@orbit.dunlap.utoronto.ca:michelle.boyce/cutout_core_libs.git

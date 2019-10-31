@@ -536,6 +536,8 @@ class SurveyABC(ABC):
             'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(hdf.get_header()['DATE-OBS'])
         })
 
+        # TODO (Issue #22): Need a cleaner way of centerng on the image, because NVSS truncates result to size of field,
+        #       voiding the calculation below; however, it comes centered -- I think.
         # set (ra,dec) tile center ... rounded to 5dp -- more than good enough
         ra  = np.round(position.ra.to(u.deg).value,5)
         dec = np.round(position.dec.to(u.deg).value,5)
@@ -551,6 +553,7 @@ class SurveyABC(ABC):
             'CRPIX1': (np.round(x_pixels/2.0, 1), 'Axis 1 reference pixel'),
             'CRPIX2': (np.round(y_pixels/2.0, 1), 'Axis 2 reference pixel')
         })
+
 
         # set survey name
         survey = type(self).__name__
@@ -591,7 +594,7 @@ class SurveyABC(ABC):
         comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA project (www.cirada.ca)'
         new_hdu.header['COMMENT'] = (comment_updates)
 
-        # TODO (Isssue #4): This is a kludge, for now, so as to make
+        # TODO (Issue #4): This is a kludge, for now, so as to make
         #       the claRAN machine learning code not bail.
         for field in ['LATPOLE','LONPOLE']:
             if field in new_hdu.header:
