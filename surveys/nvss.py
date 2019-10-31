@@ -37,7 +37,7 @@ class NVSS(SurveyABC):
         # calculate/desire pixel scale
         desired_pixel_scale = round_sig((size/max_image_pixels).to(u.arcsec/u.pix),4)
 
-        # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pixel_scale at 15"/pix, so we should mosaick 
+        # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pixel_scale at 15"/pix, so we should mosaick
         #       if desired_pixel_scale > max_pixel_scale... if we want to keep the highest resolution.
         #pixel_scale = max(max_pixel_scale, desired_pixel_scale)
         pixel_scale = min(max_pixel_scale,max(desired_pixel_scale,min_pixel_scale))
@@ -68,4 +68,3 @@ class NVSS(SurveyABC):
 
     def get_fits_header_updates(self,header,position,size):
         return None
-
