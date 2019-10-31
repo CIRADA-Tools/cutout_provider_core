@@ -1,6 +1,6 @@
 ## This Cutout Core repository based on common utilities and functionality forked from http://orbit.dunlap.utoronto.ca/michelle.boyce/Continuum_common
 
-### Applications currently accessing this Common Core cutout code include:    
+### Applications currently using this common Core Cutout code include:    
 - a Command Line Interface with instructions included below      
 - a public web service found at http://206.12.91.186/  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
 
