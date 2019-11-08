@@ -40,6 +40,4 @@ class SDSS(SurveyABC):
 
 
     def get_fits_header_updates(self,header,position,size):
-        # TOTDO: replace below with "return None"
-        return header
-
+        return None

@@ -98,10 +98,89 @@ class processing_status(Enum):
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
+    """
+                      /\
+                     /  \
+                    / _o \
+                   / <(\  \
+                  /   />`A \
+                 '----------`
+                  Commenting
+              Under Construction
+
+        The following is a list of the class methods grouped by function.
+
+            # class instance tracking number
+            set_pid(pid)
+
+            # http request settings
+            set_http_request_retries(retries)
+            set_http_wait_retry_s(wait_seconds)
+
+            # for attatching http buffer pool manager (re., urllib3) -- default: urllib
+            attach_http_pool_manager(http_pool_manager)
+
+            # ra-dec output formating string
+            get_sexadecimal_string(position)
+            get_ra_dec_string(position)
+
+            # std out printing function
+            sprint(msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True)
+            print(msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True)
+            set_print_to_stdout()
+            unset_print_to_stdout()
+
+            # cutout fetching and processing stack
+            pack(url, payload=None)
+            standardize_fits_header_DATE_and_DATE_OBS_fields(date_obs_value)
+            create_fits(data)
+            get_fits(url, payload=None)
+            get_tiles(position, size)
+            mosaic(cutouts)
+            paste_tiles(hdul_tiles, position, size)
+            trim_tile(hdu, position, size)
+            format_fits_hdu(hdu, position, size)
+
+            # main cutout fetching rounting
+            get_cutout(position, size)
+
+            # abstract base class functions required by survey/child classes
+            get_supported_filters()
+            get_filter_setting(self)
+            get_tile_urls(self,position,size)
+            get_fits_header_updates(self,hdu,position,size)
+
+        The main routine is get_cutout(position, size) which triggers the whole cutout
+            o Fetching
+            o Mosaicking
+            o Trimming
+            o Header Formating
+        processing stack. The routine returns the following information.
+
+               --------------------------------------
+               | Dict Element | Contents            |
+               |______________|_____________________|
+               | cutout       | Processed Cutout    |
+               | request_urls | Request URLS        |
+               | raw_tiles    | Unprocessed Cutouts |
+               | message      | Diagnotics Message  |
+               | status       | Processing Status   |
+               --------------------------------------
+
+
+                      /\
+                     /  \
+                    / _o \
+                   / <(\  \
+                  /   />`A \
+                 '----------`
+                  Commenting
+              Under Construction
+    """
     def __init__(self,
         http_pool_manager = None, # thread safe pool manager (i.e., urllib3)
         pid = None # 4 threads
-    ):
+        ):
         ABC.__init__(self)
 
         self.processing_status = processing_status.idle

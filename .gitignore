@@ -8,3 +8,6 @@ data
 *.jnk
 *.tmp
 *.log
+*.DS_Store
+*.pyc
+__pycache__
