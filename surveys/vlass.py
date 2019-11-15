@@ -67,7 +67,7 @@ class VLASS(SurveyABC):
         return urls
 
 
-    def get_fits_header_updates(self,header):
+    def get_fits_header_updates(self,header, all_headers=None):
         ###complex file name - extract from header info
         fpartkeys = [f'FILNAM{i+1:02}' for i in range(12)]
         nameparts = [header[key] for key in fpartkeys]
@@ -87,9 +87,9 @@ class VLASS(SurveyABC):
             'BMIN':  (header['BMIN'], 'Beam minor axis [deg]'),
             'BPA':   (header['BPA'], 'Beam position angle'),
             # TODO (Issue #6): might be already in wcs part of header...
-            'STOKES': (header['BTYPE'], 'Stokes polarisation'),
+            'BTYPE': (header['BTYPE'], 'Stokes polarisation'),
             # TODO (Issue #6): Tiling issue and based on quick-look images -- I think...
-            'IMFILE': (vfile, 'VLASS image file'),
+            # 'IMFILE': (vfile, 'VLASS image file'),
             'COMMENT': "Quick Look images do not fully sample the PSF, and are cleaned to a threshold " \
                        " of ~5 sigma (details can be found in the weblogs for individual images). " \
                        "They are used for Quality Assurance and for transient searches, but should not " \
@@ -97,4 +97,11 @@ class VLASS(SurveyABC):
                        "positions can be off by up to 1-arcsec, and the flux density uncertainties " \
                        "are ~10-20%.",
         }
+        ### ONLY FOR MOSAICKED. complex file name list all originals gone into mosaic
+        if all_headers:
+            for num,head in enumerate(all_headers):
+                fpartkeys = [f'FILNAM{i+1:02}' for i in range(12)]
+                nameparts = [head[key] for key in fpartkeys]
+                header_updates['IMFILE'+str(num+1).zfill(2)]='.'.join(nameparts) + '.subim.fits'
+                ###create single string - FILNAM12 goes after a constant
         return header_updates

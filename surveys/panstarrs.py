@@ -175,7 +175,8 @@ class PanSTARRS(SurveyABC):
         return urls
 
 
-    def get_fits_header_updates(self,header):
+    def get_fits_header_updates(self,header, all_headers=None):
+        print("here")
         survey = type(self).__name__
         header_updates = {
             'BAND':     (f'{self.filter.name}-band', 'Filter used in observation'),
@@ -185,4 +186,6 @@ class PanSTARRS(SurveyABC):
             'SKYCELL':  (header['SKYCELL'],  f'{survey} image sky cell'),
             'TESS_ID':  (header['TESS_ID'],  f'{survey} tesselation')
         }
+        #TODO consider adding in records from all images gone into mosaic
+        # using all_headers
         return header_updates
