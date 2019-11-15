@@ -48,7 +48,7 @@ class FIRST(SurveyABC):
         return [self.pack(url, post_values)]
 
 
-    def get_fits_header_updates(self,header,position,size):
+    def get_fits_header_updates(self,header):
         header_updates = {
             'BAND':     ('1.4 GHz', 'Frequency of observation'),
             'DATE-OBS': (header['DATE-OBS'], 'Obs. date (yearmonth)'),
@@ -63,4 +63,3 @@ class FIRST(SurveyABC):
             'IMFILE': (header['FIELDNAM'], 'FIRST coadded image')
         }
         return header_updates
-

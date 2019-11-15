@@ -391,10 +391,10 @@ class SurveyABC(ABC):
             'PC002001': 'PC2_1',
             'PC002002': 'PC2_2'
         }
-        for key in rotation_matrix_map.keys():
-            if key in hdul[0].header:
-                hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
-                hdul[0].header.remove(key)
+        # for key in rotation_matrix_map.keys():
+        #     if key in hdul[0].header:
+        #         hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
+        #         hdul[0].header.remove(key)
 
         return hdul
 
@@ -653,7 +653,7 @@ class SurveyABC(ABC):
 
         # add survey dependent stuff...
         #hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
-        header_updates = self.get_fits_header_updates(hdf.get_header(),position,size)
+        header_updates = self.get_fits_header_updates(hdf.get_header())
         if not header_updates is None and 'COMMENT' in header_updates:
             comment_updates = re.sub(r"\s*$"," ",header_updates['COMMENT'])
             del header_updates['COMMENT']
@@ -662,7 +662,7 @@ class SurveyABC(ABC):
         hdf.update(header_updates)
 
         # set up new hdu
-        ordered_keys   = hdf.get_saved_keys()
+        ordered_keys   = hdf.saved_keys
         updated_header = hdf.get_header()
         new_hdu = fits.PrimaryHDU(data)
         for k in ordered_keys:
@@ -745,5 +745,5 @@ class SurveyABC(ABC):
 
 
     @abstractmethod
-    def get_fits_header_updates(self,hdu,position,size):
+    def get_fits_header_updates(self,header):
         pass

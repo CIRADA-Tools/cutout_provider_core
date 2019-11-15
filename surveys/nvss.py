@@ -66,5 +66,5 @@ class NVSS(SurveyABC):
         return [self.pack(url, post_values)]
 
 
-    def get_fits_header_updates(self,header,position,size):
+    def get_fits_header_updates(self,header):
         return None

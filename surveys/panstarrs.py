@@ -175,7 +175,7 @@ class PanSTARRS(SurveyABC):
         return urls
 
 
-    def get_fits_header_updates(self,header,position,size):
+    def get_fits_header_updates(self,header):
         survey = type(self).__name__
         header_updates = {
             'BAND':     (f'{self.filter.name}-band', 'Filter used in observation'),
@@ -186,4 +186,3 @@ class PanSTARRS(SurveyABC):
             'TESS_ID':  (header['TESS_ID'],  f'{survey} tesselation')
         }
         return header_updates
-

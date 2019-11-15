@@ -39,5 +39,5 @@ class SDSS(SurveyABC):
         return [url]
 
 
-    def get_fits_header_updates(self,header,position,size):
+    def get_fits_header_updates(self,header):
         return None

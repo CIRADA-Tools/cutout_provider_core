@@ -67,7 +67,7 @@ class VLASS(SurveyABC):
         return urls
 
 
-    def get_fits_header_updates(self,header,position,size):
+    def get_fits_header_updates(self,header):
         ###complex file name - extract from header info
         fpartkeys = [f'FILNAM{i+1:02}' for i in range(12)]
         nameparts = [header[key] for key in fpartkeys]

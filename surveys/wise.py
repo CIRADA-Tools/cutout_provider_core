@@ -66,7 +66,7 @@ class WISE(SurveyABC):
         return fits_urls
 
 
-    def get_fits_header_updates(self,header,position,size):
+    def get_fits_header_updates(self,header):
         header_updates = {
             'BAND':     (f'{self.filter.name.upper()}', 'Filter used in observation'),
             'DATE-OBS': (header['MIDOBS'], 'Median observation date of stack'),
@@ -74,4 +74,3 @@ class WISE(SurveyABC):
             'IMFILE':   (header['COADDID'], 'ATLAS image identifier')
         }
         return header_updates
-
