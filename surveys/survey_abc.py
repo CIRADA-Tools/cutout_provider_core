@@ -320,9 +320,10 @@ class SurveyABC(ABC):
             except requests.exceptions.ReadTimeout as e:
                 self.print(f"{e}", is_traceback=True)
             except requests.exceptions.ConnectionError as e:
-                raise Exception(str(e))
+                self.print(f"{e}", is_traceback=True)
+                # raise Exception(str(e))
             except Exception as e:
-                print("OTHER exception" + str(e))
+                self.print("OTHER exception" + str(e))
             else:
                 try:
                     if self.http is None:
