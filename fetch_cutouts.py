@@ -44,6 +44,7 @@ def set_sig_handler(threads):
             t.die()
         sys.exit(0)
     signal.signal(signal.SIGINT,sig_handler)
+    # return
 
 
 # kills a thread when given into the queue
@@ -102,6 +103,7 @@ def save_cutout(target):
         p="\nLOG: "
         return re.sub(r"^\n","",((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}")
 
+    #print("SAVING CUTOUT ")
     if target['hdu']:
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
         msg = target['survey'].sprint(f"{target['filename']} done!",buffer=False)

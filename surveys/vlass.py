@@ -42,20 +42,19 @@ class VLASS(SurveyABC):
             ICRS_position = position.transform_to('icrs')
             basefile = baseurl.split('pub/')[1].split('?')[0]
             if (basefile[-10:] == 'subim.fits' and basefile[:6] == 'VLASS/'):
-                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:'
+                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?id=ad:'
                        + urllib.parse.quote(basefile)
-                       + ('&cutout=Circle+ICRS+{}+{}+{}').format(ICRS_position.ra.degree,
-                                                                 ICRS_position.dec.degree,
-                                                                 radius.to(u.degree).value))
+                       + ('&Circle={}+{}+{}').format(ICRS_position.ra.degree,
+                       ICRS_position.dec.degree, radius))
                 return url
             else:
                 self.print('CADC URL appears to be incorrect: {}'.format(basefile))
                 return None
         cadc = Cadc()
-        radius = size/2.0
+        radius = (size/2.0).to(u.deg).value
         metadata = cadc.query_region(
             coordinates = position,
-            radius      = radius.to(u.deg).value,
+            radius      = radius,
             collection  = 'VLASS'
         )
         if len(metadata) == 0:
@@ -68,6 +67,7 @@ class VLASS(SurveyABC):
 
 
     def get_fits_header_updates(self,header, all_headers=None):
+        self.print("header updates")
         ###complex file name - extract from header info
         fpartkeys = [f'FILNAM{i+1:02}' for i in range(12)]
         nameparts = [header[key] for key in fpartkeys]

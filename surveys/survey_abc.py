@@ -14,6 +14,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import urllib3
+import requests
 from time import sleep
 
 import re
@@ -297,42 +298,48 @@ class SurveyABC(ABC):
         #potential_retries = 5
         potential_retries = self.http_request_retries
 
+        #TODO make sure cutoutserver didnt break with changes
+
         request = self.pack(url,payload)
-
+        print("sending request for fits")
         while potential_retries > 0:
-
             try:
                 if self.http is None:
-                    response = urllib.request.urlopen(request)
+                    #response = urllib.request.urlopen(request)
+                    #webserver handles own process pool
+                    response = requests.get(url, verify=False, timeout=5)
                 else:
                     response = self.http.request('GET',request)
+
             except urllib.error.HTTPError as e:
                 self.print(f"{e}",is_traceback=True)
             except ConnectionResetError as e:
                 self.print(f"{e}",is_traceback=True)
             except urllib3.exceptions.MaxRetryError as e:
                 self.print(f"{e}",is_traceback=True)
+            except requests.exceptions.ReadTimeout as e:
+                self.print(f"{e}", is_traceback=True)
+            except requests.exceptions.ConnectionError as e:
+                raise Exception(str(e))
+            except Exception as e:
+                print("OTHER exception" + str(e))
             else:
                 try:
                     if self.http is None:
-                        response_data = bytearray(response.read())
+                        #response_data = bytearray(response.read())
+                        #webserver way
+                        response_data = bytearray(response.content)
                     else:
                         response_data = bytearray(response.data)
                     return response_data
                 except Exception as e:
-                    self.print(f"{e}",is_traceback=True)
-
-            # TODO (Issue #11): clean this up, as well as, retries, for configuration...
-            #duration_s = 60 if self.http else 25
-            #self.print(f"Taking a {duration_s}s nap...")
-            #sleep(duration_s)
+                    print(f"{e}",is_traceback=True)
             self.print(f"Taking a {self.http_wait_retry_s}s nap...")
             sleep(self.http_wait_retry_s)
             self.print("OK, lest trying fetching the cutout -- again!")
-
             potential_retries -= 1
 
-        self.print(f"WARNING: Bailed on fetch '{url}'")
+        print(f"WARNING: Bailed on fetch '{url}'")
         self.processing_status = processing_status.bailed
         return None
 
@@ -406,6 +413,7 @@ class SurveyABC(ABC):
 
 
     def get_tiles(self, position, size):
+        self.print(f"getting tile urls for {str(position)}\n\n\n\n" )
         self.request_urls_stack = self.get_tile_urls(position,size)
         if len(self.request_urls_stack) > 0:
             hdul_list = [hdul for hdul in [self.get_fits(url) for url in self.request_urls_stack] if hdul]
@@ -718,7 +726,6 @@ class SurveyABC(ABC):
         #        self.print(f"DEBUGGING: setting status to {proc.name}...")
         #        self.processing_status = proc
         #        cutout = None
-
         return {
             'cutout':       cutout,
             'request_urls': self.__pop_request_urls_stack(),

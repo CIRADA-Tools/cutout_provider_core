@@ -176,7 +176,6 @@ class PanSTARRS(SurveyABC):
 
 
     def get_fits_header_updates(self,header, all_headers=None):
-        print("here")
         survey = type(self).__name__
         header_updates = {
             'BAND':     (f'{self.filter.name}-band', 'Filter used in observation'),
