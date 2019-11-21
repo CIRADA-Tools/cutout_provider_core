@@ -132,8 +132,9 @@ class PanSTARRS(SurveyABC):
         dec = position.dec
 
         # the skycell at input (ra,dec)
+
         url = make_url(ra,dec)
-        skycells = Table.read(url, format='ascii')
+        skycells = Table.read(url, format='ascii', fast_reader=True)
 
         # TODO (Issue #8): kludge: this is a really bad way of finding the neigbhoring skeyscells...
         # Notes: https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns

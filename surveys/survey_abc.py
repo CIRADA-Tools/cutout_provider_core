@@ -364,7 +364,7 @@ class SurveyABC(ABC):
         except OSError as e:
             e_s = re.sub(r"\.$","",f"{e}")
             #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
-            self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...")
+            self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...", is_traceback=True)
             self.processing_status = processing_status.corrupted
             return None
 
@@ -393,12 +393,12 @@ class SurveyABC(ABC):
         # sanitize the rotation matrix
         # TODO (Issue #6): check for other antiquated stuff, i.e.,
         # http://tdc-www.harvard.edu/software/wcstools/cphead.wcs.html
-        rotation_matrix_map = {
-            'PC001001': 'PC1_1',
-            'PC001002': 'PC1_2',
-            'PC002001': 'PC2_1',
-            'PC002002': 'PC2_2'
-        }
+        # rotation_matrix_map = {
+        #     'PC001001': 'PC1_1',
+        #     'PC001002': 'PC1_2',
+        #     'PC002001': 'PC2_1',
+        #     'PC002002': 'PC2_2'
+        # }
         # for key in rotation_matrix_map.keys():
         #     if key in hdul[0].header:
         #         hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
