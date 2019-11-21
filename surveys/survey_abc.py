@@ -307,7 +307,7 @@ class SurveyABC(ABC):
                 if self.http is None:
                     #response = urllib.request.urlopen(request)
                     #webserver handles own process pool
-                    response = requests.get(url, verify=False, timeout=5)
+                    response = requests.get(url, verify=False, timeout=20)
                 else:
                     response = self.http.request('GET',request)
 
