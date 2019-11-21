@@ -147,14 +147,19 @@ class PanSTARRS(SurveyABC):
         urls.append(make_url(ra+r,dec))
         urls.append(make_url(ra,dec-r))
         urls.append(make_url(ra,dec+r))
-        for url in urls:
-            sc = Table.read(url, format='ascii')
-            is_in_skycells = False
-            for skycell in skycells:
-                if sc['projcell'] == skycell['projcell'] and sc['subcell'] == skycell['subcell']:
-                    is_in_skycells = True
-            if not is_in_skycells:
-                skycells = vstack([skycells,sc])
+        try:
+            for url in urls:
+                self.print("THIS URL: ", url)
+                sc = Table.read(url, format='ascii')
+                is_in_skycells = False
+                for skycell in skycells:
+                    if sc['projcell'] == skycell['projcell'] and sc['subcell'] == skycell['subcell']:
+                        is_in_skycells = True
+                if not is_in_skycells:
+                    skycells = vstack([skycells,sc])
+        except Exception as e:
+            self.print("Exception", str(e))
+            raise Exception("problem with retrieving Panstarrs skycells: " +str(e))
         return skycells
 
 
@@ -172,6 +177,7 @@ class PanSTARRS(SurveyABC):
         size_pixels = int(np.ceil((size/self.pixel_scale).to(u.pix).value))
         for skycell in self.get_skycells(position,size):
             urls.append(f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
+
         return urls
 
 
