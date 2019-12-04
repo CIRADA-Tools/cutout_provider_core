@@ -323,7 +323,6 @@ class SurveyConfig:
                 class_stack.append(f"{survey_name}()")
         return class_stack
 
-
     def set_overwrite(self,overwrite=True):
         if isinstance(overwrite, bool):
             self.overwrite = overwrite

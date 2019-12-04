@@ -197,6 +197,7 @@ class SurveyABC(ABC):
 
         self.http_request_retries = 5
         self.http_wait_retry_s = 5
+        self.tmp_dir = "/tmp"
 
 
     def __pop_processing_status(self):
@@ -204,6 +205,9 @@ class SurveyABC(ABC):
         self.processing_status = processing_status.idle
         return status
 
+    def set_tmp_dir(self, directory):
+        self.tmp_dir= directory
+        return self
 
     def set_pid(self, pid):
         self.pid = pid
@@ -307,7 +311,7 @@ class SurveyABC(ABC):
                 if self.http is None:
                     #response = urllib.request.urlopen(request)
                     #webserver handles own process pool
-                    response = requests.get(url, verify=False, timeout=20)
+                    response = requests.get(url, verify=False, timeout=40)
                 else:
                     response = self.http.request('GET',request)
 
@@ -434,6 +438,7 @@ class SurveyABC(ABC):
 
 
     def mosaic(self, cutouts):
+        tempfile.tempdir = self.tmp_dir
         td = tempfile.mkdtemp()
         input_dir = '{directory}/input'.format(directory=td)
         output_dir = '{directory}/output'.format(directory=td)
