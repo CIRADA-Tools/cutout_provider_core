@@ -462,7 +462,7 @@ class SurveyABC(ABC):
 
             # ok, let's mosaic!
             #montage.mosaic(input_dir, output_dir, bitpix=-64)
-            montage.mosaic(input_dir, output_dir)
+            montage.mosaic(input_dir, output_dir, subset_fast =True)
 
             #fits_metadata_file = f"{output_dir}/metadata.txt"
             #montage.commands.mImgtbl(input_dir,fits_metadata_file)
@@ -502,7 +502,6 @@ class SurveyABC(ABC):
 
         # TODO (Issue #8): Still require investigation...
         #      but much better -- I think.
-        mosiacked_header = hdul[0].header
         #wcs_header = HeaderFilter(hdul[0].header,is_add_wcs=True).get_header()
         wcs_header = WCS(hdul[0].header).to_header()
         hdul[0].header = wcs_header
