@@ -37,9 +37,7 @@ def readCoordsFromFile(csv_dictreader, max_batch=105):
     potential_DEC = ['DEC', 'DECLINATION']
 
     positions = []
-    print(csv_dictreader)
     headers = csv_dictreader.fieldnames
-    print(headers)
     name_h=ra_h=dec_h=None
     errors = []
     for h in headers:
