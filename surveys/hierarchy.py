@@ -11,12 +11,11 @@ class HierarchyABC(ABC):
 
         # load the config file, indepent of where the source code is run...
         this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
-        self.config = yml.load(open(this_source_file_dir+"hierarchy.yml"))
+        self.config = yml.load(open(this_source_file_dir+"hierarchy.yml"), Loader=yml.FullLoader)
 
         # set local (relative) and remote (absolute) paths
         self.local_root  = self.__sanitize_path(self.config['root']['local'])
         self.remote_root = self.__sanitize_path(self.config['root']['remote'])
-
         self.data_subdir = self.__sanitize_path(self.config['data_subdir'])
 
         # get the base data directory hierarchy

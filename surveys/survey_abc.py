@@ -607,7 +607,7 @@ class SurveyABC(ABC):
             w = w.dropaxis(2)
             naxis -= 1
         img_data = np.squeeze(hdu.data)
-
+        print("size", str(size), type(size))
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
         hdu.header.update(stamp.wcs.to_header())
         trimmed = fits.PrimaryHDU(stamp.data, header=hdu.header)

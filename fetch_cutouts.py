@@ -1,9 +1,5 @@
 # system
-import os
-import sys
-import traceback
-import signal
-
+import os, sys, traceback, signal
 # thread-salf version of urllib
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -14,23 +10,16 @@ http = urllib3.PoolManager(
     retries   = 10,
     block     = True
 )
-
 # utilities
-import re
-import click
+import re, click
 import yaml as yml
-
 # astropy
 from astropy.io import fits
 import astropy.units as u
-
 # threading
-import threading
-import queue
-
+import threading, queue
 # configuration
 from surveys.survey_config import SurveyConfig
-
 # processing
 from surveys.survey_abc import processing_status as ProcStatus
 
@@ -88,7 +77,7 @@ class WorkerThread(threading.Thread):
 
 # grab a FITS hdu from some survey
 def get_cutout(target):
-    fetched = target['survey'].set_pid(target['pid']).get_cutout(target['coord'], target['size'])
+    fetched = target['survey'].set_pid(target['pid']).get_cutout(target['position'], target['size'])
     target['hdu'] = fetched['cutout']
     target['log'] = {
         'msg': fetched['message'],
@@ -108,7 +97,7 @@ def save_cutout(target):
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
         msg = target['survey'].sprint(f"{target['filename']} done!",buffer=False)
     else:
-        msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['coord'].ra.to(u.deg).value}, {target['coord'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
+        msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['position'].ra.to(u.deg).value}, {target['position'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
         log_msg = pack_message(msg,target['log']['msg'])
         if not ProcStatus.touch_file(f"{target['filename']}",target['log']['sts'],log_msg):
             target['survey'].print("Failed to dump %s with log info...\n%s" % (
@@ -133,38 +122,82 @@ def cli():
     pass
 
 @cli.command()
-def fetch(
-):
+@click.argument('target')
+@click.argument('size')
+@click.argument('surveys', required=False, nargs=-1)
+def fetch(target, size, surveys):
     """
-        Command line cutout fetching utility.\n
-       \b
-                  /\
-                 /  \
-                / _o \
-               / <(\  \
-              /   />`A \
-             '----------`
+    fetch cutouts from single coordinate, 'target'
+    'size' is the image width in arcmin as an integer
+    specify one or several surveys comma separated
+    if surveys argument not specified then fetch from all implemented surveys
     """
-    pass
+    print("target", target)
+    print("size", size)
+    print(surveys)
+    surveys = list(surveys)
+    print("surveys", surveys)
+    # if not surveys:
+    #     survey_list = []
+    # else:
+    #     survey_list = surveys.split(' ')
+    # print("surveys parsed:", survey)
+
+    # provide list of surveys rather than name of a config file to parse items from
+    cfg = SurveyConfig(surveys)
+    if not cfg:
+        print("invalid or missing arguments! Request aborted")
+        return
+    cfg.set_single_target_params(target, size)
+    
+    print(cfg.size_arcmin)
+
+    grabbers = 60
+    savers = 1
+
+    # set up i/o queues
+    in_q  = queue.Queue()
+    out_q = queue.Queue()
+
+    # toss all the targets into the queue, including for all surveys
+    # i.e., some position in both NVSS and VLASS and SDSS, etc.
+    for task in cfg.get_procssing_stack():
+        task['survey'].attach_http_pool_manager(http)
+        in_q.put(task)
+
+    # need this for ctrl-c shutdown
+    threads = list()
+
+    # spin up a bunch of worker threads to process all the data
+    # in principle these could be chained further, such that you could go
+    # targets -> hdus -> save to file -> process to jpg -> save to file
+    for _ in range(grabbers):
+        thread = WorkerThread(get_cutout, in_q, out_q)
+        thread.start()
+        in_q.put(PoisonPill())
+        threads.append(thread)
+
+    for _ in range(savers):
+        thread = WorkerThread(save_cutout, out_q)
+        thread.start()
+        threads.append(thread)
+    set_sig_handler(threads) # install ctrl-c handler
+    in_q.join()
+
+    # testing out 1 save to file threads (absolutely not necessary)
+    for _ in range(savers):
+        out_q.put(PoisonPill())
+    out_q.join()
 
 @cli.command()
 @click.argument('config-file')
-def status(
-    config_file
-):
+def status(config_file):
     """
-       Cutout pipeline status command.\n
-       \b
+       Cutout pipeline status command.
        For CONFIG_FILE formating help details see:
-          python fetch_cutouts.py batch-process --help\n
-       \b
-                  /\
-                 /  \
-                / _o \
-               / <(\  \
-              /   />`A \
-             '----------`
+          python fetch_cutouts.py batch-process --help
     """
+    pass
 
 
 @cli.command()

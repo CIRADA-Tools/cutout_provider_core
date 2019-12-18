@@ -1,6 +1,7 @@
 #system
 import os
 import sys
+import io
 
 # utilities
 import re
@@ -21,6 +22,7 @@ import yaml as yml
 # processing
 from .survey_abc import processing_status as ProcStatus
 from .survey_abc import get_sexadecimal_string
+from .toolbox import extractCoordfromString, readCoordsFromFile
 
 # astropy libs
 from astropy import units as u
@@ -40,29 +42,20 @@ from .panstarrs import PanSTARRS
 
 def get_cutout_filename(position,size,survey,filter=None,extension=None):
     coords = get_sexadecimal_string(position)
-    size   = re.sub(r"\.?0+$","","%f" % size.to(u.arcmin).value)
+    size   = str(size)#re.sub(r"\.?0+$","","%f" % size)
     filter = (lambda f: '' if f is None else f"-{f.name}")(filter)
-    return f"J{coords}_s{size}arcmin_{survey}{filter}{'.%s' % extension if not extension is None else ''}"
+    return f"{survey}_J{coords}_s{size}arcmin_{filter}{'.%s' % extension if not extension is None else ''}"
 
 class SurveyConfig:
-    def __init__(self,yml_configuration_file):
-        # get config file
-        self.config = yml.load(open(yml_configuration_file,'r'))
-
-        # get relative path to config file
-        relative_path = re.sub(r"[^/]+$","",yml_configuration_file)
-
-        # get cutout dir hierarchy class
+    def __init__(self, yml_file_or_list):
+        relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
         self.local_dirs = LocalCutoutDirs()
-
         # file flush utility flag
         self.is_force_flush = False
-
-
-        #
-        # S U V E R Y   S E T U P
-        #
-
+        # defaults if no config
+        self.overwrite = False
+        self.flush = False
+        self.survey_block = None
         # define supported_surveys
         self.supported_surveys = (
             FIRST.__name__,
@@ -73,7 +66,6 @@ class SurveyConfig:
             SDSS.__name__,
             # TODO (Issue #13): Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
-
         # make sure supported_surveys are defined in the hierarchy class
         for survey in self.supported_surveys:
             if not self.local_dirs.has_survey(survey):
@@ -87,48 +79,54 @@ class SurveyConfig:
             if survey_filters:
                 self.survey_filter_sets.append({supported_survey: [f for f in survey_filters]})
 
-        # set survey_names
-        self.survey_block = self.config['cutouts']['surveys']
-        self.survey_names = self.__extract_surveys_names(self.survey_block)
+        # get config file or survey list
+        if type(yml_file_or_list)==list:
+            if not yml_file_or_list: #no surveys specified then use all
+                self.survey_names = list(self.supported_surveys)
+            else:
+                self.survey_names = self.__check_supported(yml_file_or_list)
+            self.overwrite = True #update single CUTOUTS
+            out_dir = self.__sanitize_path(relative_path+'data')
 
-        # set the cutout size
-        self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
+        #read in batch config file params
+        else:
+            file_obj = open(yml_file_or_list,'r')
+            self.config = yml.load(open(yml_file_or_list,'r'), Loader=yml.SafeLoader)
+            file_obj.close()
+            # get relative path to config file
+            #relative_path = re.sub(r"[^/]+$","",yml_file_or_list)
+            # set survey_names
+            self.survey_block = self.config['cutouts']['surveys']
+            self.survey_names = self.__extract_surveys_names(self.survey_block)
+            # set the cutout size
+            self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
 
+            # T A R G E T   C O N F I G U R A T I O N
+            # set targets in list of dicts
+            self.targets = list()
+            for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
+                with open(relative_path +coords_csv_file, newline='') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    self.targets, errors = readCoordsFromFile(reader)
+            # E N V I R O N M E N T   C O N F I G U R A T I O N
+            # get the configuration block
+            configuration = self.config['configuration']
+            # set the data output dir
+            data_root = self.__sanitize_path(configuration['local_root'])
+            # set the overwrite file parameter
+            if 'overwrite' in configuration:
+                self.overwrite = configuration['overwrite']
+            # set the flush file parameter
+            if 'flush' in configuration:
+                self.flush = configuration['flush']
+            if bool(re.match('/',data_root)): # absolute path case
+               out_dir = data_root
+            elif bool(re.match('~/',data_root)): # home path case
+               out_dir = os.path.expanduser(data_root)
+            else: # relative path case
+               out_dir = relative_path+data_root
 
-        #
-        # T A R G E T   C O N F I G U R A T I O N
-        #
-
-        # set targets
-        self.targets = list()
-        for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
-            sources = self.__csv_to_dict(relative_path+coords_csv_file)
-
-            # make all keys lower case to effectively reference case-variants of RA and Dec.
-            sources = [{k.lower(): v for k,v in s.items()} for s in sources]
-
-            # extract position information
-            self.targets.extend([{
-                'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
-                'size':  self.size_arcmin
-            } for x in sources])
-
-
-        #
-        # E N V I R O N M E N T   C O N F I G U R A T I O N
-        #
-
-        # get the configuration block
-        configuration = self.config['configuration']
-
-        # set the data output dir
-        data_root = self.__sanitize_path(configuration['local_root'])
-        if bool(re.match('/',data_root)): # absolute path case
-           out_dir = data_root
-        elif bool(re.match('~/',data_root)): # home path case
-           out_dir = os.path.expanduser(data_root)
-        else: # relative path case
-           out_dir = relative_path+data_root
+        # same config for sinlge or batch
         self.local_dirs.set_local_root(out_dir)
         self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
         for out_dir in self.out_dirs.values():
@@ -139,56 +137,24 @@ class SurveyConfig:
             else:
                 self.__print(f"Created FITS output dir: {out_dir}")
 
-        # set the overwrite file parameter
-        if 'overwrite' in configuration:
-            self.overwrite = configuration['overwrite']
-        else:
-            self.overwrite = False
-
-        # set the flush file parameter
-        if 'flush' in configuration:
-            self.flush = configuration['flush']
-        else:
-            self.flush = False
-
+    def set_single_target_params(self, single_target, size):
+        self.size_arcmin = size * u.arcmin
+        if not single_target:
+            self.__print("No Target provided")
+            return None
+        self.targets = [{'position': extractCoordfromString(single_target), 'size': self.size_arcmin}]
 
     def __sanitize_path(self,path):
         # clean up repeating '/'s with a trailing '/' convention
         return re.sub(r"(/+|/*$)",r"/",path)
 
-
     def __csv_to_dict(self,filename):
         entries = []
-
         with open(filename, 'r') as infile:
             c = csv.DictReader(infile)
             for entry in c:
                 entries.append(entry)
-
         return entries
-
-
-    def __get_target_list(self,config_file):
-        config  = yml.load(open(config_file,'r'))['cutouts']
-
-        targets = list()
-        size = config['box_size_arcmin'] * u.arcmin
-        for coord_csv_file in config['ra_dec_deg_csv_files']:
-            sources = csv_to_dict(coord_csv_file)
-
-            # make all keys lower case to effectively reference case-variants of RA and Dec.
-            sources = [{k.lower(): v for k,v in s.items()} for s in sources]
-
-            # extract position information
-            targets.extend([
-                {
-                    'coord': SkyCoord(x['ra'], x['dec'], unit=(u.deg, u.deg)),
-                    'size': size
-                }
-                for x in sources])
-
-        return targets
-
 
     def __print(self,string,show_caller=False,is_suspend_on_force_flush=False):
         if string is None or (self.is_force_flush and is_suspend_on_force_flush):
@@ -197,6 +163,20 @@ class SurveyConfig:
         prefixed_string = "\n".join([f"{prefix}: {s}" for s in string.splitlines()])
         print(prefixed_string)
 
+    # check list of surveys and return list of supported surveys
+    def __check_supported(self, surveys):
+        supported = list()
+        for survey in surveys:
+            added = False
+            for supported_survey in self.supported_surveys:
+                if survey.lower() == supported_survey.lower():
+                    supported.append(supported_survey)
+                    added = True
+                    break
+            # TODO (Issue #13): This should really be done in init to prevent the potential of repeated message...
+            if not added:
+                self.__print(f"WARNING: Survey '{survey}' is not supported!")
+        return supported
 
     def __extract_surveys_names(self,config_surveys_block):
         def extract_surveys_names_from_config_surveys_block(config_surveys_block):
@@ -212,24 +192,7 @@ class SurveyConfig:
                     pass
             return survey_names
         surveys = extract_surveys_names_from_config_surveys_block(config_surveys_block)
-        supported = list()
-        for survey in surveys:
-            if self.__is_supported_survey(survey):
-                for supported_survey in self.supported_surveys:
-                    if supported_survey.lower() == survey.lower():
-                        supported.append(supported_survey)
-                        break
-            else:
-                # TODO (Issue #13): This should really be done in init to prevent the potential of repeated message...
-                self.__print(f"WARNING: Survey '{survey}' is not supported!")
-        return supported
-
-
-    def __is_supported_survey(self,survey):
-        for supported_survey in self.supported_surveys:
-            if survey.lower() == supported_survey.lower():
-                return True
-        return False
+        return self.__check_supported(surveys)
 
 
     def __match_filters(self,survey,filters):
@@ -241,10 +204,8 @@ class SurveyConfig:
                     if s.lower() == survey.lower():
                       filters = survey_filters[s]
             return filters
-
         if isinstance(filters,str):
             filters = [filters]
-
         matched = list()
         for filter in filters:
             found = False
@@ -258,27 +219,24 @@ class SurveyConfig:
             # TODO (Issue #13): we need to do this test in init, otherwise the message repeats
             #else:
             #    self.__print(f"WARNING: '{survey}' filter '{filter}' is not supported!")
-
         return set(matched)
-
 
     def has_survey(self,survey):
         for survey_name in self.survey_names:
             if survey.lower() == survey_name.lower():
                 return True
-        self.__print(f"WARNING: Survey '{survey}' not found!")
+        self.__print(f"WARNING: Survey '{survey}' nottargets found!")
         return False
 
-
     def has_filters(self,survey):
-        if self.has_survey(survey):
+        if self.has_survey(survey) and self.survey_block:
             for s in self.survey_block:
                 name = s if isinstance(s,str) else [k for k in s.keys()][0]
                 if name.lower() == survey.lower() and isinstance(s,dict):
                    survey_parameters = s[name]
                    if isinstance(survey_parameters,dict) and \
                         ('filters' in survey_parameters.keys()) and \
-                        (len(self.__match_filters(name,survey_parameters['filters'])) > 0):
+                        (len(self.__match_filters(namtargetse,survey_parameters['filters'])) > 0):
                        return True
                    break
         return False
@@ -286,7 +244,6 @@ class SurveyConfig:
 
     def get_supported_survey(self):
         return self.supported_surveys
-
 
     def get_survey_names(self):
         return self.survey_names
@@ -360,13 +317,12 @@ class SurveyConfig:
 
 
     def get_cutout_filename(self, position,size,survey,filter=None,extension=None):
+        size = self.size_arcmin
         return get_cutout_filename(position,size,survey,filter,extension)
-
 
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
-
         # survey-class stack
         survey_classes = self.get_survey_class_stack()
 
@@ -376,28 +332,18 @@ class SurveyConfig:
         for survey_class in survey_classes:
             for survey_target in survey_targets:
                 survey_instance = eval(survey_class)
-
                 # ra-dec-size cutout target
+                print("tuple", survey_target)
                 task = dict(survey_target)
-
+                print("task", task)
                 # add survey instance for processing stack
                 task['survey'] = survey_instance
-
-                # define the fits output filename
-                #coords = survey_instance.get_sexadecimal_string(task['coord'])
-                #size = re.sub(r"\.?0+$","","%f" % task['size'].value)
-                #survey = type(task['survey']).__name__
-                #filter = (lambda f: '' if f is None else f"-{f.name}")(survey_instance.get_filter_setting())
-                #task['filename'] = f"{self.out_dirs[survey]}J{coords}_s{size}arcmin_{survey}{filter}.fits"
-                coords = task['coord']
-                size   = task['size']
+                # task['size'] = self.size_arcmin
                 survey = type(task['survey']).__name__
                 filter = survey_instance.get_filter_setting()
                 path = self.out_dirs[survey]
-                task['filename'] = f"{path}{self.get_cutout_filename(coords,size,survey,filter,'fits')}"
-
+                task['filename'] = f"{path}{self.get_cutout_filename(task['position'],task['size'],survey,filter,'fits')}"
                 # just flush the file/s if in flush mode
-
                 # set task pid
                 task['pid'] = pid
 
@@ -406,19 +352,14 @@ class SurveyConfig:
                 elif self.overwrite or self.flush or (not ProcStatus.is_processed(task['filename'])):
                     # push the task onto the processing stack
                     procssing_stack.append(task)
-
-                    ## set the task id ...
-                    #survey_instance.set_pid(pid)
                     # increment task pid
                     pid += 1
-
                     if self.overwrite or self.flush:
                         # flush unreprocessable files
                         self.__print(ProcStatus.flush(task['filename'],is_all=self.flush))
                 else:
                     files = ProcStatus.get_file_listing(task['filename'])
                     self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
-
         # randomize processing stack to minimize server hits...
         shuffle(procssing_stack)
 
