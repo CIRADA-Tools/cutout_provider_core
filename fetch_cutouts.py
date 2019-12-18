@@ -1,7 +1,18 @@
 # system
 import os, sys, traceback, signal
-# thread-salf version of urllib
-import urllib3
+# utilities
+import re, click, urllib3
+import yaml as yml
+# threading
+import threading, queue
+# astropy
+from astropy.io import fits
+import astropy.units as u
+# configuration & processing
+from surveys.survey_config import SurveyConfig
+from surveys.survey_abc import processing_status as ProcStatus
+
+#Global pool manager
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 http = urllib3.PoolManager(
     num_pools = 60,
@@ -10,19 +21,6 @@ http = urllib3.PoolManager(
     retries   = 10,
     block     = True
 )
-# utilities
-import re, click
-import yaml as yml
-# astropy
-from astropy.io import fits
-import astropy.units as u
-# threading
-import threading, queue
-# configuration
-from surveys.survey_config import SurveyConfig
-# processing
-from surveys.survey_abc import processing_status as ProcStatus
-
 
 def set_sig_handler(threads):
     def sig_handler(sig, frame):
@@ -34,7 +32,6 @@ def set_sig_handler(threads):
         sys.exit(0)
     signal.signal(signal.SIGINT,sig_handler)
     # return
-
 
 # kills a thread when given into the queue
 class PoisonPill:
@@ -74,7 +71,6 @@ class WorkerThread(threading.Thread):
     def die(self):
         self.kill_recieved = True
 
-
 # grab a FITS hdu from some survey
 def get_cutout(target):
     fetched = target['survey'].set_pid(target['pid']).get_cutout(target['position'], target['size'])
@@ -84,7 +80,6 @@ def get_cutout(target):
         'sts': fetched['status']
     }
     return target
-
 
 # save an HDU into a file
 def save_cutout(target):
@@ -106,55 +101,53 @@ def save_cutout(target):
             ), buffer=False)
     print(msg)
 
+# # TODO: May not need this...
+# # define the default config file with absolute path
+# this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
+# default_config = this_source_file_dir + 'config.yml'
 
-# TODO: May not need this...
-# define the default config file with absolute path
-this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
-default_config = this_source_file_dir + 'config.yml'
-
-
+##HANDLE COMMAND LINE INPUT
 @click.group()
 def cli():
     """\b
        Survey cutout fetching script.
        Command help: <command> --help
     """
+    ## TODO:  put args instructions here for the --help command
     pass
 
 @cli.command()
 @click.argument('target')
 @click.argument('size')
 @click.argument('surveys', required=False, nargs=-1)
-def fetch(target, size, surveys):
+@click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
+@click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
+def fetch(target, size, surveys, overwrite, flush):
     """
     fetch cutouts from single coordinate, 'target'
     'size' is the image width in arcmin as an integer
     specify one or several surveys comma separated
     if surveys argument not specified then fetch from all implemented surveys
     """
+    try:
+        size= int(size)
+        surveys = list(surveys)
+    except Exception as e:
+        print("invalid argument types. Request aborted. \n" + str(e))
+        return
+
     print("target", target)
     print("size", size)
-    print(surveys)
-    surveys = list(surveys)
     print("surveys", surveys)
-    # if not surveys:
-    #     survey_list = []
-    # else:
-    #     survey_list = surveys.split(' ')
-    # print("surveys parsed:", survey)
-
     # provide list of surveys rather than name of a config file to parse items from
     cfg = SurveyConfig(surveys)
-    if not cfg:
-        print("invalid or missing arguments! Request aborted")
-        return
     cfg.set_single_target_params(target, size)
-    
-    print(cfg.size_arcmin)
+
+    print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
+    print(f'Flush Mode: {cfg.set_flush(flush)}')
 
     grabbers = 60
     savers = 1
-
     # set up i/o queues
     in_q  = queue.Queue()
     out_q = queue.Queue()
@@ -199,14 +192,10 @@ def status(config_file):
     """
     pass
 
-
 @cli.command()
 @click.option('--flush',is_flag=True,default=None,help='flush existing target files')
 @click.argument('config-file')
-def maintenance(
-    config_file,
-    flush
-):
+def maintenance(config_file,flush):
     """
        Cutout pipeline maintenance command.
 
@@ -227,18 +216,12 @@ def maintenance(
     else:
         click.echo("Please enter option flag/s.")
 
-
-
 # Notes: http://click.palletsprojects.com/en/5.x/options/
 @cli.command()
 @click.argument('config-file')
 @click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
 @click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
-def batch_process(
-    config_file,
-    overwrite,
-    flush
-):
+def batch_process(config_file,overwrite,flush):
     """
        Batch cutout fetching command.
 
@@ -316,5 +299,4 @@ def batch_process(
 
 
 if __name__ == "__main__":
-    #batch_process()
     cli()

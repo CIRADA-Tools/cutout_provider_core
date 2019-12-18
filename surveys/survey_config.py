@@ -21,8 +21,7 @@ import yaml as yml
 
 # processing
 from .survey_abc import processing_status as ProcStatus
-from .survey_abc import get_sexadecimal_string
-from .toolbox import extractCoordfromString, readCoordsFromFile
+from .toolbox import extractCoordfromString, readCoordsFromFile, get_cutout_filename
 
 # astropy libs
 from astropy import units as u
@@ -40,22 +39,20 @@ from .sdss      import SDSS
 from .vlass     import VLASS
 from .panstarrs import PanSTARRS
 
-def get_cutout_filename(position,size,survey,filter=None,extension=None):
-    coords = get_sexadecimal_string(position)
-    size   = str(size)#re.sub(r"\.?0+$","","%f" % size)
-    filter = (lambda f: '' if f is None else f"-{f.name}")(filter)
-    return f"{survey}_J{coords}_s{size}arcmin_{filter}{'.%s' % extension if not extension is None else ''}"
 
 class SurveyConfig:
     def __init__(self, yml_file_or_list):
+        # set up outdirs
         relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
         self.local_dirs = LocalCutoutDirs()
+
+        # defaults
+        self.overwrite = True
+        self.flush = True
+        self.survey_block = None
         # file flush utility flag
         self.is_force_flush = False
-        # defaults if no config
-        self.overwrite = False
-        self.flush = False
-        self.survey_block = None
+
         # define supported_surveys
         self.supported_surveys = (
             FIRST.__name__,
@@ -99,15 +96,18 @@ class SurveyConfig:
             self.survey_block = self.config['cutouts']['surveys']
             self.survey_names = self.__extract_surveys_names(self.survey_block)
             # set the cutout size
+            print(type(self.config['cutouts']['box_size_arcmin']))
             self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
+            print("FIRST SIZE", self.size_arcmin)
 
             # T A R G E T   C O N F I G U R A T I O N
             # set targets in list of dicts
-            self.targets = list()
+            coords = list()
             for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
                 with open(relative_path +coords_csv_file, newline='') as csvfile:
                     reader = csv.DictReader(csvfile)
-                    self.targets, errors = readCoordsFromFile(reader)
+                    coords, errors = readCoordsFromFile(reader)
+            self.targets = [dict(item, size=self.size_arcmin) for item in coords]
             # E N V I R O N M E N T   C O N F I G U R A T I O N
             # get the configuration block
             configuration = self.config['configuration']
@@ -140,8 +140,7 @@ class SurveyConfig:
     def set_single_target_params(self, single_target, size):
         self.size_arcmin = size * u.arcmin
         if not single_target:
-            self.__print("No Target provided")
-            return None
+            raise Exception("No Target provided!")
         self.targets = [{'position': extractCoordfromString(single_target), 'size': self.size_arcmin}]
 
     def __sanitize_path(self,path):
@@ -236,11 +235,32 @@ class SurveyConfig:
                    survey_parameters = s[name]
                    if isinstance(survey_parameters,dict) and \
                         ('filters' in survey_parameters.keys()) and \
-                        (len(self.__match_filters(namtargetse,survey_parameters['filters'])) > 0):
+                        (len(self.__match_filters(name,survey_parameters['filters'])) > 0):
                        return True
                    break
         return False
 
+    def set_overwrite(self,overwrite=True):
+        if isinstance(overwrite, bool):
+            self.overwrite = overwrite
+        return self.overwrite
+
+    def get_overwrite(self):
+        return self.overwrite
+
+    def set_flush(self,flush=True):
+        if isinstance(flush, bool):
+            self.flush = flush
+        return self.flush
+
+    def get_flush(self):
+        return self.flush
+
+    def __set_force_flush(self):
+        self.is_force_flush = True
+
+    def __unset_force_flush(self):
+        self.is_force_flush = False
 
     def get_supported_survey(self):
         return self.supported_surveys
@@ -248,6 +268,8 @@ class SurveyConfig:
     def get_survey_names(self):
         return self.survey_names
 
+    def get_survey_targets(self):
+        return self.targets
 
     def get_supported_filters(self,survey):
         filters = list()
@@ -263,50 +285,17 @@ class SurveyConfig:
                     return self.__match_filters(survey,filters)
         return filters
 
-
-    def get_survey_targets(self):
-        return self.targets
-
-
     def get_survey_class_stack(self):
         class_stack = list()
         for survey_name in self.get_survey_names():
             if self.has_filters(survey_name):
                 for filter in self.get_supported_filters(survey_name):
-                    self.__print(f"USING_SUVERY_CLASS: {survey_name}(filter={filter})",is_suspend_on_force_flush=True)
+                    self.__print(f"USING_SURVEY_CLASS: {survey_name}(filter={filter})",is_suspend_on_force_flush=True)
                     class_stack.append(f"{survey_name}(filter={filter})")
             else:
-                self.__print(f"USING_SUVERY_CLASS: {survey_name}()",is_suspend_on_force_flush=True)
+                self.__print(f"USING_SURVEY_CLASS: {survey_name}()",is_suspend_on_force_flush=True)
                 class_stack.append(f"{survey_name}()")
         return class_stack
-
-    def set_overwrite(self,overwrite=True):
-        if isinstance(overwrite, bool):
-            self.overwrite = overwrite
-        return self.overwrite
-
-
-    def get_overwrite(self):
-        return self.overwrite
-
-
-    def set_flush(self,flush=True):
-        if isinstance(flush, bool):
-            self.flush = flush
-        return self.flush
-
-
-    def get_flush(self):
-        return self.flush
-
-
-    def __set_force_flush(self):
-        self.is_force_flush = True
-
-
-    def __unset_force_flush(self):
-        self.is_force_flush = False
-
 
     def force_flush(self):
         self.__print("Flushing...")
@@ -315,17 +304,16 @@ class SurveyConfig:
         self.__unset_force_flush()
         self.__print("[done]")
 
+    # def get_cutout_filename(self, position,size,survey,filter=None,extension=None):
+    #     size = self.size_arcmin
+    #     return get_cutout_filename(position,size,survey,filter,extension)
 
-    def get_cutout_filename(self, position,size,survey,filter=None,extension=None):
-        size = self.size_arcmin
-        return get_cutout_filename(position,size,survey,filter,extension)
-
+    # main initial processing step
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
         survey_targets = self.get_survey_targets()
         # survey-class stack
         survey_classes = self.get_survey_class_stack()
-
         # ok, let's build the cutout-fetching processing stack
         pid = 0 # task tracking id
         procssing_stack = list()
@@ -333,17 +321,13 @@ class SurveyConfig:
             for survey_target in survey_targets:
                 survey_instance = eval(survey_class)
                 # ra-dec-size cutout target
-                print("tuple", survey_target)
                 task = dict(survey_target)
-                print("task", task)
                 # add survey instance for processing stack
                 task['survey'] = survey_instance
-                # task['size'] = self.size_arcmin
                 survey = type(task['survey']).__name__
                 filter = survey_instance.get_filter_setting()
                 path = self.out_dirs[survey]
-                task['filename'] = f"{path}{self.get_cutout_filename(task['position'],task['size'],survey,filter,'fits')}"
-                # just flush the file/s if in flush mode
+                task['filename'] = f"{path}{get_cutout_filename(task['position'],task['size'],survey,filter,'fits')}"
                 # set task pid
                 task['pid'] = pid
 

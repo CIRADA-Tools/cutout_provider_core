@@ -4,7 +4,7 @@ cutouts:
     ra_dec_deg_csv_files:
         #- testing/BH12_120RA180_minus4DEC16_RC4_targetlist.csv
         #- testing/BH12_multicomponent_zlt0p05_targetlist2.csv
-        - targets_default.csv
+        - targets_one.csv
         #- testing/panstarrs_debug.csv
 
     # Note: box size in csv's overidde this one.
@@ -20,11 +20,10 @@ cutouts:
               filters: [i]
         - SDSS:
               filters: [g,r,i]
-
 # Processing output parameters
 configuration:
     # data root relative/absolute path defn
-    local_root: testing/data/out
+    local_root: data/out
 
     # overwrite existing files on download
     overwrite: False

@@ -1,6 +1,17 @@
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+
 import csv, re
+
+def get_sexadecimal_string(position):
+    sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+    return sexadecimal
+
+def get_cutout_filename(position,size,survey,filter=None,extension=None):
+    coords = get_sexadecimal_string(position)
+    size   = str(size)#re.sub(r"\.?0+$","","%f" % size)
+    filter = (lambda f: '' if f is None else f"-{f.name}")(filter)
+    return f"{survey}_J{coords}_s{size}arcmin_{filter}{'.%s' % extension if not extension is None else ''}"
 
 def extractCoordfromString(position, is_name=False):
     '''

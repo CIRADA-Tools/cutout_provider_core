@@ -32,11 +32,6 @@ from astropy import units as u
 import montage_wrapper as montage
 from astropy.nddata.utils import Cutout2D
 
-
-def get_sexadecimal_string(position):
-    sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-    return sexadecimal
-
 from enum import Enum
 class processing_status(Enum):
     idle      = "Waiting for fetching request"
@@ -100,64 +95,7 @@ class processing_status(Enum):
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
     """
-                      /\
-                     /  \
-                    / _o \
-                   / <(\  \
-                  /   />`A \
-                 '----------`
-                  Commenting
-              Under Construction
-
-        The following is a list of the class methods grouped by function.
-
-            # class instance tracking number
-            set_pid(pid)
-
-            # http request settings
-            set_http_request_retries(retries)
-            set_http_wait_retry_s(wait_seconds)
-
-            # for attatching http buffer pool manager (re., urllib3) -- default: urllib
-            attach_http_pool_manager(http_pool_manager)
-
-            # ra-dec output formating string
-            get_sexadecimal_string(position)
-            get_ra_dec_string(position)
-
-            # std out printing function
-            sprint(msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True)
-            print(msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True)
-            set_print_to_stdout()
-            unset_print_to_stdout()
-
-            # cutout fetching and processing stack
-            pack(url, payload=None)
-            standardize_fits_header_DATE_and_DATE_OBS_fields(date_obs_value)
-            create_fits(data)
-            get_fits(url, payload=None)
-            get_tiles(position, size)
-            mosaic(cutouts)
-            paste_tiles(hdul_tiles, position, size)
-            trim_tile(hdu, position, size)
-            format_fits_hdu(hdu, position, size)
-
-            # main cutout fetching rounting
-            get_cutout(position, size)
-
-            # abstract base class functions required by survey/child classes
-            get_supported_filters()
-            get_filter_setting(self)
-            get_tile_urls(self,position,size)
-            get_fits_header_updates(self,hdu,position,size)
-
-        The main routine is get_cutout(position, size) which triggers the whole cutout
-            o Fetching
-            o Mosaicking
-            o Trimming
-            o Header Formating
-        processing stack. The routine returns the following information.
-
+    The routine returns the following information:
                --------------------------------------
                | Dict Element | Contents            |
                |______________|_____________________|
@@ -167,38 +105,20 @@ class SurveyABC(ABC):
                | message      | Diagnotics Message  |
                | status       | Processing Status   |
                --------------------------------------
-
-
-                      /\
-                     /  \
-                    / _o \
-                   / <(\  \
-                  /   />`A \
-                 '----------`
-                  Commenting
-              Under Construction
     """
-    def __init__(self,
-        http_pool_manager = None, # thread safe pool manager (i.e., urllib3)
-        pid = None # 4 threads
-        ):
+    def __init__(self):# http_pool_manager = None, pid = None):
         ABC.__init__(self)
-
         self.processing_status = processing_status.idle
-
         self.pid = None
-        self.http = None
-
+        self.http = None #http_pool_manager #None
         self.message_buffer = ""
         self.print_to_stdout = True
-
         self.request_urls_stack = list()
         self.mosaic_hdul_tiles_stack = list()
-
+        # http request settings
         self.http_request_retries = 5
         self.http_wait_retry_s = 5
         self.tmp_dir = "/tmp"
-
 
     def __pop_processing_status(self):
         status = self.processing_status
@@ -213,40 +133,27 @@ class SurveyABC(ABC):
         self.pid = pid
         return self
 
-
     def set_http_request_retries(self,retries):
         self.http_request_retries = retries
         return self
-
 
     def set_http_wait_retry_s(self,wait_seconds):
         self.http_wait_retry_s = wait_seconds
         return self
 
-
     def attach_http_pool_manager(self,http_pool_manager):
         self.http = http_pool_manager
         return self
 
-
-    def get_sexadecimal_string(self, position):
-        return get_sexadecimal_string(position)
-
-
-    def get_ra_dec_string(self, position):
-        return "(%f,%+f) degrees" % (position.ra.to(u.deg).value,position.dec.to(u.deg).value)
-
-
     def __push_message_buffer(self,msg):
         self.message_buffer += msg+"\n"
-
 
     def __pop_message_buffer(self):
         msg = self.message_buffer
         self.message_buffer = ""
         return msg
 
-
+    # std out printing functions
     def sprint(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True):
         my_name   = type(self).__name__ + (f"[{sys._getframe(1).f_code.co_name}]" if show_caller else "")
         my_pid    = "" if self.pid is None else f"pid={self.pid}"
@@ -266,23 +173,18 @@ class SurveyABC(ABC):
             self.__push_message_buffer(prefixed_output)
         return prefixed_output
 
-
     def set_print_to_stdout(self):
         self.print_to_stdout = True
         return self
-
 
     def unset_print_to_stdout(self):
         self.print_to_stdout = False
         return self
 
-
     def print(self, msg, diagnostic_msg=None, show_caller=False, is_traceback=True, buffer=True):
-        #print(self.sprint(**{key: value for key, value in locals().items() if key not in 'self'}))
         message = self.sprint(**{key: value for key, value in locals().items() if key not in 'self'})
         if self.print_to_stdout:
             print(message)
-
 
     def pack(self, url, payload=None):
         if payload:
@@ -295,15 +197,10 @@ class SurveyABC(ABC):
             request = url
         return request
 
-
     # get data over http post
     def send_request(self, url, payload=None):
-
         #potential_retries = 5
         potential_retries = self.http_request_retries
-
-        #TODO make sure cutoutserver didnt break with changes
-
         request = self.pack(url,payload)
         print("sending request for fits")
         while potential_retries > 0:
@@ -314,7 +211,6 @@ class SurveyABC(ABC):
                     response = requests.get(url, verify=False, timeout=40)
                 else:
                     response = self.http.request('GET',request)
-
             except urllib.error.HTTPError as e:
                 self.print(f"{e}",is_traceback=True)
             except ConnectionResetError as e:
@@ -347,7 +243,6 @@ class SurveyABC(ABC):
         print(f"WARNING: Bailed on fetch '{url}'")
         self.processing_status = processing_status.bailed
         return None
-
 
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf., 'https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html'.
@@ -407,15 +302,12 @@ class SurveyABC(ABC):
         #     if key in hdul[0].header:
         #         hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
         #         hdul[0].header.remove(key)
-
         return hdul
-
 
     def get_fits(self, url, payload=None):
         self.print(f"Fetching: {url}")
         response = self.send_request(url, payload)
         return self.create_fits(response)
-
 
     def get_tiles(self, position, size):
         self.print(f"getting tile urls for {str(position)}\n\n\n\n" )
@@ -427,7 +319,6 @@ class SurveyABC(ABC):
             return None
         return hdul_list
 
-
     # make the directory structure if it doesn't exist
     def __make_dir(self, dirname):
         try:
@@ -436,42 +327,18 @@ class SurveyABC(ABC):
             if e.errno != errno.EEXIST:
                 raise
 
-
     def mosaic(self, cutouts):
         tempfile.tempdir = self.tmp_dir
         td = tempfile.mkdtemp()
         input_dir = '{directory}/input'.format(directory=td)
         output_dir = '{directory}/output'.format(directory=td)
         self.__make_dir(input_dir)
-
-        # TODO (Issue #11): So much for thread safe!
-        ## *** IO_WRAPPER ***
-        ## TODO (Issue #11): [1] Stream this
-        ##       [2] Make a decorator
-        ##       [3] Check if thread-safe
-        ## setup the environment
-        #old_stdout = sys.stdout
-        #sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
-
         try:
             for i, c in enumerate(cutouts):
                 with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
                     tmp.write(bytes(c))
 
-            #os.listdir(td)
-
-            # ok, let's mosaic!
-            #montage.mosaic(input_dir, output_dir, bitpix=-64)
             montage.mosaic(input_dir, output_dir, subset_fast =True)
-
-            #fits_metadata_file = f"{output_dir}/metadata.txt"
-            #montage.commands.mImgtbl(input_dir,fits_metadata_file)
-            #
-            #header_template_file = f"{output_dir}/header.fits"
-            #montage.mMakeHdr(fits_metadata_file,header_template_file)
-            #with open(header_template_file,'r') as f:
-            #    header_template = f.read()
-            #self.print("HEADER_TEMPLATE:",header_template)
 
             with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
                 merged = f.read()
@@ -480,40 +347,15 @@ class SurveyABC(ABC):
             shutil.rmtree(input_dir)
             shutil.rmtree(td)
 
-        ## *** IO_WRAPPER ***
-        ## get output
-        #sys.stdout.seek(0)      # jump to the start
-        #out = sys.stdout.read() # read output
-
-        ## *** IO_WRAPPER ***
-        ## restore stdout
-        #sys.stdout.close()
-        #sys.stdout = old_stdout
-
-        ## *** IO_WRAPPER ***
-        ## Now we can print the output from montage
-        #self.print(out)
-
         fits_file = io.BytesIO(merged)
         hdul = fits.open(fits_file)
-
-        # debug
-        #self.print("\n\n\n\nMOSAIKED:",hdul[0].header)
 
         # TODO (Issue #8): Still require investigation...
         #      but much better -- I think.
         #wcs_header = HeaderFilter(hdul[0].header,is_add_wcs=True).get_header()
         wcs_header = WCS(hdul[0].header).to_header()
         hdul[0].header = wcs_header
-        #if type(self).__name__ == 'PanSTARRS':
-        #    self.print("MOSAICKED:",mosiacked_header)
-        #    self.print("\n\n\n\nWCS:",wcs_header)
-
-        # debug
-        #self.print("\n\n\n\nWCS'd:",hdul[0].header)
-
         return hdul
-
 
     def get_image(self, hdu):
         # img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
@@ -541,17 +383,11 @@ class SurveyABC(ABC):
         #     'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
         #     'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
         # }).get_header()
-
-        # debug
-        #self.print(WCS(hdu[0].header).to_header())
-
         img = fits.PrimaryHDU(img_data, header=hdu[0].header)
-
         mem_file = io.BytesIO()
         img.writeto(mem_file)
         mem_file.seek(0)
         return mem_file.getvalue()
-
 
     def paste_tiles(self, hdul_tiles, position):
         if hdul_tiles is None:
@@ -559,7 +395,6 @@ class SurveyABC(ABC):
 
         hdu = None
         if len(hdul_tiles) > 1:
-            self.print(f"Pasting {len(hdul_tiles)} at J{self.get_sexadecimal_string(position)}")
             try:
                 imgs = [img for img in [self.get_image(tile) for tile in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
@@ -594,31 +429,25 @@ class SurveyABC(ABC):
         self.mosaic_hdul_tiles_stack = hdul_tiles
         return hdu
 
-
     def trim_tile(self, hdu, position, size):
         if hdu is None:
             return None
 
         w = WCS(hdu.header)
-
         # trim to 2d from nd
         naxis = w.naxis
         while naxis > 2:
             w = w.dropaxis(2)
             naxis -= 1
         img_data = np.squeeze(hdu.data)
-        print("size", str(size), type(size))
         stamp = Cutout2D(img_data, position, size, wcs=w, mode='trim', copy=True)
         hdu.header.update(stamp.wcs.to_header())
         trimmed = fits.PrimaryHDU(stamp.data, header=hdu.header)
-
         return trimmed
-
 
     def format_fits_hdu(self, hdu, position, size):
         if hdu is None:
             return None
-
         # hdu stuff...
         hdf = HeaderFilter(hdu.header,is_add_wcs=True).update({'DATE-OBS': ('na','')},is_overwrite_existing=False)
         data = hdu.data
@@ -627,9 +456,6 @@ class SurveyABC(ABC):
         hdf.update({
             'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(hdf.get_header()['DATE-OBS'])
         })
-
-        # TODO (Issue #22): Need a cleaner way of centerng on the image, because NVSS truncates result to size of field,
-        #       voiding the calculation below; however, it comes centered -- I think.
         # set (ra,dec) tile center ... rounded to 5dp -- more than good enough
         ra  = np.round(position.ra.to(u.deg).value,5)
         dec = np.round(position.dec.to(u.deg).value,5)
@@ -637,7 +463,6 @@ class SurveyABC(ABC):
             'CRVAL1': (ra, 'RA at reference pixel'),
             'CRVAL2': (dec, 'Dec at reference pixel')
         })
-
         # set pixel reference position to center of tile
         x_pixels = len(data[0])
         y_pixels = len(data)
@@ -645,24 +470,15 @@ class SurveyABC(ABC):
             'CRPIX1': (np.round(x_pixels/2.0, 1), 'Axis 1 reference pixel'),
             'CRPIX2': (np.round(y_pixels/2.0, 1), 'Axis 2 reference pixel')
         })
-
-
         # set survey name
         survey = type(self).__name__
         hdf.update({
             'SURVEY': (survey, 'Survey image obtained from')
         })
-
         # set default band
         hdf.update({
             'BAND': 'na',
         }, is_overwrite_existing=False)
-
-        # TODO (Issue #6): Same thing as EQUINOX ... depricate.
-        ## set epoch
-        #hdf.update({
-        #    'EPOCH': (2000.0, 'Julian epoch of observation')
-        #}, is_overwrite_existing=False)
 
         # add survey dependent stuff...
         #hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
@@ -673,14 +489,12 @@ class SurveyABC(ABC):
         else:
             comment_updates = ""
         hdf.update(header_updates)
-
         # set up new hdu
         ordered_keys   = hdf.saved_keys
         updated_header = hdf.get_header()
         new_hdu = fits.PrimaryHDU(data)
         for k in ordered_keys:
             new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
-
         # add custom comments
         #new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
         comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA project (www.cirada.ca)'
@@ -691,25 +505,19 @@ class SurveyABC(ABC):
         for field in ['LATPOLE','LONPOLE']:
             if field in new_hdu.header:
                 del new_hdu.header[field]
-
-        #self.print(f"  ===>  new_header:")
-        #self.print(f"{get_header_pretty_string(new_hdu.header)}")
-
         return new_hdu
-
 
     def __pop_request_urls_stack(self):
         request_urls_stack = self.request_urls_stack
         self.request_urls_stack = list()
         return request_urls_stack
 
-
     def __pop_mosaic_hdul_tiles_stack(self):
         mosaic_hdul_tiles_stack = self.mosaic_hdul_tiles_stack
         self.mosaic_hdul_tiles_stack = list()
         return mosaic_hdul_tiles_stack
 
-
+    # main routine for cutout processing
     def get_cutout(self, position, size):
         self.processing_status = processing_status.fetching
         try:
@@ -722,15 +530,8 @@ class SurveyABC(ABC):
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
             self.processing_status = processing_status.error
             cutout = None
+        self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at {size}]: Processing Status = '{self.processing_status.name}'.")
 
-        self.print(f"J{self.get_sexadecimal_string(position)}[{self.get_ra_dec_string(position)} at {size}]: Processing Status = '{self.processing_status.name}'.")
-
-        ## debug -- testing
-        #for n,proc in enumerate(processing_status):
-        #    if n == self.pid:
-        #        self.print(f"DEBUGGING: setting status to {proc.name}...")
-        #        self.processing_status = proc
-        #        cutout = None
         return {
             'cutout':       cutout,
             'request_urls': self.__pop_request_urls_stack(),
@@ -739,22 +540,19 @@ class SurveyABC(ABC):
             'status':       self.__pop_processing_status()
         }
 
-
+    # abstract base class functions required by survey/child classes
     @staticmethod
     @abstractmethod
     def get_supported_filters():
         pass
 
-
     @abstractmethod
     def get_filter_setting(self):
         pass
 
-
     @abstractmethod
     def get_tile_urls(self,position,size):
         pass
-
 
     @abstractmethod
     def get_fits_header_updates(self,header):
