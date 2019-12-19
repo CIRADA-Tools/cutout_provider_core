@@ -31,7 +31,6 @@ class VLASS(SurveyABC):
     def get_tile_urls(self,position,size):
         cadc = Cadc()
         radius = (size/2.0).to(u.deg)
-        print("radius:", radius, type(radius))
         results = cadc.query_region(
             coordinates = position,
             radius      = radius,
