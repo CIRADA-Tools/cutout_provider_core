@@ -24,47 +24,27 @@ class VLASS(SurveyABC):
     def get_supported_filters():
         return None
 
-
     def get_filter_setting(self):
         return None
 
-
+    # this will work for ANY collection from CADC
     def get_tile_urls(self,position,size):
-        # Notes: upgrade to more robust method using JJ's recipe...
-        #    1) pip install https://github.com/astropy/astroquery/archive/master.zip
-        #    2) results = cadc.query_region(coords,
-        #                 radius=value * u.deg,
-        #                 collection='VLASS')
-        #    3) cadc.get_image_list(query_result, coordinates, radius)
-        # where,
-        #    cadc = astroquery.cadc.Cadc()
-        def construct_cadc_url(baseurl, position, radius):
-            ICRS_position = position.transform_to('icrs')
-            basefile = baseurl.split('pub/')[1].split('?')[0]
-            if (basefile[-10:] == 'subim.fits' and basefile[:6] == 'VLASS/'):
-                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?id=ad:'
-                       + urllib.parse.quote(basefile)
-                       + ('&Circle={}+{}+{}').format(ICRS_position.ra.degree,
-                       ICRS_position.dec.degree, radius))
-                return url
-            else:
-                self.print('CADC URL appears to be incorrect: {}'.format(basefile))
-                return None
         cadc = Cadc()
-        radius = (size/2.0).to(u.deg).value
-        metadata = cadc.query_region(
+        radius = (size/2.0).to(u.deg)
+        print("radius:", radius, type(radius))
+        results = cadc.query_region(
             coordinates = position,
             radius      = radius,
             collection  = 'VLASS'
         )
-        if len(metadata) == 0:
+        ### If adding any filters in then this is where would do it!!!#####
+        #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
+        if len(results) == 0:
             return list()
-        base_urls = cadc.get_data_urls(metadata)
-        urls = [construct_cadc_url(base_url, position, radius) for base_url in base_urls]
+        urls = cadc.get_image_list(results, position, radius)
         if len(urls)==0:
             self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
         return urls
-
 
     def get_fits_header_updates(self,header, all_headers=None):
         self.print("header updates")

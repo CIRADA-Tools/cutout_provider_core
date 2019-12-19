@@ -99,8 +99,8 @@ class VLASS(SurveyABC):
 
         self.intersecting_tiles = intersecting_tiles
 
-        # TODO (Issue #11): This gets printed for each instance... mabye add a method and call it once... 
-        #       hmmm... get_init_message_string()...? ... can use in survey_config... 
+        # TODO (Issue #11): This gets printed for each instance... mabye add a method and call it once...
+        #       hmmm... get_init_message_string()...? ... can use in survey_config...
         #       avec try ... except ...
         #if self.is_cutout_server:
         #    self.print("=> Using CADC cutout server!")
@@ -114,25 +114,24 @@ class VLASS(SurveyABC):
             ICRS_position = position.transform_to('icrs')
             basefile = baseurl.split('pub/')[1].split('?')[0]
             if (basefile[-10:] == 'subim.fits' and basefile[:6] == 'VLASS/'):
-                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/cutout?uri=ad:' 
-                       + urllib.parse.quote(basefile) 
-                       + ('&cutout=Circle+ICRS+{}+{}+{}').format(ICRS_position.ra.degree,
-                                                                 ICRS_position.dec.degree,
-                                                                 radius.to(u.degree).value))
+                url = ( 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?id=ad:'
+                       + urllib.parse.quote(basefile)
+                       + ('&Circle={}+{}+{}').format(ICRS_position.ra.degree,
+                       ICRS_position.dec.degree, radius))
                 return url
             else:
                 self.print('CADC URL appears to be incorrect: {}'.format(basefile))
                 return None
+
         cadc = Cadc()
-        radius = size/np.sqrt(2.0)
-        metadata = cadc.query_region(
+        radius = (size/2.0).to(u.deg).value
+        print("radius:", radius, type(radius))
+        results = cadc.query_region(
             coordinates = position,
-            radius      = radius.to(u.deg).value,
+            radius      = radius,
             collection  = 'VLASS'
         )
-        if len(metadata) == 0:
-            return list()
-        base_urls = cadc.get_data_urls(metadata)
+        base_urls = cadc.get_data_urls(results)
         urls = [construct_cadc_url(base_url, position, radius) for base_url in base_urls]
         return urls
 
@@ -207,4 +206,3 @@ class VLASS(SurveyABC):
             'IMFILE': (vfile, 'VLASS image file'),
         }
         return header_updates
-
