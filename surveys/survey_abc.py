@@ -90,7 +90,6 @@ class processing_status(Enum):
                 os.remove(file)
         return "\n".join(msgs) if len(msgs) > 0 else None
 
-
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):

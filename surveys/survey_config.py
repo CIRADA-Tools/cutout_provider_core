@@ -11,7 +11,7 @@ this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
 sys.path.append(this_source_file_dir+"../..")
 
 # import the vospace space module to get the data-subdir configuration
-from .hierarchy import LocalCutoutDirs
+# from .hierarchy import LocalCutoutDirs
 
 from random import shuffle
 
@@ -43,8 +43,8 @@ from .panstarrs import PanSTARRS
 class SurveyConfig:
     def __init__(self, yml_file_or_list):
         # set up outdirs
-        relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
-        self.local_dirs = LocalCutoutDirs()
+        self.relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+        #self.local_dirs = LocalCutoutDirs() #ONLY USED FOR HEIRARCHY
 
         # defaults
         self.overwrite = True
@@ -63,11 +63,6 @@ class SurveyConfig:
             SDSS.__name__,
             # TODO (Issue #13): Handle 2MASS case (i.e., number prefixed name -- python no like)
         )
-        # make sure supported_surveys are defined in the hierarchy class
-        for survey in self.supported_surveys:
-            if not self.local_dirs.has_survey(survey):
-                self.__print(f"WARNING: '{survey}' not in {type(self.local_dirs).__name__}() class configuration: removing from list...")
-                self.supported_surveys = tuple(s for s in self.supported_surveys if s != survey)
 
         # set the filters
         self.survey_filter_sets = list()
@@ -76,59 +71,17 @@ class SurveyConfig:
             if survey_filters:
                 self.survey_filter_sets.append({supported_survey: [f for f in survey_filters]})
 
-        # get config file or survey list
         if type(yml_file_or_list)==list:
-            if not yml_file_or_list: #no surveys specified then use all
-                self.survey_names = list(self.supported_surveys)
-            else:
-                self.survey_names = self.__check_supported(yml_file_or_list)
-            self.overwrite = True #update single CUTOUTS
-            out_dir = self.__sanitize_path(relative_path+'data')
-
-        #read in batch config file params
+            out_dir = self.configure_single_source(yml_file_or_list)
         else:
-            file_obj = open(yml_file_or_list,'r')
-            self.config = yml.load(open(yml_file_or_list,'r'), Loader=yml.SafeLoader)
-            file_obj.close()
-            # get relative path to config file
-            #relative_path = re.sub(r"[^/]+$","",yml_file_or_list)
-            # set survey_names
-            self.survey_block = self.config['cutouts']['surveys']
-            self.survey_names = self.__extract_surveys_names(self.survey_block)
-            # set the cutout size
-            print(type(self.config['cutouts']['box_size_arcmin']))
-            self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
-            print("FIRST SIZE", self.size_arcmin)
+            out_dir = self.configure_batch(yml_file_or_list)
 
-            # T A R G E T   C O N F I G U R A T I O N
-            # set targets in list of dicts
-            coords = list()
-            for coords_csv_file in self.config['cutouts']['ra_dec_deg_csv_files']:
-                with open(relative_path +coords_csv_file, newline='') as csvfile:
-                    reader = csv.DictReader(csvfile)
-                    coords, errors = readCoordsFromFile(reader)
-            self.targets = [dict(item, size=self.size_arcmin) for item in coords]
-            # E N V I R O N M E N T   C O N F I G U R A T I O N
-            # get the configuration block
-            configuration = self.config['configuration']
-            # set the data output dir
-            data_root = self.__sanitize_path(configuration['local_root'])
-            # set the overwrite file parameter
-            if 'overwrite' in configuration:
-                self.overwrite = configuration['overwrite']
-            # set the flush file parameter
-            if 'flush' in configuration:
-                self.flush = configuration['flush']
-            if bool(re.match('/',data_root)): # absolute path case
-               out_dir = data_root
-            elif bool(re.match('~/',data_root)): # home path case
-               out_dir = os.path.expanduser(data_root)
-            else: # relative path case
-               out_dir = relative_path+data_root
-
+        ############# old way ONLY USED FOR HEIRARCHY files###########
+        #self.local_dirs.set_local_root(out_dir)
+        #self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
+        ###############################################################
         # same config for sinlge or batch
-        self.local_dirs.set_local_root(out_dir)
-        self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
+        self.out_dirs = {s: out_dir + s for s in self.survey_names}
         for out_dir in self.out_dirs.values():
             try:
                 os.makedirs(out_dir)
@@ -137,23 +90,75 @@ class SurveyConfig:
             else:
                 self.__print(f"Created FITS output dir: {out_dir}")
 
+    def configure_batch(self, yml_file):
+        file_obj = open(yml_file,'r')
+        self.config = yml.load(file_obj, Loader=yml.SafeLoader)
+        file_obj.close()
+        # get relative path to config file
+        #relative_path = re.sub(r"[^/]+$","",yml_file_or_list)
+        # set survey_names
+        self.survey_block = self.config['cutouts']['surveys']
+        self.survey_names = self.__extract_surveys_names(self.survey_block)
+        # set the cutout size
+        self.size_arcmin = self.config['cutouts']['box_size_arcmin'] * u.arcmin
+
+        # set all targets from csv of targets
+        self.set_batch_targets(self.config['cutouts']['ra_dec_deg_csv_files'])
+
+        # E N V I R O N M E N T   C O N F I G U R A T I O N
+        # get the configuration block
+        configuration = self.config['configuration']
+        # set the data output dir
+        data_root = self.__sanitize_path(configuration['local_root'])
+        # set the overwrite file parameter
+        if 'overwrite' in configuration:
+            self.overwrite = configuration['overwrite']
+        # set the flush file parameter
+        if 'flush' in configuration:
+            self.flush = configuration['flush']
+        if bool(re.match('/',data_root)): # absolute path case
+           out_dir = data_root
+        elif bool(re.match('~/',data_root)): # home path case
+           out_dir = os.path.expanduser(data_root)
+        else: # relative path case
+           out_dir = self.relative_path+data_root
+        return out_dir
+
+    def configure_single_source(self, survey_list):
+        if not survey_list: #no surveys specified then use all
+            self.survey_names = list(self.supported_surveys)
+        else:
+            self.survey_names = self.__check_supported(survey_list)
+        self.overwrite = True #update single CUTOUTS
+        return self.__sanitize_path(self.relative_path+'data')
+
     def set_single_target_params(self, single_target, size):
         self.size_arcmin = size * u.arcmin
         if not single_target:
             raise Exception("No Target provided!")
         self.targets = [{'position': extractCoordfromString(single_target), 'size': self.size_arcmin}]
 
+    def set_batch_targets(self, csv_files):
+        # set targets in list of dicts
+        coords = list()
+        for coords_csv_file in csv_files:
+            with open(self.relative_path +coords_csv_file, newline='') as csvfile:
+                reader = csv.DictReader(csvfile)
+                locations, errors = readCoordsFromFile(reader)
+                coords.extend(locations)
+        self.targets = [dict(item, size=self.size_arcmin) for item in coords]
+
     def __sanitize_path(self,path):
         # clean up repeating '/'s with a trailing '/' convention
         return re.sub(r"(/+|/*$)",r"/",path)
 
-    def __csv_to_dict(self,filename):
-        entries = []
-        with open(filename, 'r') as infile:
-            c = csv.DictReader(infile)
-            for entry in c:
-                entries.append(entry)
-        return entries
+    # def __csv_to_dict(self,filename):
+    #     entries = []
+    #     with open(filename, 'r') as infile:
+    #         c = csv.DictReader(infile)
+    #         for entry in c:
+    #             entries.append(entry)
+    #     return entries
 
     def __print(self,string,show_caller=False,is_suspend_on_force_flush=False):
         if string is None or (self.is_force_flush and is_suspend_on_force_flush):
@@ -192,7 +197,6 @@ class SurveyConfig:
             return survey_names
         surveys = extract_surveys_names_from_config_surveys_block(config_surveys_block)
         return self.__check_supported(surveys)
-
 
     def __match_filters(self,survey,filters):
         def get_supported_filters(survey):
@@ -304,10 +308,6 @@ class SurveyConfig:
         self.__unset_force_flush()
         self.__print("[done]")
 
-    # def get_cutout_filename(self, position,size,survey,filter=None,extension=None):
-    #     size = self.size_arcmin
-    #     return get_cutout_filename(position,size,survey,filter,extension)
-
     # main initial processing step
     def get_procssing_stack(self):
         # ra-dec-size cutout targets
@@ -327,7 +327,7 @@ class SurveyConfig:
                 survey = type(task['survey']).__name__
                 filter = survey_instance.get_filter_setting()
                 path = self.out_dirs[survey]
-                task['filename'] = f"{path}{get_cutout_filename(task['position'],task['size'],survey,filter,'fits')}"
+                task['filename'] = f"{path}/{get_cutout_filename(task['position'],task['size'],survey,filter,'fits')}"
                 # set task pid
                 task['pid'] = pid
 
