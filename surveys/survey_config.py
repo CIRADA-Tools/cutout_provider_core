@@ -132,11 +132,11 @@ class SurveyConfig:
         self.overwrite = True #update single CUTOUTS
         return self.__sanitize_path(self.relative_path+'data')
 
-    def set_single_target_params(self, single_target, size):
+    def set_single_target_params(self, single_target, size, is_name=False):
         self.size_arcmin = size * u.arcmin
         if not single_target:
             raise Exception("No Target provided!")
-        self.targets = [{'position': extractCoordfromString(single_target), 'size': self.size_arcmin}]
+        self.targets = [{'position': extractCoordfromString(single_target, is_name), 'size': self.size_arcmin}]
 
     def set_batch_targets(self, csv_files):
         # set targets in list of dicts

@@ -43,6 +43,20 @@ def readCoordsFromFile(csv_dictreader, max_batch=105):
         if value nonempty
     secondarily if 'NAME' is in any headers then that value is evaluated
         as source name if value nonempty.
+    Accepted variants of RA and Dec are:
+    R.A.
+    Right Ascension
+    RA (J2000)
+    R.A. (J2000)
+    Right Ascension (J2000)
+    RAJ2000
+    DEC
+    DEC.
+    Declination
+    DEC (J2000)
+    DEC. (J2000)
+    Declination (J2000)
+    DecJ2000
     '''
     # REMOVE SPACES, ALL CAPS, REMOVE BRACKETS, remove decimals, REMOVE 'J2000'
     potential_RA = ['RA', 'RIGHTASCENSION']

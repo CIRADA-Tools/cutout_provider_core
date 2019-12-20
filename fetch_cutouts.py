@@ -101,51 +101,8 @@ def save_cutout(target):
             ), buffer=False)
     print(msg)
 
-# # TODO: May not need this...
-# # define the default config file with absolute path
-# this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
-# default_config = this_source_file_dir + 'config.yml'
-
-##HANDLE COMMAND LINE INPUT
-@click.group()
-def cli():
-    """\b
-       Survey cutout fetching script.
-       Command help: <command> --help
-    """
-    ## TODO:  put args instructions here for the --help command
-    pass
-
-@cli.command()
-@click.argument('target')
-@click.argument('size')
-@click.argument('surveys', required=False, nargs=-1)
-@click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
-@click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
-def fetch(target, size, surveys, overwrite, flush):
-    """
-    fetch cutouts from single coordinate, 'target'
-    'size' is the image width in arcmin as an integer
-    specify one or several surveys comma separated
-    if surveys argument not specified then fetch from all implemented surveys
-    """
-    try:
-        size= int(size)
-        surveys = list(surveys)
-    except Exception as e:
-        print("invalid argument types. Request aborted. \n" + str(e))
-        return
-
-    print("target", target)
-    print("size", size)
-    print("surveys", surveys)
-    # provide list of surveys rather than name of a config file to parse items from
-    cfg = SurveyConfig(surveys)
-    cfg.set_single_target_params(target, size)
-
-    print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
-    print(f'Flush Mode: {cfg.set_flush(flush)}')
-
+#cfg is a SURVEYABC object already configured
+def process_requests(cfg):
     grabbers = 60
     savers = 1
     # set up i/o queues
@@ -181,6 +138,71 @@ def fetch(target, size, surveys, overwrite, flush):
     for _ in range(savers):
         out_q.put(PoisonPill())
     out_q.join()
+
+# # TODO: May not need this...
+# # define the default config file with absolute path
+# this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
+# default_config = this_source_file_dir + 'config.yml'
+
+##HANDLE COMMAND LINE INPUT
+@click.group()
+def cli():
+    """\b
+       Survey cutout fetching script.
+       Command help: <command> --help
+    """
+    ## TODO:  put args instructions here for the --help command
+    pass
+
+@cli.command()
+@click.option('--coords','-c', 'coords', required=False, default=None)
+@click.option('--name','-n', 'name', required=False)
+@click.option('--radius','-r', 'radius', required=True, type=int)
+@click.option('--surveys','-s', 'surveys', required=False, default=[])
+@click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
+@click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
+def fetch(coords, name, radius, surveys, overwrite, flush):
+    """
+    \b
+    Fetch cutouts for either a single set of coordinates, 'coords' or Source name, 'name'.
+    'radius' is the image cutout radius in arcmin.
+    'surveys' is one or several surveys comma separated without spaces between.
+    If surveys argument is not specified then will fetch from all implemented surveys.
+    \n
+    \b
+    example accepted coordinate formats:
+        > RA,DEC or 'RA, DEC' in degrees
+        > '00h42m30s', '+41d12m00s' or 00h42m30s,+41d12m00s
+        > '00 42 30 +41 12 00'
+        > '00:42.5 +41:12'
+    if name:
+        > The name of the object to get coordinates for, e.g. 'M42'
+    """
+    target = coords
+    size = radius*2
+    is_name = False
+
+    if not name and not coords:
+        print("Invalid options: coords or name required!\n")
+        return
+    if name and coords:
+        print('Invalid options: must enter ONE of coords or name \n')
+        return
+    if name:
+        target = name
+        is_name = True
+    if surveys:
+        surveys=surveys.split(',')
+
+    print("target", target)
+    print("image size", size)
+    print("surveys", surveys)
+    # provide list of surveys rather than name of a config file to parse items from
+    cfg = SurveyConfig(surveys)
+    cfg.set_single_target_params(target, size, is_name)
+    print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
+    print(f'Flush Mode: {cfg.set_flush(flush)}')
+    process_requests(cfg)
 
 @cli.command()
 @click.argument('config-file')
@@ -244,59 +266,37 @@ def batch_process(config_file,overwrite,flush):
               overwrite: False
               flush: True
 
-       where targets.csv must at least have columns of ra and dec, e.g.,\n
+       where targets.csv is a csvfile of source coordinates or names.\n
        \b
-          id,RA,DEC
-          6,162.33807373,-0.668059408665
-          107,0.417553782463,1.09196579456
-          191,132.387832642,1.7280052900299998
-          777,176.34243774400002,15.4953451157
-          986,208.63735961900002,28.2433853149
+       The CSV file must at least have separate columns named "RA" and "Dec"
+       (or any of the variants below, but there can only be one variant of
+       RA and one of Dec per file). A column labelled "Name" may also be used.
+       For a given source, coordinates will be evaluated via "RA" and "Dec" if
+       they are non-empty. If a line does not have a valid position, but does
+       have a "Name" value, the service will attempt to resolve the "Name".
+       \b
+        Accepted variants of RA and Dec are:
+        \b
+        R.A.
+        Right Ascension
+        RA (J2000)
+        R.A. (J2000)
+        Right Ascension (J2000)
+        RAJ2000
+        DEC
+        DEC.
+        Declination
+        DEC (J2000)
+        DEC. (J2000)
+        Declination (J2000)
+        DecJ2000
     """
-
     # load the configuration
     print(f"Using Configuration: {config_file}")
     cfg = SurveyConfig(config_file)
     print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
     print(f'Flush Mode: {cfg.set_flush(flush)}')
-
-    grabbers = 60
-    savers = 1
-
-    # set up i/o queues
-    in_q  = queue.Queue()
-    out_q = queue.Queue()
-
-    # toss all the targets into the queue, including for all surveys
-    # i.e., some position in both NVSS and VLASS and SDSS, etc.
-    for task in cfg.get_procssing_stack():
-        task['survey'].attach_http_pool_manager(http)
-        in_q.put(task)
-
-    # need this for ctrl-c shutdown
-    threads = list()
-
-    # spin up a bunch of worker threads to process all the data
-    # in principle these could be chained further, such that you could go
-    # targets -> hdus -> save to file -> process to jpg -> save to file
-    for _ in range(grabbers):
-        thread = WorkerThread(get_cutout, in_q, out_q)
-        thread.start()
-        in_q.put(PoisonPill())
-        threads.append(thread)
-
-    for _ in range(savers):
-        thread = WorkerThread(save_cutout, out_q)
-        thread.start()
-        threads.append(thread)
-    set_sig_handler(threads) # install ctrl-c handler
-    in_q.join()
-
-    # testing out 1 save to file threads (absolutely not necessary)
-    for _ in range(savers):
-        out_q.put(PoisonPill())
-    out_q.join()
-
+    process_requests(cfg)
 
 if __name__ == "__main__":
     cli()
