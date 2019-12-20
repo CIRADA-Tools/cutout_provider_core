@@ -79,17 +79,29 @@ def get_cutout(target):
         'msg': fetched['message'],
         'sts': fetched['status']
     }
+    target['originals'] = fetched['raw_tiles']
+    print("target", target)
     return target
 
 # save an HDU into a file
 def save_cutout(target):
+    print("final target", target)
     def pack_message(msg,msg_log):
         p="\nLOG: "
         return re.sub(r"^\n","",((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}")
 
     #print("SAVING CUTOUT ")
     if target['hdu']:
+        #TODO add mosaicked in filename if mosaicked
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
+        # add original raw tiles as extensions to mosaic
+        if len(target['originals'])>1:
+            fits_img = fits.open(target['filename'], mode='append')
+            for raw in target['originals']:
+                fits_img.append(raw[0])
+            #fits_img.writeto("{0}".format(target['filename']))
+            fits_img.close(output_verify="silentfix")
+
         msg = target['survey'].sprint(f"{target['filename']} done!",buffer=False)
     else:
         msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['position'].ra.to(u.deg).value}, {target['position'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
