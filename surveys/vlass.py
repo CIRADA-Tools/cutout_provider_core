@@ -24,6 +24,13 @@ class VLASS(SurveyABC):
     def get_supported_filters():
         return None
 
+    @staticmethod
+    def get_epoch(fileOrURL):
+        # works for VLASS quicklook images
+        # extracts '1.1' from url e.g. https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?ID=ad%3AVLASS%2FVLASS1.1.ql.T11t36.J235800%2B003000.10.2048.v1.I.iter1.image.pbcor.tt0.subim.fits&RUNID=x9l8m9ed6s139yir&POS=CIRCLE+6.361111354985913e-06+2.5277771640709656e-06+0.08333333333333333
+        # or filename e.g. VLASS__1.1.ql.T11t01.J000000+000000.10.2048.v1.I.iter1.image.pbcor.tt0.subim_s3.0arcmin.fits
+        return fileOrURL.split('.ql')[0][-3:]
+
     def get_filter_setting(self):
         return None
 

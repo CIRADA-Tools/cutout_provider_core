@@ -80,12 +80,10 @@ def get_cutout(target):
         'sts': fetched['status']
     }
     target['originals'] = fetched['raw_tiles']
-    print("target", target)
     return target
 
 # save an HDU into a file
 def save_cutout(target):
-    print("final target", target)
     def pack_message(msg,msg_log):
         p="\nLOG: "
         return re.sub(r"^\n","",((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}")
@@ -215,16 +213,6 @@ def fetch(coords, name, radius, surveys, overwrite, flush):
     print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
     print(f'Flush Mode: {cfg.set_flush(flush)}')
     process_requests(cfg)
-
-@cli.command()
-@click.argument('config-file')
-def status(config_file):
-    """
-       Cutout pipeline status command.
-       For CONFIG_FILE formating help details see:
-          python fetch_cutouts.py batch-process --help
-    """
-    pass
 
 @cli.command()
 @click.option('--flush',is_flag=True,default=None,help='flush existing target files')
