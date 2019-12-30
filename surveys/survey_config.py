@@ -327,7 +327,8 @@ class SurveyConfig:
                 survey = type(task['survey']).__name__
                 filter = survey_instance.get_filter_setting()
                 path = self.out_dirs[survey]
-                task['filename'] = f"{path}/{get_cutout_filename(task['position'],task['size'],survey,filter,'fits')}"
+                radius = task['size']/2
+                task['filename'] = f"{path}/{get_cutout_filename(task['position'],radius,survey,filter,'fits')}"
                 # set task pid
                 task['pid'] = pid
 

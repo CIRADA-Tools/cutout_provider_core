@@ -90,6 +90,7 @@ class processing_status(Enum):
                 os.remove(file)
         return "\n".join(msgs) if len(msgs) > 0 else None
 
+
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
@@ -258,9 +259,10 @@ class SurveyABC(ABC):
 
         # open fits hdul
         try:
-            hdul = fits.open(fits_file)
+            hdul = fits.open(fits_file, ignore_missing_end= True)
         except OSError as e:
             e_s = re.sub(r"\.$","",f"{e}")
+            self.print(data)
             #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
             self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...", is_traceback=True)
             self.processing_status = processing_status.corrupted
@@ -305,14 +307,27 @@ class SurveyABC(ABC):
 
     def get_fits(self, url, payload=None):
         self.print(f"Fetching: {url}")
-        response = self.send_request(url, payload)
-        return self.create_fits(response)
+        try:
+            response = self.send_request(url, payload)
+        except Exception as e:
+            print("EXCEPTION" + str(e))
+            raise Exception(str(e))
+        if not response:
+            raise Exception(f"No FITS found at url {url} survey {type(self).__name__} !")
+        hdul = self.create_fits(response)
+        if not hdul:
+            raise Exception("error creating FITS")
+        return (hdul[0], url)
 
     def get_tiles(self, position, size):
         self.print(f"getting tile urls for {str(position)}\n\n\n\n" )
         self.request_urls_stack = self.get_tile_urls(position,size)
+        if not self.request_urls_stack:
+            self.processing_status = processing_status.none
+            raise Exception(f"no valid {type(self).__name__} urls found")
+            return None
         if len(self.request_urls_stack) > 0:
-            hdul_list = [hdul for hdul in [self.get_fits(url) for url in self.request_urls_stack] if hdul]
+            hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in self.request_urls_stack] if hdul_tup[0]]
         else:
             self.processing_status = processing_status.none
             return None
@@ -358,7 +373,7 @@ class SurveyABC(ABC):
 
     def get_image(self, hdu):
         # img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
-        img_data = hdu[0].data
+        img_data = hdu.data
         # we need to center the pixel ref's so as to reduce rotations during mosaicking
         # TODO (Issue #8):
         #      OK, so the scripette below removes the rotation,
@@ -382,7 +397,7 @@ class SurveyABC(ABC):
         #     'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
         #     'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
         # }).get_header()
-        img = fits.PrimaryHDU(img_data, header=hdu[0].header)
+        img = fits.PrimaryHDU(img_data, header=hdu.header)
         mem_file = io.BytesIO()
         img.writeto(mem_file)
         mem_file.seek(0)
@@ -395,7 +410,7 @@ class SurveyABC(ABC):
         hdu = None
         if len(hdul_tiles) > 1:
             try:
-                imgs = [img for img in [self.get_image(tile) for tile in hdul_tiles]]
+                imgs = [img for img in [self.get_image(tile) for (tile,url) in hdul_tiles]]
                 # TODO (Issue #6): Need to handle multiple COADDID's...
                 header_template = hdul_tiles[0][0].header
                 hdu = self.mosaic(imgs)[0]
@@ -444,7 +459,7 @@ class SurveyABC(ABC):
         trimmed = fits.PrimaryHDU(stamp.data, header=hdu.header)
         return trimmed
 
-    def format_fits_hdu(self, hdu, position, size):
+    def format_fits_hdu(self, hdu, position, all_headers):
         if hdu is None:
             return None
         # hdu stuff...
@@ -452,12 +467,13 @@ class SurveyABC(ABC):
         data = hdu.data
 
         # standardize DATE-OBS to 'yyyy-mm-ddT00:00:00.000'
+        date_obs = re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000", sanitize_fits_date_fields(hdf.header['DATE-OBS']))
         hdf.update({
-            'DATE-OBS': self.standardize_fits_header_DATE_and_DATE_OBS_fields(hdf.get_header()['DATE-OBS'])
+            'DATE-OBS': date_obs
         })
         # set (ra,dec) tile center ... rounded to 5dp -- more than good enough
-        ra  = np.round(position.ra.to(u.deg).value,5)
-        dec = np.round(position.dec.to(u.deg).value,5)
+        ra  = np.round(position.ra.to(u.deg).value,7)
+        dec = np.round(position.dec.to(u.deg).value,7)
         hdf.update({
             'CRVAL1': (ra, 'RA at reference pixel'),
             'CRVAL2': (dec, 'Dec at reference pixel')
@@ -480,30 +496,34 @@ class SurveyABC(ABC):
         }, is_overwrite_existing=False)
 
         # add survey dependent stuff...
-        #hdf.update(self.get_fits_header_updates(hdf.get_header(),position,size))
-        header_updates = self.get_fits_header_updates(hdf.get_header())
-        if not header_updates is None and 'COMMENT' in header_updates:
-            comment_updates = re.sub(r"\s*$"," ",header_updates['COMMENT'])
-            del header_updates['COMMENT']
-        else:
-            comment_updates = ""
-        hdf.update(header_updates)
+        hdf.update(self.get_fits_header_updates(hdf.header, all_headers))
+
         # set up new hdu
         ordered_keys   = hdf.saved_keys
-        updated_header = hdf.get_header()
+        updated_header = hdf.header
         new_hdu = fits.PrimaryHDU(data)
         for k in ordered_keys:
-            new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
+            if k.upper()=="COMMENT" or k.upper()=="HISTORY":
+                new = str(updated_header[k]).replace("\n", " ")
+                new_hdu.header[k] = (new, updated_header.comments[k])
+            else:
+                new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
         # add custom comments
-        #new_hdu.header['COMMENT'] = ('This cutout was by the VLASS cross-ID working group within the CIRADA   project (www.cirada.ca)')
-        comment_updates += 'This cutout was by the VLASS cross-ID working group within the CIRADA project (www.cirada.ca)'
-        new_hdu.header['COMMENT'] = (comment_updates)
+        # add more custom comments
+        new_hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project (www.cirada.ca)')
+        new_hdu.header['COMMENT'] = "The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
+                        "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
+                        "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
+                        "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
+                        "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation."
+        new_hdu.header['COMMENT'] = "BMAJ, BMIN, BPA, MJD-OBS, and DATE-OBS only currently represent the values" \
+                                    " from one of the input files."
 
-        # TODO (Issue #4): This is a kludge, for now, so as to make
+        # TODO (Issue #4): Is this still needed?? This is a kludge, for now, so as to make
         #       the claRAN machine learning code not bail.
-        for field in ['LATPOLE','LONPOLE']:
-            if field in new_hdu.header:
-                del new_hdu.header[field]
+        # for field in ['LATPOLE','LONPOLE']:
+        #     if field in new_hdu.header:
+        #         del new_hdu.header[field]
         return new_hdu
 
     def __pop_request_urls_stack(self):
@@ -516,19 +536,23 @@ class SurveyABC(ABC):
         self.mosaic_hdul_tiles_stack = list()
         return mosaic_hdul_tiles_stack
 
-    # main routine for cutout processing
+    # main routine for CLI cutout processing
     def get_cutout(self, position, size):
         self.processing_status = processing_status.fetching
+        all_headers = None
         try:
             tiles   = self.get_tiles(position,size)
+            if len(tiles)>1:
+                all_headers = [t.header for (t,tile_url) in tiles]
             tile    = self.paste_tiles(tiles,position)
-            trimmed = self.trim_tile(tile,position,size)
-            cutout  = self.format_fits_hdu(trimmed,position,size)
+            trimmed = self.trim_tile(tile,position,size) ##TODO: only need trimming for thumbnail
+            cutout  = self.format_fits_hdu(trimmed,position,all_headers)
             self.processing_status = processing_status.done
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
             self.processing_status = processing_status.error
             cutout = None
+        #self.print(f"J{position} at {size}]: Processing Status = '{self.processing_status.name}'.")
         self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at {size}]: Processing Status = '{self.processing_status.name}'.")
 
         return {
@@ -554,5 +578,5 @@ class SurveyABC(ABC):
         pass
 
     @abstractmethod
-    def get_fits_header_updates(self,header):
+    def get_fits_header_updates(self,header, all_headers=None):
         pass

@@ -2,7 +2,6 @@ import re
 
 from astropy.table import Table
 from astropy import units as u
-
 from astroquery.ibe import IbeClass
 
 
@@ -42,9 +41,7 @@ class WISE(SurveyABC):
 
     def get_tile_urls(self,position,size):
         #status = list()
-
         wise = IbeClass()
-
         edge = size.to(u.deg)
         metadata = wise.query_region(
             coordinate = position,
@@ -52,21 +49,18 @@ class WISE(SurveyABC):
             dataset    = 'allwise',
             table      = self.metadata_root,
             columns    = 'band,coadd_id',
-            width      = edge,
-            height     = edge,
+            width      = str(edge),
+            # height     = edge, # makes square by default
             intersect  = 'COVERS'
         )
-
         if len(metadata)==0:
             self.print(f"Position ({position.ra}, {position.dec}) has overlapping tiles.")
-
         coadd_ids = self.__get_coadd_ids(metadata)
         fits_urls = self.__get_fits_urls(coadd_ids)
-
         return fits_urls
 
 
-    def get_fits_header_updates(self,header):
+    def get_fits_header_updates(self,header, all_headers=None):
         header_updates = {
             'BAND':     (f'{self.filter.name.upper()}', 'Filter used in observation'),
             'DATE-OBS': (header['MIDOBS'], 'Median observation date of stack'),

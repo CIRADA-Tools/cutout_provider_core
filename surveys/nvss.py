@@ -20,17 +20,13 @@ class NVSS(SurveyABC):
         def round_sig(x, sig=3):
             """Rounds x to nearest sigificant figure, sig > 2."""
             return round(x.value,(sig if sig > 2 else 3)-int(floor(log10(abs(x.value))))-1)*x.unit
-
         # base url
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
-
         # images can't be bigger than this
         #max_image_pixels = 510 * u.pix
-        max_image_pixels = 512 * u.pix
-
+        max_image_pixels = 511 * u.pix # max is 512x512 but down one to be safe
         # max pixel scale without information lose
         max_pixel_scale = 15*u.arcsec/u.pix
-
         # min allow pixel scale
         min_pixel_scale = 0.001*u.arcsec/u.pix
 
@@ -66,5 +62,5 @@ class NVSS(SurveyABC):
         return [self.pack(url, post_values)]
 
 
-    def get_fits_header_updates(self,header):
+    def get_fits_header_updates(self,header, all_headers=None):
         return None

@@ -7,10 +7,10 @@ def get_sexadecimal_string(position):
     sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
     return sexadecimal
 
-def get_cutout_filename(position,size,survey,filter=None,extension=None):
+def get_cutout_filename(position,radius,survey,filter=None,extension=None):
     coords = get_sexadecimal_string(position)
     # note:the size as string already prints the units but remove space needed
-    size   = str(size).replace(" ", "")#re.sub(r"\.?0+$","","%f" % size)
+    size   = str(radius).replace(" ", "")#re.sub(r"\.?0+$","","%f" % size)
     filter = (lambda f: '' if f is None else f"-{f.name}")(filter)
     return f"{survey}_J{coords}_s{size}{filter}_mosaicked{'.%s' % extension if not extension is None else ''}"
 

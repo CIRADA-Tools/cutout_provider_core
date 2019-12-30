@@ -196,4 +196,10 @@ class PanSTARRS(SurveyABC):
         }
         #TODO consider adding in records from all images gone into mosaic
         # using all_headers
+        if all_headers:
+            for num,head in enumerate(all_headers):
+                fpartkeys = ['TESS_ID', 'SKYCELL','STK_ID']
+                nameparts = [head[key] for key in fpartkeys]
+                header_updates['IMFILE'+str(num+1).zfill(2)]='.'.join(nameparts) + '.stk.i.unconv.fits_sci.fits'
+                ###create single string - FILNAM12 goes after a constant
         return header_updates
