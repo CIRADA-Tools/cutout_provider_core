@@ -32,24 +32,20 @@ class PS1SkyTessellationPatterns:
         self.pix_scale = 0.25 * (u.arcsec/u.pix)
         self.sub_cells = 10
 
-
     def __sanitize_ra(self,ra):
         if not isinstance(ra,Quantity):
             ra = (ra % 360.0) * u.deg
         return ra
-
 
     def __sanitize_dec(self,dec):
         if not isinstance(dec,Quantity):
             dec = dec * u.deg
         return dec
 
-
     def dec(self, zone):
         if not zone in self.zones:
             return None
         return self.decs[self.zones.index(zone)]
-
 
     def zone(self,dec):
         dec = self.__sanitize_dec(dec)
@@ -57,7 +53,6 @@ class PS1SkyTessellationPatterns:
             if self.min_decs[i] <= dec and dec < self.max_decs[i]:
                  return zone
         return None
-
 
     def projcell(self,ra,dec):
         zone = self.zone(dec)
@@ -71,7 +66,6 @@ class PS1SkyTessellationPatterns:
             if (i == 0 and ((ra_i <= ra and ra < 0*u.deg) or (0*u.deg <= ra and ra < d_ra/2.0))) or (ra_i <= ra and ra < ra_i+d_ra):
                 return i+self.proj_cells[self.zones.index(zone)]
         return None
-
 
     def projcell_center(self,ra,dec):
         projcell = self.projcell(ra,dec)
@@ -104,23 +98,24 @@ class PS1SkyTessellationPatterns:
         # TODO: cat seem to get xy to make table query
         for i in range(self.sub_cells):
             dec_i = i * d_dec + min_dec
-            print(f"{dec}: ({dec_i},{dec_i+d_dec})")
+            #print(f"{dec}: ({dec_i},{dec_i+d_dec})")
             if dec_i <= dec and dec < dec_i+d_dec:
                  si_dec = i
                  break
         print(f"si_dec={si_dec}")
         return projcell
 
-
 from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
 class PanSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
         super().__init__()
-
         self.pixel_scale = 0.25 * (u.arcsec/u.pix)
         self.filter = filter
 
+    @staticmethod
+    def get_supported_filters():
+        return grizy_filters
 
     def get_skycells(self,position,size):
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
@@ -132,7 +127,6 @@ class PanSTARRS(SurveyABC):
         dec = position.dec
 
         # the skycell at input (ra,dec)
-
         url = make_url(ra,dec)
         skycells = Table.read(url, format='ascii', fast_reader=True)
 
@@ -151,7 +145,7 @@ class PanSTARRS(SurveyABC):
         # try:
         for url in urls:
             try:
-                self.print("THIS URL: ", url)
+                self.print("GETTING SKYCELL AT: ", url)
                 sc = Table.read(url, format='ascii')
                 is_in_skycells = False
                 for skycell in skycells:
@@ -160,21 +154,11 @@ class PanSTARRS(SurveyABC):
                 if not is_in_skycells:
                     skycells = vstack([skycells,sc])
             except Exception as e:
-                self.print("prob doesn't exisit?", str(e))
-        # except Exception as e:
-        #     self.print("Exception", str(e))
-        #     raise Exception("problem with retrieving Panstarrs skycells: " +str(e))
+                self.print("prob doesn't exist?", str(e))
         return skycells
-
-
-    @staticmethod
-    def get_supported_filters():
-        return grizy_filters
-
 
     def get_filter_setting(self):
         return self.filter
-
 
     def get_tile_urls(self,position,size):
         urls = list()
@@ -182,7 +166,6 @@ class PanSTARRS(SurveyABC):
         for skycell in self.get_skycells(position,size):
             urls.append(f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
         return urls
-
 
     def get_fits_header_updates(self,header, all_headers=None):
         survey = type(self).__name__

@@ -6,15 +6,12 @@ class NVSS(SurveyABC):
     def __init__(self):
         super().__init__()
 
-
     @staticmethod
     def get_supported_filters():
-        return None
-
+        return []
 
     def get_filter_setting(self):
         return None
-
 
     def get_tile_urls(self,position,size):
         def round_sig(x, sig=3):
@@ -55,12 +52,9 @@ class NVSS(SurveyABC):
             'MAPROJ': 'SIN',
             'Type': 'application/octet-stream'
         }
-
         self.print(f"({position.ra.to(u.deg).value},{position.dec.to(u.deg).value}) => ({post_values['RA']},{post_values['Dec']})")
         #self.print(f"URL: {self.pack(url, post_values)}")
-
         return [self.pack(url, post_values)]
-
 
     def get_fits_header_updates(self,header, all_headers=None):
         return None

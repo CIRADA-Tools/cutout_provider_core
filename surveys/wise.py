@@ -14,11 +14,9 @@ class WISE(SurveyABC):
         self.metadata_root = 'p3am_cdd'
         self.url_root = f"https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/{self.metadata_root}"
 
-
     @staticmethod
     def get_supported_filters():
         return wise_filters
-
 
     def get_filter_setting(self):
         return self.filter
@@ -58,7 +56,6 @@ class WISE(SurveyABC):
         coadd_ids = self.__get_coadd_ids(metadata)
         fits_urls = self.__get_fits_urls(coadd_ids)
         return fits_urls
-
 
     def get_fits_header_updates(self,header, all_headers=None):
         header_updates = {

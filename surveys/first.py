@@ -9,18 +9,14 @@ class FIRST(SurveyABC):
 
     @staticmethod
     def get_supported_filters():
-        return None
-
+        return []
 
     def get_filter_setting(self):
         return None
 
-
     def get_tile_urls(self,position,size):
         url = 'https://third.ucllnl.org/cgi-bin/firstimage'
-
         position = position.to_string('hmsdms', sep=' ')
-
         post_values = {
             'RA': position,  # note that this includes DEC
             'Equinox': 'J2000',
@@ -44,9 +40,7 @@ class FIRST(SurveyABC):
         #str += "post_values = %s" % (" {\n>"+",\n> ".join([f"{k}: {post_values[k]}" for k in post_values.keys()])+"\n> }\n")
         #str += f" ======> {self.pack(url, post_values)}"
         #print(str)
-
         return [self.pack(url, post_values)]
-
 
     def get_fits_header_updates(self,header, all_headers=None):
         header_updates = {

@@ -81,16 +81,6 @@ class processing_status(Enum):
                 file_listing.append(file)
         return file_listing
 
-    @classmethod
-    def flush(self,filename,is_all=False):
-        msgs = list()
-        for file in ([filename] if is_all else [])+self.__get_unreprocessable_file_names(filename):
-            if os.path.exists(file):
-                msgs.append(f"Flushed: {file}")
-                os.remove(file)
-        return "\n".join(msgs) if len(msgs) > 0 else None
-
-
 # abstract class for a survey
 from abc import ABC, abstractmethod
 class SurveyABC(ABC):
@@ -320,7 +310,7 @@ class SurveyABC(ABC):
         return (hdul[0], url)
 
     def get_tiles(self, position, size):
-        self.print(f"getting tile urls for {str(position)}\n\n\n\n" )
+        self.print(f"getting tile urls for {str(position)}\n" )
         self.request_urls_stack = self.get_tile_urls(position,size)
         if not self.request_urls_stack:
             self.processing_status = processing_status.none
@@ -553,7 +543,7 @@ class SurveyABC(ABC):
             self.processing_status = processing_status.error
             cutout = None
         #self.print(f"J{position} at {size}]: Processing Status = '{self.processing_status.name}'.")
-        self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at {size}]: Processing Status = '{self.processing_status.name}'.")
+        self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at radius {size/2}]: Processing Status = '{self.processing_status.name}'.")
 
         return {
             'cutout':       cutout,

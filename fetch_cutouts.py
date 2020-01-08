@@ -88,28 +88,32 @@ def save_cutout(target):
         p="\nLOG: "
         return re.sub(r"^\n","",((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}")
 
-    #print("SAVING CUTOUT ")
     if target['hdu']:
-        #TODO add mosaicked in filename if mosaicked
         target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
         # add original raw tiles as extensions to mosaic
         if len(target['originals'])>1:
             fits_img = fits.open(target['filename'], mode='append')
             for raw in target['originals']:
                 fits_img.append(raw[0])
-            #fits_img.writeto("{0}".format(target['filename']))
             fits_img.close(output_verify="silentfix")
-
-        msg = target['survey'].sprint(f"{target['filename']} done!",buffer=False)
+        msg = target['survey'].sprint(f"{target['filename']} SAVED!",buffer=False)
     else:
         msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['position'].ra.to(u.deg).value}, {target['position'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
         log_msg = pack_message(msg,target['log']['msg'])
         if not ProcStatus.touch_file(f"{target['filename']}",target['log']['sts'],log_msg):
-            target['survey'].print("Failed to dump %s with log info...\n%s" % (
+            target['survey'].sprint("Failed to dump %s with log info...\n%s" % (
                 re.sub(r"\.fits$",f".{target['log']['sts'].name}",target['filename']),
                 log_msg
             ), buffer=False)
     print(msg)
+
+def check_batch_csv(batch_files_string):
+    batch_files = batch_files_string.split(',')
+    good_files = [csv for csv in batch_files if csv[-4:]=='.csv']
+    bad_files = [x for x in batch_files if x not in good_files]
+    if len(bad_files)>0:
+        print("only CSV batch file formats accepted! skipped "+ str(bad_files))
+    return good_files
 
 #cfg is a SURVEYABC object already configured
 def process_requests(cfg):
@@ -149,37 +153,32 @@ def process_requests(cfg):
         out_q.put(PoisonPill())
     out_q.join()
 
-# # TODO: May not need this...
-# # define the default config file with absolute path
-# this_source_file_dir = re.sub(r"(.*/).*$",r"\1",os.path.realpath(__file__))
-# default_config = this_source_file_dir + 'config.yml'
+def parse_surveys_string(surveys):
+    # regex to match if filters in brackets next to survey name
+    # e.g. WISE[w1],SDSS(g,r,i)
+    if surveys:
+        return re.split(",(?![^[]*\\])(?![^(]*\\))",surveys)
 
 ##HANDLE COMMAND LINE INPUT
 @click.group()
 def cli():
     """\b
-       Survey cutout fetching script.
-       Command help: <command> --help
+       Command Line Cutout Fetching program.
     """
-    ## TODO:  put args instructions here for the --help command
-    pass
 
 @cli.command()
 @click.option('--coords','-c', 'coords', required=False, default=None)
 @click.option('--name','-n', 'name', required=False)
 @click.option('--radius','-r', 'radius', required=True, type=int)
 @click.option('--surveys','-s', 'surveys', required=False, default=[])
-@click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
-@click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
-def fetch(coords, name, radius, surveys, overwrite, flush):
+@click.option('--output','-o', 'data_out', required=False, default='data_out')
+@click.option('--overwrite',is_flag=True,default=True,help='overwrite existing target files (default True)')
+@click.option('--flush', is_flag=True,default=False,help='flush existing target files (supersedes --overwrite)')
+def fetch(coords, name, radius, surveys, data_out, overwrite, flush):
     """
     \b
-    Fetch cutouts for either a single set of coordinates, 'coords' or Source name, 'name'.
-    'radius' is the image cutout radius in arcmin.
-    'surveys' is one or several surveys comma separated without spaces between.
-    If surveys argument is not specified then will fetch from all implemented surveys.
-    \n
-    \b
+    Single cutout fetching command.
+    Coordinates -c 'coords' OR Source name, -n 'name'.
     example accepted coordinate formats:
         > RA,DEC or 'RA, DEC' in degrees
         > '00h42m30s', '+41d12m00s' or 00h42m30s,+41d12m00s
@@ -187,11 +186,31 @@ def fetch(coords, name, radius, surveys, overwrite, flush):
         > '00:42.5 +41:12'
     if name:
         > The name of the object to get coordinates for, e.g. 'M42'
+    \b
+    -r 'radius' is the Integer search radius around the specified source location in arcmin.
+    The cutouts will be of maximum width and height of 2*radius
+    \n
+    \b
+    -s 'surveys' is one or several surveys comma separated without spaces between.
+    Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
+    \b
+    Filters for each survey may be specified in the following formats:
+        > "WISE(w2),SDSS[g,r]"
+        > "WISE[w1],VLASS"
+        > WISE,VLASS
+    \b
+    If no filters are specified then the default filter is used for each.
+    If surveys argument is not specified then will fetch from ALL implemented
+    surveys with default filters for each survey.
+    \n
+
+    \b
+    -o 'output' is the directory location to save output FITS images to.
+    Default location is a folder named 'data_out/' in this current directory.
     """
     target = coords
     size = radius*2
     is_name = False
-
     if not name and not coords:
         print("Invalid options: coords or name required!\n")
         return
@@ -201,82 +220,43 @@ def fetch(coords, name, radius, surveys, overwrite, flush):
     if name:
         target = name
         is_name = True
-    if surveys:
-        surveys=surveys.split(',')
-
-    print("target", target)
-    print("image size", size)
-    print("surveys", surveys)
+    surveys = parse_surveys_string(surveys)
+    print(f"Using args:\n target {target} \n image size {size} \n surveys {surveys}")
     # provide list of surveys rather than name of a config file to parse items from
-    cfg = SurveyConfig(surveys)
+    cfg = SurveyConfig(surveys, data_out)
     cfg.set_single_target_params(target, size, is_name)
+    if flush:
+        cfg.flush_old_survey_data()
     print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
-    print(f'Flush Mode: {cfg.set_flush(flush)}')
+    # MAIN CALL
     process_requests(cfg)
 
-@cli.command()
-@click.option('--flush',is_flag=True,default=None,help='flush existing target files')
-@click.argument('config-file')
-def maintenance(config_file,flush):
-    """
-       Cutout pipeline maintenance command.
-
-          CONFIG_FILE = yaml configuration file
-
-       \b
-       For CONFIG_FILE formating help details see:
-          python fetch_cutouts.py batch-process --help
-    """
-    if flush:
-        # load the configuration
-        click.echo(f"Using Configuration: {config_file}")
-        try:
-            cfg = SurveyConfig(config_file)
-            cfg.force_flush()
-        except Exception as e:
-            click.echo("ERROR: %s\n> %s" % (e, "\n> ".join(traceback.format_exc().splitlines())))
-    else:
-        click.echo("Please enter option flag/s.")
-
 # Notes: http://click.palletsprojects.com/en/5.x/options/
+#
 @cli.command()
-@click.argument('config-file')
-@click.option('--overwrite',is_flag=True,default=None,help='overwrite existing target files')
-@click.option('--flush',is_flag=True,default=None,help='flush existing target files (supersedes --overwrite)')
-def batch_process(config_file,overwrite,flush):
+@click.option('--file','-f', 'batch_files_string', required=True)
+@click.option('--radius','-r', 'radius', required=True, type=int)
+@click.option('--surveys','-s', 'surveys', required=False, default=[])
+@click.option('--output','-o', 'data_out', required=False, default='data_out')
+@click.option('--overwrite',is_flag=True,default=True,help='overwrite existing target files (default True)')
+@click.option('--flush',is_flag=True,default=False,help='flush existing target files (supersedes --overwrite)')
+def batch_process(batch_files_string, radius, surveys, data_out, overwrite,flush):
     """
        Batch cutout fetching command.
 
-           CONFIG_FILE = yaml configuration file
-
-       The following is an example of a configuration file.\n
        \b
-          cutouts:
-              ra_dec_deg_csv_files:
-                  - targets.csv
-              box_size_arcmin: 3
-              surveys:
-                  - VLASS
-                  - WISE:
-                        filters: [w1]
-                  - PanSTARRS:
-                        filters: [g,i]
-          configuration:
-              local_root: testing/data/out
-              overwrite: False
-              flush: True
-
-       where targets.csv is a csvfile of source coordinates or names.\n
+       Fetch batch cutouts for either a single csv, or multiple csv file(s)
+       of source coordinates or names.
        \b
-       The CSV file must at least have separate columns named "RA" and "Dec"
+       -f "file" The CSV file(s) must at least have separate columns named "RA" and "Dec"
        (or any of the variants below, but there can only be one variant of
-       RA and one of Dec per file). A column labelled "Name" may also be used.
+       RA and one of Dec per file). A column labelled "Name" or "NAME" may also be used.
        For a given source, coordinates will be evaluated via "RA" and "Dec" if
-       they are non-empty. If a line does not have a valid position, but does
-       have a "Name" value, the service will attempt to resolve the "Name".
+       they are non-empty. If a line does not have a valid coordinate position,
+       but does have a "Name" column value, the service will attempt to resolve
+       the source name.
        \b
-        Accepted variants of RA and Dec are:
-        \b
+        Accepted variants of RA and Dec Column header names are:
         R.A.
         Right Ascension
         RA (J2000)
@@ -290,12 +270,46 @@ def batch_process(config_file,overwrite,flush):
         DEC. (J2000)
         Declination (J2000)
         DecJ2000
+        \b
+        Source names will be resolved via the Sesame Name Resolver:
+        http://vizier.u-strasbg.fr/viz-bin/Sesame
+       \b
+       -r 'radius' is the Integer search radius around the specified source location in arcmin.
+       The cutouts will be of maximum width and height of 2*radius
+       \n
+       \b
+       -s 'surveys' is one or several surveys comma separated without spaces between.
+       Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
+       \b
+       Filters for each survey may be specified in the following formats:
+           > "WISE(w2),SDSS[g,r]"
+           > "WISE[w1],VLASS"
+           > WISE,VLASS
+       \b
+       If no filters are specified then the default filter is used for each.
+       If surveys argument is not specified then will fetch from ALL implemented
+       surveys with default filters for each survey.
+       \n
+
+       \b
+       -o 'output' is the directory location to save output FITS images to.
+       Output will be furthered separated into subfolders for the corresponding survey.
+       Default location is a folder named 'data_out/' in this current directory.
     """
-    # load the configuration
-    print(f"Using Configuration: {config_file}")
-    cfg = SurveyConfig(config_file)
+    size = radius*2
+    surveys = parse_surveys_string(surveys)
+    print(f"Using args: \n image size {size} \n surveys {surveys}")
+
+    accepted_batch_files = check_batch_csv(batch_files_string)
+    if not accepted_batch_files:
+        return None
+    print(f"Using batch csv: {accepted_batch_files}")
+    # configuration
+    cfg = SurveyConfig(surveys, data_out)
+    cfg.set_batch_targets(accepted_batch_files, size)
+    if flush:
+        cfg.flush_old_survey_data()
     print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")
-    print(f'Flush Mode: {cfg.set_flush(flush)}')
     process_requests(cfg)
 
 if __name__ == "__main__":
