@@ -27,9 +27,11 @@ from .first     import FIRST
 from .wise      import WISE
 from .sdss      import SDSS
 from .vlass     import VLASS
-from .panstarrs import PanSTARRS
+from .panstarrs import PANSTARRS
 
 
+# THIS IS ONLY USED FOR THE COMMAND LINE INTERFACE CAN BE REMOVED FROM CORE
+#
 class SurveyConfig:
     # define Class var
 
@@ -45,7 +47,7 @@ class SurveyConfig:
             NVSS.__name__,
             VLASS.__name__,
             WISE.__name__,
-            PanSTARRS.__name__,
+            PANSTARRS.__name__,
             SDSS.__name__,
         )
         self.survey_names = []
@@ -56,6 +58,8 @@ class SurveyConfig:
         ###############################################################
         # same config for sinlge or batch
         self.out_dirs = {s: os.path.join(out_dir,s) for s in self.survey_names}
+        if "PANSTARRS" in self.out_dirs.keys():
+            self.out_dirs["PANSTARRS"] = self.out_dirs["PANSTARRS"].replace("PANSTARRS", "PanSTARRS")
         for out_dir in self.out_dirs.values():
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
@@ -102,10 +106,10 @@ class SurveyConfig:
                 square = re.search('\[([^)]+)\]',survey)
                 if rund:
                     filters = [str(f) for f in rund[0].replace('(','').replace(')','').split(',')]
-                    survey = survey.replace(rund[0],'')
+                    survey = survey.replace(rund[0],'').upper()
                 elif square:
                     filters = [str(f) for f in square[0].replace('[','').replace(']','').split(',')]
-                    survey = survey.replace(square[0],'')
+                    survey = survey.replace(square[0],'').upper()
                 safe_filters = self.match_filters(survey,filters)
                 if survey in self.supported_surveys:
                     self.survey_filter_sets[survey] = safe_filters
@@ -175,13 +179,11 @@ class SurveyConfig:
         procssing_stack = list()
         for survey_class in survey_classes:
             for survey_target in survey_targets:
-                survey_instance = eval(survey_class)
                 # ra-dec-size cutout target
                 task = dict(survey_target)
-                # add survey instance for processing stack
-                task['survey'] = survey_instance
+                task['survey'] = eval(survey_class) # add survey instance to processing stack
                 survey = type(task['survey']).__name__
-                filter = survey_instance.get_filter_setting()
+                filter = task['survey'].get_filter_setting()
                 path = self.out_dirs[survey]
                 radius = task['size']/2
                 task['filename'] = f"{path}/{get_cutout_filename(task['position'],radius,survey,filter,'fits')}"

@@ -176,31 +176,30 @@ class SurveyABC(ABC):
         if self.print_to_stdout:
             print(message)
 
+    # currently only survey that packs data is NVSS
     def pack(self, url, payload=None):
         if payload:
             data = urllib.parse.urlencode(payload).encode('utf-8')
-            if self.http is None:
-                request = urllib.request.Request(url, data)
-            else:
-                request = url+"/post?"+data.decode('utf-8')
+            # if self.http is None:
+            #     request = urllib.request.Request(url, data)
+            # else:
+            request = url+"/post?"+data.decode('utf-8')
         else:
             request = url
         return request
 
     # get data over http post
-    def send_request(self, url, payload=None):
-        #potential_retries = 5
+    def send_request(self, url):
         potential_retries = self.http_request_retries
-        request = self.pack(url,payload)
         print("sending request for fits")
         while potential_retries > 0:
             try:
+                #webserver handles own process pool
                 if self.http is None:
                     #response = urllib.request.urlopen(request)
-                    #webserver handles own process pool
                     response = requests.get(url, verify=False, timeout=40)
                 else:
-                    response = self.http.request('GET',request)
+                    response = self.http.request('GET',url)
             except urllib.error.HTTPError as e:
                 self.print(f"{e}",is_traceback=True)
             except ConnectionResetError as e:
@@ -216,9 +215,8 @@ class SurveyABC(ABC):
                 self.print("OTHER exception" + str(e))
             else:
                 try:
+                    #webserver way
                     if self.http is None:
-                        #response_data = bytearray(response.read())
-                        #webserver way
                         response_data = bytearray(response.content)
                     else:
                         response_data = bytearray(response.data)
@@ -295,10 +293,10 @@ class SurveyABC(ABC):
         #         hdul[0].header.remove(key)
         return hdul
 
-    def get_fits(self, url, payload=None):
+    def get_fits(self, url):
         self.print(f"Fetching: {url}")
         try:
-            response = self.send_request(url, payload)
+            response = self.send_request(url)
         except Exception as e:
             print("EXCEPTION" + str(e))
             raise Exception(str(e))

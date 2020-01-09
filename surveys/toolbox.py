@@ -8,6 +8,7 @@ def get_sexadecimal_string(position):
     return sexadecimal
 
 def get_cutout_filename(position,radius,survey,filter=None,extension=None):
+    survey= survey.replace("PANSTARRS", "PanSTARRS")
     coords = get_sexadecimal_string(position)
     # note:the size as string already prints the units but remove space needed
     size   = str(radius).replace(" ", "")#re.sub(r"\.?0+$","","%f" % size)

@@ -107,7 +107,7 @@ class PS1SkyTessellationPatterns:
 
 from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
-class PanSTARRS(SurveyABC):
+class PANSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
         super().__init__()
         self.pixel_scale = 0.25 * (u.arcsec/u.pix)

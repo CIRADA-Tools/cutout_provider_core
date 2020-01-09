@@ -8,5 +8,5 @@ from .first     import FIRST
 from .nvss      import NVSS
 from .vlass     import VLASS
 from .wise      import WISE
-from .panstarrs import PanSTARRS
+from .panstarrs import PANSTARRS
 from .sdss      import SDSS

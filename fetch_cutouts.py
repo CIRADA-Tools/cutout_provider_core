@@ -3,6 +3,7 @@ import os, sys, traceback, signal
 # utilities
 import re, click, urllib3
 import yaml as yml
+from datetime import datetime
 # threading
 import threading, queue
 # astropy
@@ -50,15 +51,12 @@ class WorkerThread(threading.Thread):
     def run(self):
         while not self.kill_recieved:
             task = self.input_q.get()
-
             # if it's swallowed
             if type(task) is PoisonPill:
                 self.input_q.task_done()
                 break
-
             ret = self.worker(task)
             self.input_q.task_done()
-
             if self.output_q:
                 self.output_q.put(item=ret)
 
@@ -117,8 +115,8 @@ def check_batch_csv(batch_files_string):
 
 #cfg is a SURVEYABC object already configured
 def process_requests(cfg):
+    start = datetime.now()
     grabbers = 60
-    savers = 1
     # set up i/o queues
     in_q  = queue.Queue()
     out_q = queue.Queue()
@@ -136,22 +134,20 @@ def process_requests(cfg):
     # in principle these could be chained further, such that you could go
     # targets -> hdus -> save to file -> process to jpg -> save to file
     for _ in range(grabbers):
-        thread = WorkerThread(get_cutout, in_q, out_q)
-        thread.start()
+        thread = WorkerThread(get_cutout, in_q, out_q).start()
         in_q.put(PoisonPill())
         threads.append(thread)
 
-    for _ in range(savers):
-        thread = WorkerThread(save_cutout, out_q)
-        thread.start()
-        threads.append(thread)
+    # save all from out queue as added there
+    thread = WorkerThread(save_cutout, out_q).start()
+    threads.append(thread)
     set_sig_handler(threads) # install ctrl-c handler
     in_q.join()
 
-    # testing out 1 save to file threads (absolutely not necessary)
-    for _ in range(savers):
-        out_q.put(PoisonPill())
+    out_q.put(PoisonPill()) # add killmessage to end of queue
     out_q.join()
+
+    print("time took: " +str(datetime.now()-start))
 
 def parse_surveys_string(surveys):
     # regex to match if filters in brackets next to survey name
