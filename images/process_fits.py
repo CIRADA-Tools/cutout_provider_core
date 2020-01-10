@@ -9,6 +9,7 @@ from astropy.visualization import make_lupton_rgb
 import matplotlib.pyplot as plt
 
 '''
+TODO finish this?? looks incomplete and needs to use toolbox
 Grab FITS files from /out, process into JPGs and save to /processed
 
 TODO (Issue #15): Should probably be refactored so that it can easily integrated

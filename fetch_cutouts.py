@@ -10,8 +10,8 @@ import threading, queue
 from astropy.io import fits
 import astropy.units as u
 # configuration & processing
-from surveys.survey_config import SurveyConfig
-from surveys.survey_abc import processing_status as ProcStatus
+from cli_config import CLIConfig
+from core.survey_abc import processing_status as ProcStatus
 
 #Global pool manager
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -105,6 +105,22 @@ def save_cutout(target):
             ), buffer=False)
     print(msg)
 
+def read_in_config(yml_file):
+    try:
+        file_obj = open(yml_file,'r')
+        file_data = yml.load(file_obj, Loader=yml.SafeLoader)
+        file_obj.close()
+        params = {}
+        params['surveys'] = file_data['cutouts']['surveys']
+        params['radius'] = file_data['cutouts']['radius']
+        params['output'] = file_data['configuration']['output']
+        params['overwrite'] = file_data['configuration']['overwrite']
+        params['flush'] = file_data['configuration']['flush']
+    except Exception as e:
+        print("YAML file read error: " +str(e))
+        return None
+    return params
+
 def check_batch_csv(batch_files_string):
     batch_files = batch_files_string.split(',')
     good_files = [csv for csv in batch_files if csv[-4:]=='.csv']
@@ -154,6 +170,8 @@ def parse_surveys_string(surveys):
     # e.g. WISE[w1],SDSS(g,r,i)
     if surveys:
         return re.split(",(?![^[]*\\])(?![^(]*\\))",surveys)
+    else:
+        return []
 
 ##HANDLE COMMAND LINE INPUT
 @click.group()
@@ -165,12 +183,13 @@ def cli():
 @cli.command()
 @click.option('--coords','-c', 'coords', required=False, default=None)
 @click.option('--name','-n', 'name', required=False)
-@click.option('--radius','-r', 'radius', required=True, type=int)
-@click.option('--surveys','-s', 'surveys', required=False, default=[])
-@click.option('--output','-o', 'data_out', required=False, default='data_out')
-@click.option('--overwrite',is_flag=True,default=True,help='overwrite existing target files (default True)')
-@click.option('--flush', is_flag=True,default=False,help='flush existing target files (supersedes --overwrite)')
-def fetch(coords, name, radius, surveys, data_out, overwrite, flush):
+@click.option('--radius','-r', 'radius', required=False, type=int)
+@click.option('--surveys','-s', 'surveys', required=False, type=str)
+@click.option('--output','-o', 'data_out', required=False)
+@click.option('--config', '-cf','config_file', required=False, help='Specify YAML config file for settings, ex. "config.yml". *Note: Specified command line args will overwrite these settings')
+@click.option('--overwrite',is_flag=True, help='overwrite existing target files (default False)')
+@click.option('--flush', is_flag=True, help='flush existing target files (supersedes --overwrite)')
+def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=None, config_file=''):
     """
     \b
     Single cutout fetching command.
@@ -205,7 +224,6 @@ def fetch(coords, name, radius, surveys, data_out, overwrite, flush):
     Default location is a folder named 'data_out/' in this current directory.
     """
     target = coords
-    size = radius*2
     is_name = False
     if not name and not coords:
         print("Invalid options: coords or name required!\n")
@@ -216,10 +234,43 @@ def fetch(coords, name, radius, surveys, data_out, overwrite, flush):
     if name:
         target = name
         is_name = True
-    surveys = parse_surveys_string(surveys)
-    print(f"Using args:\n target {target} \n image size {size} \n surveys {surveys}")
-    # provide list of surveys rather than name of a config file to parse items from
-    cfg = SurveyConfig(surveys, data_out)
+
+    if not radius and not config_file:
+        print("\n must specify search radius or to use config.yml (--config_file)")
+        return
+
+    if radius:
+        size = radius*2
+
+    if config_file:
+        config_dict = read_in_config(config_file)
+        if not config_dict:
+            return # config file error abort
+        # use YAML configs only if args not given
+        if not radius:
+            size = config_dict['radius']*2
+        if surveys is None:
+            surveys = config_dict['surveys']
+            print("YAML surveys", surveys)
+        if data_out is None:
+            data_out = config_dict['output']
+        if not overwrite:
+            overwrite = config_dict['overwrite']
+        if not flush:
+            flush = config_dict['flush']
+
+    if data_out is None:
+        data_out = 'data_out'
+
+    relative_path = os.path.dirname(os.path.abspath(__file__))+'/'
+    out_path = os.path.join(relative_path,data_out)
+
+    if isinstance(surveys, str):
+        surveys = parse_surveys_string(surveys)
+    print(f"Using args: \n image size {size} \n surveys {surveys}")
+
+    # configuration
+    cfg = CLIConfig(surveys, out_path)
     cfg.set_single_target_params(target, size, is_name)
     if flush:
         cfg.flush_old_survey_data()
@@ -230,13 +281,14 @@ def fetch(coords, name, radius, surveys, data_out, overwrite, flush):
 # Notes: http://click.palletsprojects.com/en/5.x/options/
 #
 @cli.command()
-@click.option('--file','-f', 'batch_files_string', required=True)
-@click.option('--radius','-r', 'radius', required=True, type=int)
-@click.option('--surveys','-s', 'surveys', required=False, default=[])
-@click.option('--output','-o', 'data_out', required=False, default='data_out')
-@click.option('--overwrite',is_flag=True,default=True,help='overwrite existing target files (default True)')
-@click.option('--flush',is_flag=True,default=False,help='flush existing target files (supersedes --overwrite)')
-def batch_process(batch_files_string, radius, surveys, data_out, overwrite,flush):
+@click.option('--file','-f', 'batch_files_string', required=True, help='batch file(s) name(s)')
+@click.option('--radius','-r', 'radius', required=False, type=int)
+@click.option('--surveys','-s', 'surveys', required=False, type=str)
+@click.option('--output','-o', 'data_out', required=False)
+@click.option('--config', '-cf','config_file', required=False, help='Specify YAML config file for settings, ex. "config.yml". *Note: Specified command line args will overwrite these settings')
+@click.option('--overwrite', 'overwrite', is_flag=True, help='overwrite existing target files (default False)')
+@click.option('--flush', 'flush', is_flag=True, help='flush existing target files (supersedes --overwrite)')
+def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None, data_out=None, config_file=''):
     """
        Batch cutout fetching command.
 
@@ -292,17 +344,46 @@ def batch_process(batch_files_string, radius, surveys, data_out, overwrite,flush
        Output will be furthered separated into subfolders for the corresponding survey.
        Default location is a folder named 'data_out/' in this current directory.
     """
-    size = radius*2
-    surveys = parse_surveys_string(surveys)
+    if not radius and not config_file:
+        print("\n must specify search radius or to use config.yml (--config_file)")
+        return
+    if radius:
+        size = radius*2
+
+    if config_file:
+        config_dict = read_in_config(config_file)
+        if not config_dict:
+            return # config file error abort
+        # use YAML configs only if args not given
+        if not radius:
+            size = config_dict['radius']*2
+        if surveys is None:
+            surveys = config_dict['surveys']
+        if data_out is None:
+            data_out = config_dict['output']
+        if not overwrite:
+            overwrite = config_dict['overwrite']
+        if not flush:
+            flush = config_dict['flush']
+
+    if data_out is None:
+        data_out = 'data_out'
+
+    relative_path = os.path.dirname(os.path.abspath(__file__))+'/'
+    out_path = os.path.join(relative_path,data_out)
+
+    if isinstance(surveys, str):
+        surveys = parse_surveys_string(surveys)
     print(f"Using args: \n image size {size} \n surveys {surveys}")
 
     accepted_batch_files = check_batch_csv(batch_files_string)
     if not accepted_batch_files:
-        return None
+        print("no valid CSV batch files specified!")
+        return
     print(f"Using batch csv: {accepted_batch_files}")
     # configuration
-    cfg = SurveyConfig(surveys, data_out)
-    cfg.set_batch_targets(accepted_batch_files, size)
+    cfg = CLIConfig(surveys, out_path)
+    cfg.set_batch_targets(accepted_batch_files, relative_path, size)
     if flush:
         cfg.flush_old_survey_data()
     print(f"Overwrite Mode: {cfg.set_overwrite(overwrite)}")

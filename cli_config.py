@@ -13,34 +13,34 @@ from random import shuffle
 import csv
 import yaml as yml
 # processing
-from .survey_abc import processing_status as ProcStatus
-from .toolbox import extractCoordfromString, readCoordsFromFile, get_cutout_filename
+from core.survey_abc import processing_status as ProcStatus
+from core.toolbox import extractCoordfromString, readCoordsFromFile, get_cutout_filename
 # astropy libs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 # filters used by various surveys
-from .survey_filters import wise_filters
-from .survey_filters import grizy_filters
+from core.survey_filters import wise_filters
+from core.survey_filters import grizy_filters
 # supported suverys (nb: cf., SurveyConfig::self.supported_surveys)
-from .nvss      import NVSS
-from .first     import FIRST
-from .wise      import WISE
-from .sdss      import SDSS
-from .vlass     import VLASS
-from .panstarrs import PANSTARRS
+from core.nvss      import NVSS
+from core.first     import FIRST
+from core.wise      import WISE
+from core.sdss      import SDSS
+from core.vlass     import VLASS
+from core.panstarrs import PANSTARRS
 
 
 # THIS IS ONLY USED FOR THE COMMAND LINE INTERFACE CAN BE REMOVED FROM CORE
 #
-class SurveyConfig:
+class CLIConfig:
     # define Class var
 
-    def __init__(self, surveys, data_out='data'):
+    def __init__(self, surveys, data_out='data_out'):
         # set up outdirs
-        self.relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+        # self.relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
         #self.local_dirs = LocalCutoutDirs() #ONLY USED FOR HEIRARCHY
         # defaults
-        self.overwrite = True
+        self.overwrite = False
         self.survey_filter_sets = {} #None # this is to keep track of requested survey filters
         self.supported_surveys = (
             FIRST.__name__,
@@ -51,13 +51,13 @@ class SurveyConfig:
             SDSS.__name__,
         )
         self.survey_names = []
-        out_dir = self.set_survey_filter_sets(surveys, data_out)
+        self.set_survey_filter_sets(surveys)
         ############# old way ONLY USED FOR HEIRARCHY files###########
         #self.local_dirs.set_local_root(out_dir)
         #self.out_dirs = {s: self.local_dirs.get_survey_dir(s) for s in self.survey_names}
         ###############################################################
         # same config for sinlge or batch
-        self.out_dirs = {s: os.path.join(out_dir,s) for s in self.survey_names}
+        self.out_dirs = {s: os.path.join(data_out,s) for s in self.survey_names}
         if "PANSTARRS" in self.out_dirs.keys():
             self.out_dirs["PANSTARRS"] = self.out_dirs["PANSTARRS"].replace("PANSTARRS", "PanSTARRS")
         for out_dir in self.out_dirs.values():
@@ -93,7 +93,7 @@ class SurveyConfig:
                 print(f"NO DATA TO FLUSH AT {dir}")
         return
 
-    def set_survey_filter_sets(self, survey_list, out_dir):
+    def set_survey_filter_sets(self, survey_list):
         if not survey_list: #no surveys specified then use all
             self.survey_names = list(self.supported_surveys)
             self.survey_filter_sets = {s:set() for s in self.survey_names}
@@ -114,8 +114,7 @@ class SurveyConfig:
                 if survey in self.supported_surveys:
                     self.survey_filter_sets[survey] = safe_filters
                     self.survey_names.append(survey)
-        out = self.relative_path+out_dir
-        return out.replace("//","/")
+        return
 
     def set_single_target_params(self, single_target, size, is_name=False):
         self.size_arcmin = size * u.arcmin
@@ -123,12 +122,12 @@ class SurveyConfig:
             raise Exception("No Target provided!")
         self.targets = [{'position': extractCoordfromString(single_target, is_name), 'size': self.size_arcmin}]
 
-    def set_batch_targets(self, csv_files, size):
+    def set_batch_targets(self, csv_files, relative_path, size):
         self.size_arcmin = size * u.arcmin
         # set targets in list of dicts
         coords = list()
         for coords_csv_file in csv_files:
-            with open(self.relative_path +coords_csv_file, newline='') as csvfile:
+            with open(relative_path+coords_csv_file, newline='') as csvfile:
                 reader = csv.DictReader(csvfile)
                 locations, errors = readCoordsFromFile(reader)
                 coords.extend(locations)

@@ -1,14 +1,15 @@
 # Basic cutout search parameters
+# alter these values for custom settings
 ####DEFAULTS######
 cutouts:
     # search radius around the specified source location in arcmin.
     # The cutouts will be of maximum width and height of 2*radius
-    radius: 1
+    radius: 3
 
     #custom filters in brackets 
     surveys:
-        #- FIRST
-        #- NVSS
+        - FIRST
+        - NVSS
         - VLASS
         - WISE[w1]
         - PanSTARRS[i]
@@ -17,7 +18,7 @@ cutouts:
 # Processing output parameters
 configuration:
     # folder to put FITS output data into further separated by Survey name folder
-    output: data_out/
+    output: data/
 
     # overwrite existing files on download
     overwrite: True
