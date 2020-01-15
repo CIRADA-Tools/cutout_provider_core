@@ -11,11 +11,10 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import Angle
 from astropy import units as u
-
 from astroquery.cadc import Cadc
-
-
 from .survey_abc import SurveyABC
+
+
 class VLASS(SurveyABC):
     def __init__(self):
         super().__init__()

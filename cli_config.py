@@ -180,6 +180,7 @@ class CLIConfig:
             for survey_target in survey_targets:
                 # ra-dec-size cutout target
                 task = dict(survey_target)
+                print(survey_class)
                 task['survey'] = eval(survey_class) # add survey instance to processing stack
                 survey = type(task['survey']).__name__
                 filter = task['survey'].get_filter_setting()

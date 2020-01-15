@@ -1,0 +1,23 @@
+Programming error...
+LOG: SDSS(pid=5,filter='r'): getting tile urls for <SkyCoord (ICRS): (ra, dec) in deg
+LOG: SDSS(pid=5,filter='r'):     (0., 0.)>
+LOG: SDSS(pid=5,filter='r'): Fetching: http://legacysurvey.org/viewer/fits-cutout?ra=0.0&dec=0.0&layer=sdss2&bands=r&pixscale=0.262&size=1374
+LOG: SDSS(pid=5,filter='r'): bytearray(b'<html><body><h1>503 Service Unavailable</h1>')
+LOG: SDSS(pid=5,filter='r'): bytearray(b'No server is available to handle this request.')
+LOG: SDSS(pid=5,filter='r'): bytearray(b'</body></html>')
+LOG: SDSS(pid=5,filter='r'): bytearray(b'')
+LOG: SDSS(pid=5,filter='r'): OSError: Empty or corrupt FITS file: Badly formatted FITS file: Cutout not found: Skipping...
+LOG: SDSS[print](pid=5,filter='r'): ERROR: error creating FITS
+LOG: SDSS[print](pid=5,filter='r'): TRACEBACK:
+LOG: SDSS[print](pid=5,filter='r'): >Traceback (most recent call last):
+LOG: SDSS[print](pid=5,filter='r'): >   File "/home/falon/django_server/cirada/Cutout_Core/core/survey_abc.py", line 532, in get_cutout
+LOG: SDSS[print](pid=5,filter='r'): >     tiles   = self.get_tiles(position,size)
+LOG: SDSS[print](pid=5,filter='r'): >   File "/home/falon/django_server/cirada/Cutout_Core/core/survey_abc.py", line 318, in get_tiles
+LOG: SDSS[print](pid=5,filter='r'): >     hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in self.request_urls_stack] if hdul_tup[0]]
+LOG: SDSS[print](pid=5,filter='r'): >   File "/home/falon/django_server/cirada/Cutout_Core/core/survey_abc.py", line 318, in <listcomp>
+LOG: SDSS[print](pid=5,filter='r'): >     hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in self.request_urls_stack] if hdul_tup[0]]
+LOG: SDSS[print](pid=5,filter='r'): >   File "/home/falon/django_server/cirada/Cutout_Core/core/survey_abc.py", line 307, in get_fits
+LOG: SDSS[print](pid=5,filter='r'): >     raise Exception("error creating FITS")
+LOG: SDSS[print](pid=5,filter='r'): > Exception: error creating FITS
+LOG: SDSS(pid=5,filter='r'): [Position: 0.0, 0.0 at radius 3.0 arcmin]: Processing Status = 'error'.
+LOG: SDSS(pid=5,filter='r'): Cutout at (RA, Dec) of (0.0, 0.0) degrees /w size=6.0 arcmin returned None.
