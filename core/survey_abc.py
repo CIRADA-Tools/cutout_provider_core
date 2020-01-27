@@ -244,17 +244,18 @@ class SurveyABC(ABC):
         # a pretend file in memory
         fits_file = io.BytesIO(data)
         fits_file.seek(0)
-
         # open fits hdul
         try:
             hdul = fits.open(fits_file, ignore_missing_end= True)
         except OSError as e:
-            e_s = re.sub(r"\.$","",f"{e}")
-            self.print(data)
-            #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
-            self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...", is_traceback=True)
-            self.processing_status = processing_status.corrupted
-            return None
+            if "data is available" in str(data):
+                raise Exception(f"{type(self).__name__}: error creating FITS "+ str(data))
+            else:
+                e_s = re.sub(r"\.$","",f"{e}")
+                #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
+                self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...", is_traceback=True)
+                self.processing_status = processing_status.corrupted
+                return None
 
         # get/check header field
         header = hdul[0].header
