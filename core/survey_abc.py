@@ -249,7 +249,7 @@ class SurveyABC(ABC):
             hdul = fits.open(fits_file, ignore_missing_end= True)
         except OSError as e:
             if "data is available" in str(data):
-                raise Exception(f"{type(self).__name__}: error creating FITS "+ str(data))
+                raise Exception(f"{type(self).__name__}: error creating FITS "+ str(data.decode()))
             else:
                 e_s = re.sub(r"\.$","",f"{e}")
                 #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
