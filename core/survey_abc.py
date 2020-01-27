@@ -298,13 +298,13 @@ class SurveyABC(ABC):
         try:
             response = self.send_request(url)
         except Exception as e:
-            print("EXCEPTION" + str(e))
-            raise Exception(str(e))
+            print(f"{type(self).__name__} EXCEPTION" + str(e))
+            raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
         if not response:
             raise Exception(f"No FITS found at url {url} survey {type(self).__name__} !")
         hdul = self.create_fits(response)
         if not hdul:
-            raise Exception("error creating FITS")
+            raise Exception(f"{type(self).__name__}: error creating FITS")
         return (hdul[0], url)
 
     def get_tiles(self, position, size):
