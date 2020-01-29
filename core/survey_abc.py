@@ -526,7 +526,7 @@ class SurveyABC(ABC):
         return mosaic_hdul_tiles_stack
 
     # main routine for CLI cutout processing
-    def get_cutout(self, position, size):
+    def get_cutout(self, position, size, group_by):
         self.processing_status = processing_status.fetching
         all_headers = None
         try:
@@ -534,8 +534,9 @@ class SurveyABC(ABC):
             if len(tiles)>1:
                 all_headers = [t.header for (t,tile_url) in tiles]
             tile    = self.paste_tiles(tiles,position)
-            trimmed = self.trim_tile(tile,position,size) ##TODO: only need trimming for thumbnail
-            cutout  = self.format_fits_hdu(trimmed,position,all_headers)
+            if self.needs_trimming:
+                hdu = self.trim_tile(tile,position,size) ##TODO: only need trimming for thumbnail for VLASS
+            cutout  = self.format_fits_hdu(hdu,position,all_headers)
             self.processing_status = processing_status.done
         except Exception as e:
             self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)

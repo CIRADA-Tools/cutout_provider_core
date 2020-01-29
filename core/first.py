@@ -5,6 +5,7 @@ from .survey_abc import SurveyABC
 class FIRST(SurveyABC):
     def __init__(self):
         super().__init__()
+        self.needs_trimming = True
 
 
     @staticmethod

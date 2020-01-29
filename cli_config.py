@@ -35,7 +35,7 @@ from core.panstarrs import PANSTARRS
 class CLIConfig:
     # define Class var
 
-    def __init__(self, surveys, data_out='data_out'):
+    def __init__(self, surveys, data_out='data_out', group_by=None):
         # set up outdirs
         # self.relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
         #self.local_dirs = LocalCutoutDirs() #ONLY USED FOR HEIRARCHY
@@ -50,6 +50,7 @@ class CLIConfig:
             PANSTARRS.__name__,
             SDSS.__name__,
         )
+        self.group_by = group_by
         self.survey_names = []
         self.set_survey_filter_sets(surveys)
         ############# old way ONLY USED FOR HEIRARCHY files###########
@@ -180,7 +181,6 @@ class CLIConfig:
             for survey_target in survey_targets:
                 # ra-dec-size cutout target
                 task = dict(survey_target)
-                print(survey_class)
                 task['survey'] = eval(survey_class) # add survey instance to processing stack
                 survey = type(task['survey']).__name__
                 filter = task['survey'].get_filter_setting()

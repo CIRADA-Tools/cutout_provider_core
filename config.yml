@@ -14,6 +14,9 @@ cutouts:
         - PanSTARRS[i]
         - SDSS[g,r,i]
 
+    # group by MOSAIC, NONE, or DATE-OBS, default is NONE (no grouping)
+    grouping: NONE
+
 # Processing output parameters
 configuration:
     # folder to put FITS output data into further separated by Survey name folder

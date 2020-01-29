@@ -8,6 +8,7 @@ class SDSS(SurveyABC):
     def __init__(self,filter=grizy_filters.g):
         super().__init__()
         self.filter = filter
+        self.needs_trimming = True
 
     @staticmethod
     def get_supported_filters():

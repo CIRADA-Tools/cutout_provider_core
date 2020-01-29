@@ -18,6 +18,7 @@ from .survey_abc import SurveyABC
 class VLASS(SurveyABC):
     def __init__(self):
         super().__init__()
+        self.needs_trimming = False
 
     @staticmethod
     def get_supported_filters():

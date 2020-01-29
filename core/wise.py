@@ -13,6 +13,7 @@ class WISE(SurveyABC):
         self.filter = filter
         self.metadata_root = 'p3am_cdd'
         self.url_root = f"https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/{self.metadata_root}"
+        self.needs_trimming = True
 
     @staticmethod
     def get_supported_filters():

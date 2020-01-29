@@ -41,9 +41,10 @@ class PoisonPill:
 
 # TODO (Issue #11): Need to vet this for thread-saftey -- tricky!
 class WorkerThread(threading.Thread):
-    def __init__(self, worker, input_q, output_q=None, *args, **kwargs):
+    def __init__(self, worker, input_q, output_q=None, group_by=None, *args, **kwargs):
         self.input_q = input_q
         self.output_q = output_q
+        self.group_by = group_by
         self.worker = worker
         self.kill_recieved = False
         super().__init__(*args, **kwargs)
@@ -113,6 +114,7 @@ def read_in_config(yml_file):
         params = {}
         params['surveys'] = file_data['cutouts']['surveys']
         params['radius'] = file_data['cutouts']['radius']
+        params['group_by'] = file_data['cutouts']['group_by']
         params['output'] = file_data['configuration']['output']
         params['overwrite'] = file_data['configuration']['overwrite']
         params['flush'] = file_data['configuration']['flush']
@@ -150,7 +152,7 @@ def process_requests(cfg):
     # in principle these could be chained further, such that you could go
     # targets -> hdus -> save to file -> process to jpg -> save to file
     for _ in range(grabbers):
-        thread = WorkerThread(get_cutout, in_q, out_q).start()
+        thread = WorkerThread(get_cutout, in_q, out_q, cfg.group_by).start()
         in_q.put(PoisonPill())
         threads.append(thread)
 
@@ -186,10 +188,11 @@ def cli():
 @click.option('--radius','-r', 'radius', required=False, type=int)
 @click.option('--surveys','-s', 'surveys', required=False, type=str)
 @click.option('--output','-o', 'data_out', required=False)
+@click.option('--groupby','-g', 'group_by', required=False, type=str)
 @click.option('--config', '-cf','config_file', required=False, help='Specify YAML config file for settings, ex. "config.yml". *Note: Specified command line args will overwrite these settings')
 @click.option('--overwrite',is_flag=True, help='overwrite existing target files (default False)')
 @click.option('--flush', is_flag=True, help='flush existing target files (supersedes --overwrite)')
-def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=None, config_file=''):
+def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=None, group_by=None config_file=''):
     """
     \b
     Single cutout fetching command.
@@ -242,9 +245,13 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
     if radius:
         size = radius*2
 
+    if group_by:
+        group_by = group_by.upper()
+
     if config_file:
         config_dict = read_in_config(config_file)
         if not config_dict:
+            print(f"no valid params parsed from config file {config_file}")
             return # config file error abort
         # use YAML configs only if args not given
         if not radius:
@@ -258,6 +265,8 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
             overwrite = config_dict['overwrite']
         if not flush:
             flush = config_dict['flush']
+        if not group_by:
+            group_by = config_dict['group_by']
 
     if data_out is None:
         data_out = 'data_out'
@@ -270,7 +279,7 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
     print(f"Using args: \n image size {size} \n surveys {surveys}")
 
     # configuration
-    cfg = CLIConfig(surveys, out_path)
+    cfg = CLIConfig(surveys, out_path, group_by)
     cfg.set_single_target_params(target, size, is_name)
     if flush:
         cfg.flush_old_survey_data()

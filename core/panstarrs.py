@@ -112,6 +112,7 @@ class PANSTARRS(SurveyABC):
         super().__init__()
         self.pixel_scale = 0.25 * (u.arcsec/u.pix)
         self.filter = filter
+        self.needs_trimming = True # may not need to trim??
 
     @staticmethod
     def get_supported_filters():
