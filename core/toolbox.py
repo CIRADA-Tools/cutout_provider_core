@@ -2,18 +2,55 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 import csv, re
+import urllib.parse
+
+def get_header_value(tile, value):
+    if value in tile.header:
+        return tile.header[value]
+    else:
+        return 'unknown'
 
 def get_sexadecimal_string(position):
     sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
     return sexadecimal
 
-def get_cutout_filename(position,radius,survey,filter=None,extension=None):
+# todo incorporate source bnames into this
+def get_mosaic_filename(position,radius,survey,filter=None, group_title='', extension=None):
     survey= survey.replace("PANSTARRS", "PanSTARRS")
     coords = get_sexadecimal_string(position)
     # note:the size as string already prints the units but remove space needed
     size   = str(radius).replace(" ", "")#re.sub(r"\.?0+$","","%f" % size)
-    filter = (lambda f: '' if f is None else f"-{f.name}")(filter)
-    return f"{survey}_J{coords}_s{size}{filter}_mosaicked{'.%s' % extension if not extension is None else ''}"
+    # if not self.name.replace("'", "").replace(" ", "").replace(",", "").replace("`", " ").replace('.','').replace('-','').replace('+','').isdigit():
+    #     coords = self.name + "." + coords
+    if not filter:
+        filter=''
+    if group_title=='MOSAIC':
+        group_title = ''
+    return f"{survey}_{str(group_title)}_J{coords}_s{size}{filter}_mosaicked{'.%s' % extension if not extension is None else ''}"
+
+# filename for download when NOT mosaiced and preserve as much info as possible
+# replace sexigesimal location string with actual new center
+def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, group_title=""):
+    survey= survey.replace("PANSTARRS", "PanSTARRS")
+    radius = str(radius_arcmin).strip(' ')
+    baseurl = urllib.parse.unquote(baseurl)
+    basefile = baseurl.split('/')[-1].split('.fits')[0]
+    new_coords = "J"+get_sexadecimal_string(position)
+    if group_title=='None':
+             group_title = ''
+    # if not self.name.replace("'", "").replace(" ", "").replace(",", "").replace("`", " ").replace('.','').replace('-','').replace('+','').isdigit():
+    #     # if name is not just coords add it in
+    #     new_coords = self.name+"." + new_coords
+    if survey=='VLASS':
+        old_center = re.search('J(.+?(?=\.))', basefile).group(0)
+        new_base = basefile.replace(old_center, new_coords)
+    else:
+        new_base = survey + new_coords + "_" + basefile
+    # if name is just coords use our standard coord string otherwise use their given name
+    new_base = new_base.replace(survey, survey+"_"+str(group_title)+"_")
+    if index!=0:
+        return new_base+'_s'+str(radius)+'.img-'+str(index+1)+'.fits'
+    return new_base+'_s'+str(radius)+'.fits'
 
 def extractCoordfromString(position, is_name=False):
     '''

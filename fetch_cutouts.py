@@ -71,39 +71,44 @@ class WorkerThread(threading.Thread):
         self.kill_recieved = True
 
 # grab a FITS hdu from some survey
-def get_cutout(target):
-    fetched = target['survey'].set_pid(target['pid']).get_cutout(target['position'], target['size'])
-    target['hdu'] = fetched['cutout']
-    target['log'] = {
-        'msg': fetched['message'],
-        'sts': fetched['status']
-    }
-    target['originals'] = fetched['raw_tiles']
-    return target
+def get_cutout(target, group_by=None):
+    # all fits is list of one or more dicts
+    all_fits = target['survey'].set_pid(target['pid']).get_cutout(target['position'], target['size'], group_by)
+    # now here process the list of dicts and then return them to be saved?
+    # target['hdu'] = fetched['cutout']
+    # target['log'] = {
+    #     'msg': fetched['message'],
+    #     'sts': fetched['status']
+    # }
+    # target['originals'] = fetched['raw_tiles']
+    return all_fits
 
 # save an HDU into a file
-def save_cutout(target):
+# here target is dict with some things.... what if it was a list of dicts? then save same way as webserver
+def save_cutout(all_fits, save_dir, originals_path_end="_ORIGINALS"):
+
     def pack_message(msg,msg_log):
         p="\nLOG: "
         return re.sub(r"^\n","",((f"{p}"+f"{p}".join(msg_log.splitlines())) if msg_log != "" else "")+f"{p}{msg}")
-
-    if target['hdu']:
-        target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
-        # add original raw tiles as extensions to mosaic
-        if len(target['originals'])>1:
-            fits_img = fits.open(target['filename'], mode='append')
-            for raw in target['originals']:
-                fits_img.append(raw[0])
-            fits_img.close(output_verify="silentfix")
-        msg = target['survey'].sprint(f"{target['filename']} SAVED!",buffer=False)
-    else:
-        msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['position'].ra.to(u.deg).value}, {target['position'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
-        log_msg = pack_message(msg,target['log']['msg'])
-        if not ProcStatus.touch_file(f"{target['filename']}",target['log']['sts'],log_msg):
-            target['survey'].sprint("Failed to dump %s with log info...\n%s" % (
-                re.sub(r"\.fits$",f".{target['log']['sts'].name}",target['filename']),
-                log_msg
-            ), buffer=False)
+    # for dict item in list all_fits. save
+    for f_dict in all_fits:
+        if target['hdu']:
+            target['hdu'].writeto("{0}".format(target['filename']), overwrite=True)
+            # add original raw tiles as extensions to mosaic
+            if len(target['originals'])>1:
+                fits_img = fits.open(target['filename'], mode='append')
+                for raw in target['originals']:
+                    fits_img.append(raw[0])
+                fits_img.close(output_verify="silentfix")
+            msg = target['survey'].sprint(f"{target['filename']} SAVED!",buffer=False)
+        else:
+            msg = target['survey'].sprint(f"Cutout at (RA, Dec) of ({target['position'].ra.to(u.deg).value}, {target['position'].dec.to(u.deg).value}) degrees /w size={target['size']} returned None.",buffer=False)
+            log_msg = pack_message(msg,target['log']['msg'])
+            if not ProcStatus.touch_file(f"{target['filename']}",target['log']['sts'],log_msg):
+                target['survey'].sprint("Failed to dump %s with log info...\n%s" % (
+                    re.sub(r"\.fits$",f".{target['log']['sts'].name}",target['filename']),
+                    log_msg
+                ), buffer=False)
     print(msg)
 
 def read_in_config(yml_file):

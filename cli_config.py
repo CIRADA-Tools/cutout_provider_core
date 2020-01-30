@@ -186,7 +186,7 @@ class CLIConfig:
                 filter = task['survey'].get_filter_setting()
                 path = self.out_dirs[survey]
                 radius = task['size']/2
-                task['filename'] = f"{path}/{get_cutout_filename(task['position'],radius,survey,filter,'fits')}"
+                # task['filename'] = f"{path}/{get_cutout_filename(task['position'],radius,survey,filter,'fits')}"
                 # set task pid
                 task['pid'] = pid
                 if self.overwrite or (not ProcStatus.is_processed(task['filename'])):

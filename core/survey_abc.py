@@ -4,6 +4,7 @@ import sys
 import traceback
 import tempfile
 import shutil
+import datetime, timestring
 
 # *** IO_WRAPPER ***
 # TODO (Issue #11): ...
@@ -26,6 +27,7 @@ from astropy.io import fits
 from .survey_filters import HeaderFilter
 from .survey_filters import get_header_pretty_string
 from .survey_filters import sanitize_fits_date_fields
+from .toolbox import get_mosaic_filename, get_non_mosaic_filename, get_header_value
 
 from astropy import units as u
 
@@ -525,33 +527,112 @@ class SurveyABC(ABC):
         self.mosaic_hdul_tiles_stack = list()
         return mosaic_hdul_tiles_stack
 
-    # main routine for CLI cutout processing
-    def get_cutout(self, position, size, group_by):
-        self.processing_status = processing_status.fetching
-        all_headers = None
-        try:
-            tiles   = self.get_tiles(position,size)
-            if len(tiles)>1:
-                all_headers = [t.header for (t,tile_url) in tiles]
-            tile    = self.paste_tiles(tiles,position)
-            if self.needs_trimming:
-                hdu = self.trim_tile(tile,position,size) ##TODO: only need trimming for thumbnail for VLASS
-            cutout  = self.format_fits_hdu(hdu,position,all_headers)
-            self.processing_status = processing_status.done
-        except Exception as e:
-            self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
-            self.processing_status = processing_status.error
-            cutout = None
-        #self.print(f"J{position} at {size}]: Processing Status = '{self.processing_status.name}'.")
-        self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at radius {size/2}]: Processing Status = '{self.processing_status.name}'.")
+    def group_tiles(self, tile_tups, rule):
+        # rule has to be a valid fits HEADER value (such as DATE-OBS) OR of our defined groups "Mosaic" or "None"
+        # tile_tups is a list of tuples with (hdul,url) for each
+        groups = {}
+        if rule=="MOSAIC" or rule=="None": # None is default
+            return {rule:tile_tups}
+        for (tile,tile_url) in tile_tups:
+            if rule in tile.header:
+                this_group = tile.header[rule]
+                if rule=='DATE-OBS':
+                    this_group = timestring.Date(tile.header[rule]).date.strftime("%Y-%m-%d")
+                if this_group in list(groups):
+                    groups[this_group].append((tile,tile_url))
+                else:
+                    groups[this_group]=[ (tile,tile_url) ]
+            else: # None is default, don't group if category not found in header
+                if "None" in list(groups):
+                    groups["None"].append((tile,tile_url))
+                else:
+                    groups["None"]=[ ((tile,tile_url)) ]
+        return groups
 
-        return {
-            'cutout':       cutout,
-            'request_urls': self.__pop_request_urls_stack(),
-            'raw_tiles':    self.__pop_mosaic_hdul_tiles_stack(),
-            'message':      self.__pop_message_buffer(),
-            'status':       self.__pop_processing_status()
-        }
+    def process_tile_group(self, tiles, position, size, group, index):
+        fits_data = {}
+        fits_data['epoch'] = None
+        survey_name = type(self).__name__
+        radius = size/2
+        try:
+            filter = self.get_filter_setting().name.lower()
+        except Exception as e:
+            print(str(e))
+            filter = ""
+        # try:
+        if len(tiles)>1:
+            all_headers = [t.header for (t, tile_url) in tiles]
+            tile    = self.paste_tiles(tiles, position)
+            if self.needs_trimming:
+                tile = self.trim_tile(tile,position,size)
+            cutout  = self.format_fits_hdu(tile,position,all_headers)
+            fits_data['filename'] = get_mosaic_filename(position,radius,survey_name, filter=filter, group_title=group, extension=None)
+        elif len(tiles)==0:
+            print(f"no {survey_name} tiles found for {position}! ")
+            return None
+        else:
+            if group == "MOSAIC":
+                group="None"
+            fits_data['filename'] = get_non_mosaic_filename(position, radius, survey_name, baseurl=tiles[0][1], index=index)
+            cutout = tiles[0][0]
+            if self.needs_trimming:
+                cutout = self.trim_tile(cutout,position,size)
+            if survey_name=="VLASS": # only label if not mosaicked for now in case multiple epochs
+                fits_data['epoch'] = self.get_epoch(fits_data['filename'])
+
+        # store original tiles
+        # THIS SPECIFIC TO VLASS ONLY stokes being FILNAME09
+        if survey_name == "VLASS":
+            fits_data['originals'] = {tile_url:{'obs-date': get_header_value(tile, 'DATE-OBS'),
+                                                'stokes': get_header_value(tile, 'FILNAM09'),
+                                                'epoch': self.get_epoch(tile_url),
+                                                'tile': tile} for (tile,tile_url) in tiles}
+        else:
+            fits_data['originals'] = {tile_url:{'obs-date': get_header_value(tile, 'DATE-OBS'),
+                                                'tile': tile} for (tile,tile_url) in tiles}
+        # except Exception as e:
+        #     self.print(f"ERROR: {e}",diagnostic_msg=traceback.format_exc(),show_caller=True)
+        #     self.processing_status = processing_status.error
+            #return None
+
+        self.processing_status = processing_status.done
+        fits_data['download'] = cutout
+        fits_data['group'] = group
+        fits_data['survey'] = survey_name
+        fits_data['filter'] = filter
+        # fits_data['status'] = self.__pop_processing_status()
+        self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at radius {size/2}]: Processing Status = '{self.processing_status.name}'.")
+        return fits_data
+
+        # return {
+        #     'cutout':       cutout,
+        #     'request_urls': self.__pop_request_urls_stack(),
+        #     'raw_tiles':    self.__pop_mosaic_hdul_tiles_stack(),
+        #     'message':      self.__pop_message_buffer(),
+        #     'status':       self.__pop_processing_status()
+        # }
+
+    # main routine for CLI cutout processing
+    def get_cutout(self, position, size, group_by="None"):
+        if not group_by:
+            group_by="None"
+
+        self.processing_status = processing_status.fetching
+
+
+        tiles   = self.get_tiles(position,size)
+        if not tiles:
+            print("NO {type(self).__name__} TILES FOUND for {position}")
+        groups_dict = self.group_tiles(tiles, group_by) # to read header and separate tiles
+        for group in list(groups_dict):
+            if group=="None": # handle each individually if no grouping
+                all_fits = []
+                for single in groups_dict[group]:
+                    # THIS COULD BE DANGEROUS? WILL THERE BE DOUBLES? THEY BE OVERWRITTEN WITH UPDATE
+                    all_fits.append(self.process_tile_group([single], position, size, "None", groups_dict[group].index(single)))
+            else:
+                all_fits = [self.process_tile_group(groups_dict[group], position, size, group, 0)]
+        return all_fits
 
     # abstract base class functions required by survey/child classes
     @staticmethod
