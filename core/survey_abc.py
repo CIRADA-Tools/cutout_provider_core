@@ -10,7 +10,7 @@ import datetime, timestring
 # TODO (Issue #11): ...
 # Notes: https://stackoverflow.com/questions/1218933/can-i-redirect-the-stdout-in-python-into-some-sort-of-string-buffer/33979942#33979942
 from io import TextIOWrapper, BytesIO
-
+import io, os, shutil, tempfile, sys, base64, shutil, json
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -27,7 +27,8 @@ from astropy.io import fits
 from .survey_filters import HeaderFilter
 from .survey_filters import get_header_pretty_string
 from .survey_filters import sanitize_fits_date_fields
-from .toolbox import get_mosaic_filename, get_non_mosaic_filename, get_header_value
+from .toolbox import *
+from .FITS2DImageTools import *
 
 from astropy import units as u
 
@@ -111,6 +112,54 @@ class SurveyABC(ABC):
         self.http_request_retries = 5
         self.http_wait_retry_s = 5
         self.tmp_dir = "/tmp"
+
+    # save a list of dicts for HDU results into a folder with originals in nearby folder
+    #save_orig_separately is for webserver
+    @staticmethod
+    def save_and_serialize(all_fits, save_dir="data_out/", originals_path_end="_ORIGINALS", save_orig_separately=False):
+        for f_dict in all_fits:
+            survey_dir = os.path.join(save_dir, f_dict['survey'])
+            if not os.path.exists(survey_dir):
+                os.makedirs(survey_dir)
+            save_at = os.path.join(survey_dir, f_dict['filename'])
+            if f_dict['download']:
+                try:
+                    f_dict['download'].writeto(save_at, overwrite=True)
+                except Exception as e:
+                    print("EXCEPTION in TASKS", str(e))
+                    if "Verif" in str(e): #skip verify warnings from fits standards
+                        f_dict['download'].writeto(save_at, overwrite=True, output_verify='silentfix+warn')
+                    else:
+                        raise Exception(f"problem creating {f_dict['filename']} for {f_dict['survey']}")
+                # add original raw tiles as extensions to mosaic
+                if len(list(f_dict['originals']))>1 and save_orig_separately==False:
+                    fits_img = fits.open(f_dict['filename'], mode='append')
+                    for og in f_dict['originals']:
+                        fits_img.append(og['tile'])
+                        del og['tile']
+                    fits_img.close(output_verify="silentfix")
+
+                elif len(list(f_dict['originals']))>1 and save_orig_separately==True:
+                    orig_dir = save_dir + originals_path_end
+                    if os.path.exists(orig_dir):
+                        shutil.rmtree(orig_dir)
+                    os.makedirs(orig_dir)
+                    # sort by date-obs
+                    sorted_keys = sorted((list(f_dict['originals'])), key=lambda x: f_dict['originals'][x]['obs-date'])
+                    for num, url in enumerate(sorted_keys, 1):
+                        fname = str(num)+"-" + url.split('/')[-1]+'.fits'
+                        f_dict['originals'][url]['tile'].writeto(orig_dir+'/'+fname, overwrite=True, output_verify='silentfix+warn')
+                        del f_dict['originals'][url]['tile'] # remove fits image so json serializable
+                else:  # still remove fits image so json serializable
+                    del f_dict['originals'][list(f_dict['originals'])[0]]['tile']
+            else:
+                print(f"Cutout at (RA, Dec) of ({f_dict['position'].ra.to(u.deg).value}, {f_dict['position'].dec.to(u.deg).value}) degrees /w size={f_dict['radius']} returned None for FITS data.",buffer=False)
+            f_dict['download_path'] = save_at
+            f_dict['thumbnail'] = base64.encodestring(get_thumbnail(f_dict['download'], f_dict['survey'])).decode('ascii')
+            del f_dict['download'] # don't need FITZ image in memory because saved locally now
+
+        return all_fits
+
 
     def __pop_processing_status(self):
         status = self.processing_status
@@ -600,6 +649,8 @@ class SurveyABC(ABC):
         fits_data['group'] = group
         fits_data['survey'] = survey_name
         fits_data['filter'] = filter
+        fits_data['position'] = f"{position.ra.degree}, {position.dec.degree}"
+        fits_data['radius'] = radius.value
         # fits_data['status'] = self.__pop_processing_status()
         self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at radius {size/2}]: Processing Status = '{self.processing_status.name}'.")
         return fits_data
@@ -612,13 +663,13 @@ class SurveyABC(ABC):
         #     'status':       self.__pop_processing_status()
         # }
 
+
     # main routine for CLI cutout processing
     def get_cutout(self, position, size, group_by="None"):
         if not group_by:
             group_by="None"
 
         self.processing_status = processing_status.fetching
-
 
         tiles   = self.get_tiles(position,size)
         if not tiles:
