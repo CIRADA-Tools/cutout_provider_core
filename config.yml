@@ -15,7 +15,7 @@ cutouts:
         - SDSS[g,r,i]
 
     # group by MOSAIC, NONE, or DATE-OBS, default is NONE (no grouping)
-    grouping: NONE
+    group_by: NONE
 
 # Processing output parameters
 configuration:

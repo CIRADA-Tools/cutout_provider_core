@@ -11,7 +11,7 @@ from astropy.io import fits
 import astropy.units as u
 # configuration & processing
 from cli_config import CLIConfig
-from core.survey_abc import processing_status as ProcStatus
+from core.survey_abc import processing_status as ProcStatus, SurveyABC
 
 #Global pool manager
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -72,6 +72,7 @@ class WorkerThread(threading.Thread):
 # grab a FITS hdu from some survey
 def get_cutout(target):
     # all fits is list of one or more dicts
+
     all_fits = target['survey'].set_pid(target['pid']).get_cutout(target['position'], target['size'], target['group_by'])
     # now here process the list of dicts and then return them to be saved?
     # target['hdu'] = fetched['cutout']
@@ -83,9 +84,9 @@ def get_cutout(target):
     return all_fits
 
 def save_cutout(all_fits):
-    save_dir="data_out/"
-    originals_path_end="_ORIGINALS"
-    SurveyABC.save_and_serialize(all_fits, save_dir, originals_path_end)
+    print("saving!!!")
+    originals_end="_ORIGINALS"
+    SurveyABC.save_and_serialize(all_fits, originals_path_end=originals_end)
 
 def read_in_config(yml_file):
     try:
@@ -133,7 +134,7 @@ def process_requests(cfg):
     # in principle these could be chained further, such that you could go
     # targets -> hdus -> save to file -> process to jpg -> save to file
     for _ in range(grabbers):
-        thread = WorkerThread(get_cutout, in_q, out_q, cfg.group_by).start()
+        thread = WorkerThread(get_cutout, in_q, out_q).start()
         in_q.put(PoisonPill())
         threads.append(thread)
 
@@ -169,43 +170,62 @@ def cli():
 @click.option('--radius','-r', 'radius', required=False, type=int)
 @click.option('--surveys','-s', 'surveys', required=False, type=str)
 @click.option('--output','-o', 'data_out', required=False)
-@click.option('--groupby','-g', 'group_by', required=False, type=str)
-@click.option('--config', '-cf','config_file', required=False, help='Specify YAML config file for settings, ex. "config.yml". *Note: Specified command line args will overwrite these settings')
+@click.option('--groupby','-g', 'group_by', required=False)
+@click.option('--config', '-cf','config_file', required=False)
 @click.option('--overwrite',is_flag=True, help='overwrite existing target files (default False)')
 @click.option('--flush', is_flag=True, help='flush existing target files (supersedes --overwrite)')
-def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=None, group_by=None config_file=''):
+def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=None, group_by='', config_file=''):
     """
     \b
     Single cutout fetching command.
-    Coordinates -c 'coords' OR Source name, -n 'name'.
-    example accepted coordinate formats:
+    -c 'coords' for Source coordinates OR
+    -n 'name' for Source name
+        example accepted coordinate formats:
         > RA,DEC or 'RA, DEC' in degrees
         > '00h42m30s', '+41d12m00s' or 00h42m30s,+41d12m00s
         > '00 42 30 +41 12 00'
         > '00:42.5 +41:12'
-    if name:
+        if name:
         > The name of the object to get coordinates for, e.g. 'M42'
     \b
     -r 'radius' is the Integer search radius around the specified source location in arcmin.
-    The cutouts will be of maximum width and height of 2*radius
+        The cutouts will be of maximum width and height of 2*radius
     \n
     \b
     -s 'surveys' is one or several surveys comma separated without spaces between.
-    Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
+        Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
     \b
-    Filters for each survey may be specified in the following formats:
+        Filters for each survey may be specified in the following formats:
         > "WISE(w2),SDSS[g,r]"
         > "WISE[w1],VLASS"
         > WISE,VLASS
     \b
-    If no filters are specified then the default filter is used for each.
-    If surveys argument is not specified then will fetch from ALL implemented
-    surveys with default filters for each survey.
+        If no filters are specified then the default filter is used for each.
+        If surveys argument is not specified then will fetch from ALL implemented
+        surveys with default filters for each survey.
     \n
 
     \b
     -o 'output' is the directory location to save output FITS images to.
-    Default location is a folder named 'data_out/' in this current directory.
+        Output will be furthered separated into subfolders for the corresponding survey.
+        Default location is a folder named 'data_out/' in this current directory.
+    \n
+    \b
+    -g 'groupby' is an option to separate FITS results by "MOSAIC", "DATE-OBS", or "NONE" (default).
+        > "MOSAIC": if the requested position and radius straddle boundaries in multiple
+                    FITS images for a given survey a mosaicked FITS file will be generated
+                    from all of these input images with each input image as an extension of
+                    the corresponding mosaicked FITS. Mosaics are largely provided for visual
+                    use only.
+        > "DATE-OBS": For surveys VLASS, FIRST, NVSS, or PanSTARRS a Mosaicked FITS is made
+                    (when needed) for every unique DATE-OBS.
+        > "NONE" (default): All resulting FITS images in the requested survey are returned
+                    without doing any mosaicking
+    \n
+    \b
+    -cf 'config' is to specify a YAML config file for settings, ex."config.yml".
+        *Note: Specified command line args will overwrite these settings.
+
     """
     target = coords
     is_name = False
@@ -275,10 +295,11 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
 @click.option('--radius','-r', 'radius', required=False, type=int)
 @click.option('--surveys','-s', 'surveys', required=False, type=str)
 @click.option('--output','-o', 'data_out', required=False)
-@click.option('--config', '-cf','config_file', required=False, help='Specify YAML config file for settings, ex. "config.yml". *Note: Specified command line args will overwrite these settings')
+@click.option('--groupby','-g', 'group_by', required=False)
+@click.option('--config', '-cf','config_file', required=False)
 @click.option('--overwrite', 'overwrite', is_flag=True, help='overwrite existing target files (default False)')
 @click.option('--flush', 'flush', is_flag=True, help='flush existing target files (supersedes --overwrite)')
-def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None, data_out=None, config_file=''):
+def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None, data_out=None, groupby='', config_file=''):
     """
        Batch cutout fetching command.
 
@@ -287,58 +308,78 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
        of source coordinates or names.
        \b
        -f "file" The CSV file(s) must at least have separate columns named "RA" and "Dec"
-       (or any of the variants below, but there can only be one variant of
-       RA and one of Dec per file). A column labelled "Name" or "NAME" may also be used.
-       For a given source, coordinates will be evaluated via "RA" and "Dec" if
-       they are non-empty. If a line does not have a valid coordinate position,
-       but does have a "Name" column value, the service will attempt to resolve
-       the source name.
+          (or any of the variants below, but there can only be one variant of
+          RA and one of Dec per file). A column labelled "Name" or "NAME" may also be used.
+          For a given source, coordinates will be evaluated via "RA" and "Dec" if
+          they are non-empty. If a line does not have a valid coordinate position,
+          but does have a "Name" column value, the service will attempt to resolve
+          the source name.
        \b
-        Accepted variants of RA and Dec Column header names are:
-        R.A.
-        Right Ascension
-        RA (J2000)
-        R.A. (J2000)
-        Right Ascension (J2000)
-        RAJ2000
-        DEC
-        DEC.
-        Declination
-        DEC (J2000)
-        DEC. (J2000)
-        Declination (J2000)
-        DecJ2000
+          Accepted variants of RA and Dec Column header names are:
+          R.A.
+          Right Ascension
+          RA (J2000)
+          R.A. (J2000)
+          Right Ascension (J2000)
+          RAJ2000
+          DEC
+          DEC.
+          Declination
+          DEC (J2000)
+          DEC. (J2000)
+          Declination (J2000)
+          DecJ2000
         \b
-        Source names will be resolved via the Sesame Name Resolver:
-        http://vizier.u-strasbg.fr/viz-bin/Sesame
+          Source names will be resolved via the Sesame Name Resolver:
+          http://vizier.u-strasbg.fr/viz-bin/Sesame
        \b
        -r 'radius' is the Integer search radius around the specified source location in arcmin.
-       The cutouts will be of maximum width and height of 2*radius
+          The cutouts will be of maximum width and height of 2*radius
        \n
        \b
        -s 'surveys' is one or several surveys comma separated without spaces between.
-       Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
+          Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
        \b
-       Filters for each survey may be specified in the following formats:
+          Filters for each survey may be specified in the following formats:
            > "WISE(w2),SDSS[g,r]"
            > "WISE[w1],VLASS"
            > WISE,VLASS
        \b
-       If no filters are specified then the default filter is used for each.
-       If surveys argument is not specified then will fetch from ALL implemented
-       surveys with default filters for each survey.
+          If no filters are specified then the default filter is used for each.
+          If surveys argument is not specified then will fetch from ALL implemented
+          surveys with default filters for each survey.
        \n
 
        \b
        -o 'output' is the directory location to save output FITS images to.
-       Output will be furthered separated into subfolders for the corresponding survey.
-       Default location is a folder named 'data_out/' in this current directory.
+          Output will be furthered separated into subfolders for the corresponding survey.
+          Default location is a folder named 'data_out/' in this current directory.
+       \n
+       \b
+       -g 'groupby' is an option to group FITS results by "MOSAIC", "DATE-OBS", or "NONE" (default).
+           > "MOSAIC": if the requested position and radius straddle boundaries in multiple
+                       FITS images for a given survey a mosaicked FITS file will be generated
+                       from all of these input images with each input image as an extension of
+                       the corresponding mosaicked FITS. Mosaics are largely provided for visual
+                       use only.
+           > "DATE-OBS": For surveys VLASS, FIRST, NVSS, or PanSTARRS a Mosaicked FITS is made
+                       (when needed) for every unique DATE-OBS.
+           > "NONE" (default): All resulting FITS images in the requested survey are returned
+                       without doing any mosaicking
+
+      \n
+      \b
+      -cf 'config' is to specify a YAML config file for settings, ex."config.yml".
+          *Note: Specified command line args will overwrite these settings.
     """
     if not radius and not config_file:
         print("\n must specify search radius or to use config.yml (--config_file)")
         return
     if radius:
         size = radius*2
+
+    if group_by:
+        group_by = group_by.upper()
 
     if config_file:
         config_dict = read_in_config(config_file)
@@ -355,6 +396,8 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
             overwrite = config_dict['overwrite']
         if not flush:
             flush = config_dict['flush']
+        if not group_by:
+            group_by = config_dict['group_by']
 
     if data_out is None:
         data_out = 'data_out'
@@ -372,7 +415,7 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
         return
     print(f"Using batch csv: {accepted_batch_files}")
     # configuration
-    cfg = CLIConfig(surveys, out_path)
+    cfg = CLIConfig(surveys, out_path, group_by)
     cfg.set_batch_targets(accepted_batch_files, relative_path, size)
     if flush:
         cfg.flush_old_survey_data()

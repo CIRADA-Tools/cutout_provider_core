@@ -112,16 +112,17 @@ class SurveyABC(ABC):
         self.http_request_retries = 5
         self.http_wait_retry_s = 5
         self.tmp_dir = "/tmp"
+        self.out_dir = None
 
     # save a list of dicts for HDU results into a folder with originals in nearby folder
     #save_orig_separately is for webserver
     @staticmethod
-    def save_and_serialize(all_fits, save_dir="data_out/", originals_path_end="_ORIGINALS", save_orig_separately=False):
+    def save_and_serialize(all_fits, originals_path_end="_ORIGINALS", save_orig_separately=False, save_dir="data_out/"):
         for f_dict in all_fits:
-            survey_dir = os.path.join(save_dir, f_dict['survey'])
-            if not os.path.exists(survey_dir):
-                os.makedirs(survey_dir)
-            save_at = os.path.join(survey_dir, f_dict['filename'])
+            if f_dict["out_dir"]:
+                save_at = os.path.join(f_dict["out_dir"], f_dict['filename'])
+            else:
+                save_at = os.path.join(save_dir, f_dict['filename'])
             if f_dict['download']:
                 try:
                     f_dict['download'].writeto(save_at, overwrite=True)
@@ -135,8 +136,8 @@ class SurveyABC(ABC):
                 if len(list(f_dict['originals']))>1 and save_orig_separately==False:
                     fits_img = fits.open(f_dict['filename'], mode='append')
                     for og in f_dict['originals']:
-                        fits_img.append(og['tile'])
-                        del og['tile']
+                        fits_img.append(f_dict['originals'][og]['tile'])
+                        del f_dict['originals'][og]['tile']
                     fits_img.close(output_verify="silentfix")
 
                 elif len(list(f_dict['originals']))>1 and save_orig_separately==True:
@@ -150,7 +151,7 @@ class SurveyABC(ABC):
                         fname = str(num)+"-" + url.split('/')[-1]+'.fits'
                         f_dict['originals'][url]['tile'].writeto(orig_dir+'/'+fname, overwrite=True, output_verify='silentfix+warn')
                         del f_dict['originals'][url]['tile'] # remove fits image so json serializable
-                else:  # still remove fits image so json serializable
+                else:  # still remove fits imagset_out_dire so json serializable
                     del f_dict['originals'][list(f_dict['originals'])[0]]['tile']
             else:
                 print(f"Cutout at (RA, Dec) of ({f_dict['position'].ra.to(u.deg).value}, {f_dict['position'].dec.to(u.deg).value}) degrees /w size={f_dict['radius']} returned None for FITS data.",buffer=False)
@@ -169,6 +170,9 @@ class SurveyABC(ABC):
     def set_tmp_dir(self, directory):
         self.tmp_dir= directory
         return self
+
+    def set_out_dir(self, dir_path):
+        self.out_dir = dir_path
 
     def set_pid(self, pid):
         self.pid = pid
@@ -350,12 +354,15 @@ class SurveyABC(ABC):
         try:
             response = self.send_request(url)
         except Exception as e:
+            print(self, "exception in surveyabc" + str(e))
             print(f"{type(self).__name__} EXCEPTION" + str(e))
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
         if not response:
+            print(self, "exception in surveyabc no response" + str(e))
             raise Exception(f"No FITS found at url {url} survey {type(self).__name__} !")
         hdul = self.create_fits(response)
         if not hdul:
+            print(self, "NO HDUL" + str(e))
             raise Exception(f"{type(self).__name__}: error creating FITS")
         return (hdul[0], url)
 
@@ -606,7 +613,7 @@ class SurveyABC(ABC):
         try:
             filter = self.get_filter_setting().name.lower()
         except Exception as e:
-            print(str(e))
+            print("no filter name" + str(e))
             filter = ""
         # try:
         if len(tiles)>1:
@@ -646,6 +653,7 @@ class SurveyABC(ABC):
 
         self.processing_status = processing_status.done
         fits_data['download'] = cutout
+        fits_data['out_dir'] = self.out_dir
         fits_data['group'] = group
         fits_data['survey'] = survey_name
         fits_data['filter'] = filter
@@ -668,21 +676,19 @@ class SurveyABC(ABC):
     def get_cutout(self, position, size, group_by="None"):
         if not group_by:
             group_by="None"
-
         self.processing_status = processing_status.fetching
-
         tiles   = self.get_tiles(position,size)
         if not tiles:
             print("NO {type(self).__name__} TILES FOUND for {position}")
         groups_dict = self.group_tiles(tiles, group_by) # to read header and separate tiles
+        all_fits = []
         for group in list(groups_dict):
             if group=="None": # handle each individually if no grouping
-                all_fits = []
                 for single in groups_dict[group]:
                     # THIS COULD BE DANGEROUS? WILL THERE BE DOUBLES? THEY BE OVERWRITTEN WITH UPDATE
                     all_fits.append(self.process_tile_group([single], position, size, "None", groups_dict[group].index(single)))
             else:
-                all_fits = [self.process_tile_group(groups_dict[group], position, size, group, 0)]
+                all_fits = all_fits+[self.process_tile_group(groups_dict[group], position, size, group, 0)]
         return all_fits
 
     # abstract base class functions required by survey/child classes

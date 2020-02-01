@@ -14,7 +14,7 @@ import csv
 import yaml as yml
 # processing
 from core.survey_abc import processing_status as ProcStatus
-from core.toolbox import extractCoordfromString, readCoordsFromFile, get_cutout_filename
+from core.toolbox import *
 # astropy libs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -183,21 +183,20 @@ class CLIConfig:
                 task = dict(survey_target)
                 task['survey'] = eval(survey_class) # add survey instance to processing stack
                 survey = type(task['survey']).__name__
-                filter = task['survey'].get_filter_setting()
-                path = self.out_dirs[survey]
-                radius = task['size']/2
+                task['survey'].set_out_dir(self.out_dirs[survey]) #set where to store output
+                # filter = task['survey'].get_filter_setting()
+                # radius = task['size']/2
                 task['group_by'] = self.group_by
-                # task['filename'] = f"{path}/{get_cutout_filename(task['position'],radius,survey,filter,'fits')}"
                 # set task pid
                 task['pid'] = pid
-                if self.overwrite or (not ProcStatus.is_processed(task['filename'])):
-                    # push the task onto the processing stack
-                    procssing_stack.append(task)
-                    # increment task pid
-                    pid += 1
-                else:
-                    files = ProcStatus.get_file_listing(task['filename'])
-                    self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
+                # if self.overwrite or (not ProcStatus.is_processed(task['filename'])):
+                # push the task onto the processing stack
+                procssing_stack.append(task)
+                # increment task pid
+                pid += 1
+                # else:
+                #     files = ProcStatus.get_file_listing(task['filename'])
+                #     self.__print(f"File{'s' if len(files) > 1 else ''} {files} exist{'' if len(files) > 1 else 's'}; overwrite={self.overwrite}, skipping...")
         # randomize processing stack to minimize server hits...
         shuffle(procssing_stack)
 
