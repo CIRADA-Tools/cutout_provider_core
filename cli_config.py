@@ -111,10 +111,12 @@ class CLIConfig:
                 elif square:
                     filters = [str(f) for f in square[0].replace('[','').replace(']','').split(',')]
                     survey = survey.replace(square[0],'').upper()
-                safe_filters = self.match_filters(survey,filters)
                 if survey in self.supported_surveys:
+                    safe_filters = self.match_filters(survey,filters)
                     self.survey_filter_sets[survey] = safe_filters
                     self.survey_names.append(survey)
+                else:
+                    print(f"Survey {survey} NOT Supported!")
         return
 
     def set_single_target_params(self, single_target, size, is_name=False):
@@ -184,6 +186,7 @@ class CLIConfig:
                 task['survey'] = eval(survey_class) # add survey instance to processing stack
                 survey = type(task['survey']).__name__
                 task['survey'].set_out_dir(self.out_dirs[survey]) #set where to store output
+                task['survey'].overwrite = self.overwrite
                 # filter = task['survey'].get_filter_setting()
                 # radius = task['size']/2
                 task['group_by'] = self.group_by

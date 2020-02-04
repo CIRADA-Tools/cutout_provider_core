@@ -50,21 +50,37 @@ class WorkerThread(threading.Thread):
 
     def run(self):
         while not self.kill_recieved:
+            # try:
             task = self.input_q.get()
+            # except Exception as e:
+            #     print(str(e), "killing thread from ")
+            #     self.input_q.task_done()
+            #     break
             # if it's swallowed
             if type(task) is PoisonPill:
                 self.input_q.task_done()
                 break
-            ret = self.worker(task)
+            try:
+                ret = self.worker(task)
+                # self.input_q.task_done()
+
+                if self.output_q:
+                    self.output_q.put(item=ret)
+            #catch running exception and kill
+            except Exception as e:
+                print(f"{str(e)} killing thread\n\n")
+                # print("ret", ret)
+                self.die()
+                # self.input_q.task_done()
+
             self.input_q.task_done()
-            if self.output_q:
-                self.output_q.put(item=ret)
 
         if self.kill_recieved:
             try:
                 task['survey'].print("Bye!")
             except:
                 print("Bye!")
+            self.input_q.task_done()
 
     def die(self):
         self.kill_recieved = True
@@ -72,15 +88,7 @@ class WorkerThread(threading.Thread):
 # grab a FITS hdu from some survey
 def get_cutout(target):
     # all fits is list of one or more dicts
-
     all_fits = target['survey'].set_pid(target['pid']).get_cutout(target['position'], target['size'], target['group_by'])
-    # now here process the list of dicts and then return them to be saved?
-    # target['hdu'] = fetched['cutout']
-    # target['log'] = {
-    #     'msg': fetched['message'],
-    #     'sts': fetched['status']
-    # }
-    # target['originals'] = fetched['raw_tiles']
     return all_fits
 
 def save_cutout(all_fits):
@@ -131,12 +139,13 @@ def process_requests(cfg):
     threads = list()
 
     # spin up a bunch of worker threads to process all the data
-    # in principle these could be chained further, such that you could go
+    # in principle these could be chained furprint(str(e), "killing thread")
     # targets -> hdus -> save to file -> process to jpg -> save to file
     for _ in range(grabbers):
         thread = WorkerThread(get_cutout, in_q, out_q).start()
         in_q.put(PoisonPill())
         threads.append(thread)
+
 
     # save all from out queue as added there
     thread = WorkerThread(save_cutout, out_q).start()
@@ -148,6 +157,16 @@ def process_requests(cfg):
     out_q.join()
 
     print("time took: " +str(datetime.now()-start))
+
+def check_group_by_string(group_by):
+    case_match = group_by.upper()
+    valid = ["MOSAIC", "NONE", "DATE-OBS"]
+    if "DATE" in case_match:
+        case_match = "DATE-OBS"
+    if case_match in valid:
+        return case_match
+    else:
+        raise Exception(f"group_by argument {group_by} is invalid!\n Valid group by options are: MOSAIC, NONE, DATE-OBS")
 
 def parse_surveys_string(surveys):
     # regex to match if filters in brackets next to survey name
@@ -163,6 +182,7 @@ def cli():
     """\b
        Command Line Cutout Fetching program.
     """
+    pass
 
 @cli.command()
 @click.option('--coords','-c', 'coords', required=False, default=None)
@@ -259,7 +279,6 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
             size = config_dict['radius']*2
         if surveys is None:
             surveys = config_dict['surveys']
-            print("YAML surveys", surveys)
         if data_out is None:
             data_out = config_dict['output']
         if not overwrite:
@@ -277,7 +296,14 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
 
     if isinstance(surveys, str):
         surveys = parse_surveys_string(surveys)
-    print(f"Using args: \n image size {size} \n surveys {surveys}")
+
+    if isinstance(group_by, str):
+        try:
+            group_by = check_group_by_string(group_by)
+        except Exception as e:
+            print(str(e))
+            return
+    print(f"Using args: \n image size {size} \n surveys {surveys} \n group by: {group_by}\n")
 
     # configuration
     cfg = CLIConfig(surveys, out_path, group_by)
@@ -297,9 +323,9 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
 @click.option('--output','-o', 'data_out', required=False)
 @click.option('--groupby','-g', 'group_by', required=False)
 @click.option('--config', '-cf','config_file', required=False)
-@click.option('--overwrite', 'overwrite', is_flag=True, help='overwrite existing target files (default False)')
+@click.option('--overwrite', 'overwrite', is_flag=True, help='overwrite existing duplicate target files (default True)')
 @click.option('--flush', 'flush', is_flag=True, help='flush existing target files (supersedes --overwrite)')
-def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None, data_out=None, groupby='', config_file=''):
+def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None, data_out=None, group_by='', config_file=''):
     """
        Batch cutout fetching command.
 
@@ -399,21 +425,31 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
         if not group_by:
             group_by = config_dict['group_by']
 
-    if data_out is None:
-        data_out = 'data_out'
-
-    relative_path = os.path.dirname(os.path.abspath(__file__))+'/'
-    out_path = os.path.join(relative_path,data_out)
-
     if isinstance(surveys, str):
         surveys = parse_surveys_string(surveys)
-    print(f"Using args: \n image size {size} \n surveys {surveys}")
+
+    if isinstance(group_by, str):
+        try:
+            group_by = check_group_by_string(group_by)
+        except Exception as e:
+            print(str(e))
+            return
+    print(f"Using args: \n image size {size} \n surveys {surveys} \n group by: {group_by}\n")
 
     accepted_batch_files = check_batch_csv(batch_files_string)
     if not accepted_batch_files:
         print("no valid CSV batch files specified!")
         return
     print(f"Using batch csv: {accepted_batch_files}")
+
+    if data_out is None:
+        # make output oflder resemble batch file name
+        if len(accepted_batch_files) == 1:
+            data_out = accepted_batch_files[0].split("/")[-1].replace('.csv', '_out')
+        else:
+            data_out = 'data_out'
+    relative_path = os.path.dirname(os.path.abspath(__file__))+'/'
+    out_path = os.path.join(relative_path,data_out)
     # configuration
     cfg = CLIConfig(surveys, out_path, group_by)
     cfg.set_batch_targets(accepted_batch_files, relative_path, size)
@@ -424,3 +460,4 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
 
 if __name__ == "__main__":
     cli()
+    print("hmm")

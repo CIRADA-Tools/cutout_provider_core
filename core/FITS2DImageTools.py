@@ -8,7 +8,6 @@ from astropy.stats import mad_std
 from astropy.visualization import imshow_norm, ZScaleInterval, MinMaxInterval, AsinhStretch, ManualInterval, ImageNormalize
 
 
-
 def asinh_plot(wcs, image_data, survey, showgrid=False):
     cmap = plt.get_cmap('gray')
     if survey.upper() in ["PANSTARRS", "WISE", "SDSS"]:
@@ -92,6 +91,14 @@ def trim_axes(hdu, wcs):
     image_data = np.squeeze(hdu.data)
     return image_data
 
+# main, calls other methods to create and return thumbnail in image buffer
+def get_thumbnail(hdu, survey):
+    wcs = WCS(hdu.header)
+    # # trim to 2d from nd to make thumbnail
+    image_data = trim_axes(hdu, wcs)
+    img_buffer = asinh_plot(wcs, image_data, survey)
+    return img_buffer.getvalue()
+
 # def get_image_stats(hdu):
 #     wcs = WCS(hdu.header)
 #     #TODO check if these stats for only 2D image or okay to put in FITS header
@@ -105,12 +112,3 @@ def trim_axes(hdu, wcs):
 #      image_RMS, image_STD) = robust_stats_radio(image_data_2D)
 #      return {"image_MIN":image_MIN, "image_MAX":image_MAX, "image_MEDIAN":image_MEDIAN,
 #       "image_RMS":image_RMS, "image_STD":image_STD}
-
-
-# main, calls other methods to create and return thumbnail in image buffer
-def get_thumbnail(hdu, survey):
-    wcs = WCS(hdu.header)
-    # # trim to 2d from nd to make thumbnail
-    image_data = trim_axes(hdu, wcs)
-    img_buffer = asinh_plot(wcs, image_data, survey)
-    return img_buffer.getvalue()

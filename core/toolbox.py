@@ -15,7 +15,7 @@ def get_sexadecimal_string(position):
     return sexadecimal
 
 # todo incorporate source bnames into this
-def get_mosaic_filename(position,radius,survey,filter=None, group_title='', extension=None):
+def get_mosaic_filename(position,radius,survey,filter=None, group_title=''):
     survey= survey.replace("PANSTARRS", "PanSTARRS")
     coords = get_sexadecimal_string(position)
     # note:the size as string already prints the units but remove space needed
@@ -26,18 +26,20 @@ def get_mosaic_filename(position,radius,survey,filter=None, group_title='', exte
         filter=''
     if group_title=='MOSAIC':
         group_title = ''
-    return f"{survey}_{str(group_title)}_J{coords}_s{size}{filter}_mosaicked{'.%s' % extension if not extension is None else ''}"
+    return f"{survey}_{str(group_title)}_J{coords}_s{size}_{filter}_mosaicked.fits"
 
 # filename for download when NOT mosaiced and preserve as much info as possible
 # replace sexigesimal location string with actual new center
-def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, group_title=""):
+def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, filter=None, group_title=""):
     survey= survey.replace("PANSTARRS", "PanSTARRS")
     radius = str(radius_arcmin).strip(' ')
     baseurl = urllib.parse.unquote(baseurl)
     basefile = baseurl.split('/')[-1].split('.fits')[0]
     new_coords = "J"+get_sexadecimal_string(position)
     if group_title=='None':
-             group_title = ''
+        group_title = ''
+    if not filter:
+        filter=''
     # if not self.name.replace("'", "").replace(" ", "").replace(",", "").replace("`", " ").replace('.','').replace('-','').replace('+','').isdigit():
     #     # if name is not just coords add it in
     #     new_coords = self.name+"." + new_coords
@@ -49,8 +51,8 @@ def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, gro
     # if name is just coords use our standard coord string otherwise use their given name
     new_base = new_base.replace(survey, survey+"_"+str(group_title)+"_")
     if index!=0:
-        return new_base+'_s'+str(radius)+'.img-'+str(index+1)+'.fits'
-    return new_base+'_s'+str(radius)+'.fits'
+        return f"{new_base}_s{radius}_{filter}_img-{str(index+1)}.fits"
+    return f"{new_base}_s{radius}_{filter}.fits"
 
 def extractCoordfromString(position, is_name=False):
     '''

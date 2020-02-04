@@ -113,6 +113,7 @@ class SurveyABC(ABC):
         self.http_wait_retry_s = 5
         self.tmp_dir = "/tmp"
         self.out_dir = None
+        self.overwrite = True
 
     # save a list of dicts for HDU results into a folder with originals in nearby folder
     #save_orig_separately is for webserver
@@ -125,11 +126,22 @@ class SurveyABC(ABC):
                 save_at = os.path.join(save_dir, f_dict['filename'])
             if f_dict['download']:
                 try:
-                    f_dict['download'].writeto(save_at, overwrite=True)
+                    f_dict['download'].writeto(save_at, overwrite=f_dict['overwrite'])
                 except Exception as e:
-                    print("EXCEPTION in TASKS", str(e))
                     if "Verif" in str(e): #skip verify warnings from fits standards
-                        f_dict['download'].writeto(save_at, overwrite=True, output_verify='silentfix+warn')
+                        f_dict['download'].writeto(save_at, overwrite=f_dict['overwrite'], output_verify='silentfix+warn')
+                    elif "exists" in str(e):
+                        next = 1
+                        save_at = save_at.replace(".fits", f"({next}).fits")
+                        while next < 10:
+                            try:
+                                f_dict['download'].writeto(save_at, overwrite=f_dict['overwrite'], output_verify='silentfix+warn')
+                                break
+                            except:
+                                next+=1
+                                save_at = save_at.replace(f"({next-1}).fits", f"({next}).fits")
+                        if next>=10:
+                            raise Exception(f"duplicate files not saved! {f_dict['filename']} for {f_dict['survey']}")
                     else:
                         raise Exception(f"problem creating {f_dict['filename']} for {f_dict['survey']}")
                 # add original raw tiles as extensions to mosaic
@@ -141,7 +153,8 @@ class SurveyABC(ABC):
                     fits_img.close(output_verify="silentfix")
 
                 elif len(list(f_dict['originals']))>1 and save_orig_separately==True:
-                    orig_dir = save_dir + originals_path_end
+                    print("saving originals!")
+                    orig_dir = save_at + originals_path_end
                     if os.path.exists(orig_dir):
                         shutil.rmtree(orig_dir)
                     os.makedirs(orig_dir)
@@ -372,13 +385,10 @@ class SurveyABC(ABC):
         if not self.request_urls_stack:
             self.processing_status = processing_status.none
             raise Exception(f"no valid {type(self).__name__} urls found")
-            return None
-        if len(self.request_urls_stack) > 0:
+            # return None
+        else: #len(self.request_urls_stack) > 0:
             hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in self.request_urls_stack] if hdul_tup[0]]
-        else:
-            self.processing_status = processing_status.none
-            return None
-        return hdul_list
+            return hdul_list
 
     # make the directory structure if it doesn't exist
     def __make_dir(self, dirname):
@@ -613,7 +623,6 @@ class SurveyABC(ABC):
         try:
             filter = self.get_filter_setting().name.lower()
         except Exception as e:
-            print("no filter name" + str(e))
             filter = ""
         # try:
         if len(tiles)>1:
@@ -622,14 +631,14 @@ class SurveyABC(ABC):
             if self.needs_trimming:
                 tile = self.trim_tile(tile,position,size)
             cutout  = self.format_fits_hdu(tile,position,all_headers)
-            fits_data['filename'] = get_mosaic_filename(position,radius,survey_name, filter=filter, group_title=group, extension=None)
+            fits_data['filename'] = get_mosaic_filename(position,radius,survey_name, filter=filter, group_title=group)
         elif len(tiles)==0:
             print(f"no {survey_name} tiles found for {position}! ")
             return None
         else:
             if group == "MOSAIC":
                 group="None"
-            fits_data['filename'] = get_non_mosaic_filename(position, radius, survey_name, baseurl=tiles[0][1], index=index)
+            fits_data['filename'] = get_non_mosaic_filename(position, radius, survey_name, baseurl=tiles[0][1], index=index, filter=filter, group_title=group)
             cutout = tiles[0][0]
             if self.needs_trimming:
                 cutout = self.trim_tile(cutout,position,size)
@@ -654,6 +663,7 @@ class SurveyABC(ABC):
         self.processing_status = processing_status.done
         fits_data['download'] = cutout
         fits_data['out_dir'] = self.out_dir
+        fits_data['overwrite'] = self.overwrite
         fits_data['group'] = group
         fits_data['survey'] = survey_name
         fits_data['filter'] = filter
@@ -663,13 +673,6 @@ class SurveyABC(ABC):
         self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at radius {size/2}]: Processing Status = '{self.processing_status.name}'.")
         return fits_data
 
-        # return {
-        #     'cutout':       cutout,
-        #     'request_urls': self.__pop_request_urls_stack(),
-        #     'raw_tiles':    self.__pop_mosaic_hdul_tiles_stack(),
-        #     'message':      self.__pop_message_buffer(),
-        #     'status':       self.__pop_processing_status()
-        # }
 
 
     # main routine for CLI cutout processing
@@ -679,7 +682,7 @@ class SurveyABC(ABC):
         self.processing_status = processing_status.fetching
         tiles   = self.get_tiles(position,size)
         if not tiles:
-            print("NO {type(self).__name__} TILES FOUND for {position}")
+            raise Exception("NO {type(self).__name__} TILES FOUND for {position}")
         groups_dict = self.group_tiles(tiles, group_by) # to read header and separate tiles
         all_fits = []
         for group in list(groups_dict):

@@ -11,12 +11,12 @@ cutouts:
         - FIRST
         - NVSS
         - VLASS
-        - WISE[w1]
-        - PanSTARRS[i]
-        - SDSS[g,r,i]
+        - WISE
+        - PanSTARRS
+        - SDSS
 
     # group by MOSAIC, NONE, or DATE-OBS, default is NONE (no grouping)
-    group_by: NONE
+    group_by: MOSAIC
 
 # Processing output parameters
 configuration:
