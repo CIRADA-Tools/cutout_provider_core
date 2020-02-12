@@ -101,16 +101,19 @@ class SurveyABC(ABC):
     """
     def __init__(self):# http_pool_manager = None, pid = None):
         ABC.__init__(self)
+        # for CLI only
         self.processing_status = processing_status.idle
         self.pid = None
         self.http = None #http_pool_manager #None
         self.message_buffer = ""
-        self.print_to_stdout = True
-        self.request_urls_stack = list()
-        self.mosaic_hdul_tiles_stack = list()
+        # self.request_urls_stack = list()
+        # self.mosaic_hdul_tiles_stack = list()
+
         # http request settings
+        self.print_to_stdout = True
         self.http_request_retries = 5
         self.http_wait_retry_s = 5
+        # data out settings
         self.tmp_dir = "/tmp"
         self.out_dir = None
         self.overwrite = True
@@ -126,6 +129,7 @@ class SurveyABC(ABC):
                 save_at = os.path.join(save_dir, f_dict['filename'])
             if f_dict['download']:
                 try:
+                    print("overwrite", f_dict['overwrite'])
                     f_dict['download'].writeto(save_at, overwrite=f_dict['overwrite'])
                 except Exception as e:
                     if "Verif" in str(e): #skip verify warnings from fits standards
@@ -381,13 +385,15 @@ class SurveyABC(ABC):
 
     def get_tiles(self, position, size):
         self.print(f"getting tile urls for {str(position)}\n" )
-        self.request_urls_stack = self.get_tile_urls(position,size)
-        if not self.request_urls_stack:
+        print("getting tilessss")
+        request_urls_stack = self.get_tile_urls(position,size)
+        print("request", request_urls_stack)
+        if not request_urls_stack:
             self.processing_status = processing_status.none
             raise Exception(f"no valid {type(self).__name__} urls found")
             # return None
         else: #len(self.request_urls_stack) > 0:
-            hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in self.request_urls_stack] if hdul_tup[0]]
+            hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in request_urls_stack] if hdul_tup[0]]
             return hdul_list
 
     # make the directory structure if it doesn't exist
@@ -497,7 +503,7 @@ class SurveyABC(ABC):
                 self.processing_status = processing_status.error
         elif len(hdul_tiles) == 1: # this shouldn't ever happen with webserver code
                 hdu = hdul_tiles[0][0]
-        self.mosaic_hdul_tiles_stack = hdul_tiles
+        # self.mosaic_hdul_tiles_stack = hdul_tiles
         return hdu
 
     def trim_tile(self, hdu, position, size):
@@ -583,15 +589,15 @@ class SurveyABC(ABC):
         #         del new_hdu.header[field]
         return new_hdu
 
-    def __pop_request_urls_stack(self):
-        request_urls_stack = self.request_urls_stack
-        self.request_urls_stack = list()
-        return request_urls_stack
+    # def __pop_request_urls_stack(self):
+    #     request_urls_stack = self.request_urls_stack
+    #     self.request_urls_stack = list()
+    #     return request_urls_stack
 
-    def __pop_mosaic_hdul_tiles_stack(self):
-        mosaic_hdul_tiles_stack = self.mosaic_hdul_tiles_stack
-        self.mosaic_hdul_tiles_stack = list()
-        return mosaic_hdul_tiles_stack
+    # def __pop_mosaic_hdul_tiles_stack(self):
+    #     mosaic_hdul_tiles_stack = self.mosaic_hdul_tiles_stack
+    #     self.mosaic_hdul_tiles_stack = list()
+    #     return mosaic_hdul_tiles_stack
 
     def group_tiles(self, tile_tups, rule):
         # rule has to be a valid fits HEADER value (such as DATE-OBS) OR of our defined groups "Mosaic" or "None"
@@ -673,17 +679,18 @@ class SurveyABC(ABC):
         self.print(f"[Position: {position.ra.degree}, {position.dec.degree} at radius {size/2}]: Processing Status = '{self.processing_status.name}'.")
         return fits_data
 
-
-
     # main routine for CLI cutout processing
     def get_cutout(self, position, size, group_by="None"):
+        print("get cutout??")
         if not group_by:
             group_by="None"
         self.processing_status = processing_status.fetching
         tiles   = self.get_tiles(position,size)
+        print("TILES", len(tiles))
         if not tiles:
             raise Exception("NO {type(self).__name__} TILES FOUND for {position}")
         groups_dict = self.group_tiles(tiles, group_by) # to read header and separate tiles
+        print("groups dict", groups_dict)
         all_fits = []
         for group in list(groups_dict):
             if group=="None": # handle each individually if no grouping
