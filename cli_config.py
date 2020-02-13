@@ -107,10 +107,11 @@ class CLIConfig:
                 square = re.search('\[([^)]+)\]',survey)
                 if rund:
                     filters = [str(f) for f in rund[0].replace('(','').replace(')','').split(',')]
-                    survey = survey.replace(rund[0],'').upper()
+                    survey = survey.replace(rund[0],'')
                 elif square:
                     filters = [str(f) for f in square[0].replace('[','').replace(']','').split(',')]
-                    survey = survey.replace(square[0],'').upper()
+                    survey = survey.replace(square[0],'')
+                survey = survey.upper()
                 if survey in self.supported_surveys:
                     safe_filters = self.match_filters(survey,filters)
                     self.survey_filter_sets[survey] = safe_filters

@@ -38,7 +38,6 @@ class VLASS(SurveyABC):
     def get_tile_urls(self,position,size):
         cadc = Cadc()
         radius = (size/2.0).to(u.deg)
-        print("query", radius, position)
         results = cadc.query_region(
             coordinates = position,
             radius      = radius,
@@ -46,12 +45,9 @@ class VLASS(SurveyABC):
         )
         ### If adding any filters in then this is where would do it!!!#####
         #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
-        print("results", results)
         if len(results) == 0:
             return list()
-        print("getting image list")
         urls = cadc.get_image_list(results, position, radius)
-        print("urls", urls)
         if len(urls)==0:
             self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
         return urls

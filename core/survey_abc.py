@@ -113,6 +113,7 @@ class SurveyABC(ABC):
         self.print_to_stdout = True
         self.http_request_retries = 5
         self.http_wait_retry_s = 5
+        self.http_read_timeout = 40
         # data out settings
         self.tmp_dir = "/tmp"
         self.out_dir = None
@@ -269,9 +270,9 @@ class SurveyABC(ABC):
                 #webserver handles own process pool
                 if self.http is None:
                     #response = urllib.request.urlopen(request)
-                    response = requests.get(url, verify=False, timeout=40)
+                    response = requests.get(url, verify=False, timeout=self.http_read_timeout)
                 else:
-                    response = self.http.request('GET',url)
+                    response = self.http.request('GET',url, timeout=self.http_read_timeout)
             except urllib.error.HTTPError as e:
                 self.print(f"{e}",is_traceback=True)
             except ConnectionResetError as e:
@@ -375,7 +376,6 @@ class SurveyABC(ABC):
             print(f"{type(self).__name__} EXCEPTION" + str(e))
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
         if not response:
-            print(self, "exception in surveyabc no response" + str(e))
             raise Exception(f"No FITS found at url {url} survey {type(self).__name__} !")
         hdul = self.create_fits(response)
         if not hdul:
@@ -385,9 +385,7 @@ class SurveyABC(ABC):
 
     def get_tiles(self, position, size):
         self.print(f"getting tile urls for {str(position)}\n" )
-        print("getting tilessss")
         request_urls_stack = self.get_tile_urls(position,size)
-        print("request", request_urls_stack)
         if not request_urls_stack:
             self.processing_status = processing_status.none
             raise Exception(f"no valid {type(self).__name__} urls found")
@@ -681,16 +679,13 @@ class SurveyABC(ABC):
 
     # main routine for CLI cutout processing
     def get_cutout(self, position, size, group_by="None"):
-        print("get cutout??")
         if not group_by:
             group_by="None"
         self.processing_status = processing_status.fetching
         tiles   = self.get_tiles(position,size)
-        print("TILES", len(tiles))
         if not tiles:
             raise Exception("NO {type(self).__name__} TILES FOUND for {position}")
         groups_dict = self.group_tiles(tiles, group_by) # to read header and separate tiles
-        print("groups dict", groups_dict)
         all_fits = []
         for group in list(groups_dict):
             if group=="None": # handle each individually if no grouping
