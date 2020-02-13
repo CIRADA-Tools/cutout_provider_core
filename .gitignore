@@ -12,3 +12,4 @@ data
 *.pyc
 __pycache__
 testbatches/*
+OutLOG.txt

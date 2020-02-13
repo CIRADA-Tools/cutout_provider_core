@@ -13,6 +13,8 @@ import astropy.units as u
 from cli_config import CLIConfig
 from core.survey_abc import processing_status as ProcStatus, SurveyABC
 
+LOG_FILE = "OutLOG.txt"
+
 #Global pool manager
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 http = urllib3.PoolManager(
@@ -39,7 +41,6 @@ class PoisonPill:
     def __init__(self):
         pass
 
-# TODO (Issue #11): Need to vet this for thread-saftey -- tricky!
 class WorkerThread(threading.Thread):
     def __init__(self, worker, input_q, output_q=None, *args, **kwargs):
         self.input_q = input_q
@@ -50,13 +51,7 @@ class WorkerThread(threading.Thread):
 
     def run(self):
         while not self.kill_recieved:
-            # try:
             task = self.input_q.get()
-            # except Exception as e:
-            #     print(str(e), "killing thread from ")
-            #     self.input_q.task_done()
-            #     break
-            # if it's swallowed
             if type(task) is PoisonPill:
                 self.input_q.task_done()
                 break
@@ -68,11 +63,18 @@ class WorkerThread(threading.Thread):
                     self.output_q.put(item=ret)
             #catch running exception and kill
             except Exception as e:
-                print(f"{str(e)} killing thread\n\n")
+                msg = task['survey'].sprint(f"{str(e)} killing thread\n\n")
+                try:
+                    date_mark = str(datetime.now()) + ": "
+                    with open(LOG_FILE, "a") as logfile:
+                        logfile.write("\n\n"+date_mark+msg)
+                        logfile.close()
+                except:
+                    print("Unable to write error to log: " + msg)
                 # print("ret", ret)
+                print(msg)
                 self.die()
                 # self.input_q.task_done()
-
             self.input_q.task_done()
 
         if self.kill_recieved:
@@ -92,9 +94,24 @@ def get_cutout(target):
     return all_fits
 
 def save_cutout(all_fits):
-    print("saving!!!")
     originals_end="_ORIGINALS"
-    SurveyABC.save_and_serialize(all_fits, originals_path_end=originals_end)
+    try:
+        saved_fits = SurveyABC.save_and_serialize(all_fits, originals_path_end=originals_end)
+        msg = f"{all_fits[0]['survey']}({all_fits[0]['filter']}): [Position:{all_fits[0]['position']} at "\
+            f"radius {all_fits[0]['radius']} arcmin]: All Output Files Successfully Saved!"
+        date_mark = str(datetime.now()) + ": "
+        with open(LOG_FILE, "a") as logfile:
+            logfile.write("\n\n"+date_mark+msg)
+            logfile.close()
+        print(msg)
+    except Exception as e:
+        print("Unable to save ")
+        date_mark = str(datetime.now()) + ": "
+        with open(LOG_FILE, "a") as logfile:
+            logfile.write("\n\n"+date_mark+str(e))
+            logfile.close()
+
+
 
 def read_in_config(yml_file):
     try:

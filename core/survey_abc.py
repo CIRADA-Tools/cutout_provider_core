@@ -231,7 +231,7 @@ class SurveyABC(ABC):
             msg_str = "HEADER:\n>%s" % "\n>".join(get_header_pretty_string(msg).splitlines())
         else:
             msg_str = msg
-        prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines()])
+        prefixed_output = "\n".join([f"{prefix}: {s}" for s in msg_str.splitlines() if s])
         if buffer:
             self.__push_message_buffer(prefixed_output)
         return prefixed_output
@@ -296,10 +296,11 @@ class SurveyABC(ABC):
                     return response_data
                 except Exception as e:
                     print(f"{e}",is_traceback=True)
-            self.print(f"Taking a {self.http_wait_retry_s}s nap...")
-            sleep(self.http_wait_retry_s)
-            self.print("OK, lest trying fetching the cutout -- again!")
             potential_retries -= 1
+            if potential_retries > 0:
+                self.print(f"Taking a {self.http_wait_retry_s}s nap...")
+                sleep(self.http_wait_retry_s)
+                self.print("OK, lest trying fetching the cutout -- again!")
 
         print(f"WARNING: Bailed on fetch '{url}'")
         self.processing_status = processing_status.bailed
@@ -372,14 +373,12 @@ class SurveyABC(ABC):
         try:
             response = self.send_request(url)
         except Exception as e:
-            print(self, "exception in surveyabc" + str(e))
             print(f"{type(self).__name__} EXCEPTION" + str(e))
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
         if not response:
-            raise Exception(f"No FITS found at url {url} survey {type(self).__name__} !")
+            raise Exception(f"No FITS found at url {url} within time constraint for {type(self).__name__} !")
         hdul = self.create_fits(response)
         if not hdul:
-            print(self, "NO HDUL" + str(e))
             raise Exception(f"{type(self).__name__}: error creating FITS")
         return (hdul[0], url)
 
@@ -388,7 +387,7 @@ class SurveyABC(ABC):
         request_urls_stack = self.get_tile_urls(position,size)
         if not request_urls_stack:
             self.processing_status = processing_status.none
-            raise Exception(f"no valid {type(self).__name__} urls found")
+            raise Exception(f"no valid {type(self).__name__} urls found for Position: {position.ra.degree}, {position.dec.degree}")
             # return None
         else: #len(self.request_urls_stack) > 0:
             hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in request_urls_stack] if hdul_tup[0]]
@@ -637,7 +636,7 @@ class SurveyABC(ABC):
             cutout  = self.format_fits_hdu(tile,position,all_headers)
             fits_data['filename'] = get_mosaic_filename(position,radius,survey_name, filter=filter, group_title=group)
         elif len(tiles)==0:
-            print(f"no {survey_name} tiles found for {position}! ")
+            print(f"no {survey_name} tiles found for Position:{position.ra.to(u.deg).value}, {position.dec.to(u.deg).value}! ")
             return None
         else:
             if group == "MOSAIC":
@@ -684,7 +683,7 @@ class SurveyABC(ABC):
         self.processing_status = processing_status.fetching
         tiles   = self.get_tiles(position,size)
         if not tiles:
-            raise Exception("NO {type(self).__name__} TILES FOUND for {position}")
+            raise Exception(f"NO {type(self).__name__} TILES FOUND for Position: {position.ra.degree}, {position.dec.degree}")
         groups_dict = self.group_tiles(tiles, group_by) # to read header and separate tiles
         all_fits = []
         for group in list(groups_dict):
