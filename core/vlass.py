@@ -38,18 +38,24 @@ class VLASS(SurveyABC):
     def get_tile_urls(self,position,size):
         cadc = Cadc()
         radius = (size/2.0).to(u.deg)
-        results = cadc.query_region(
+        print("this request")
+        urls = cadc.get_images(
             coordinates = position,
             radius      = radius,
-            collection  = 'VLASS'
+            collection  = 'VLASS',
+            get_url_list= True
         )
         ### If adding any filters in then this is where would do it!!!#####
         #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
-        if len(results) == 0:
-            return list()
-        urls = cadc.get_image_list(results, position, radius)
-        if len(urls)==0:
+        if len(urls) == 0:
             self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
+            return list()
+        # if len(results) == 0:
+        #     return list()
+        # print("or this one?")
+        # urls = cadc.get_image_list(results, position, radius)
+        # if len(urls)==0:
+        #     self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
         return urls
 
     def get_fits_header_updates(self,header, all_headers=None):

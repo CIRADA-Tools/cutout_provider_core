@@ -21,7 +21,7 @@ http = urllib3.PoolManager(
     num_pools = 60,
     maxsize   = 15,
     timeout   = 30.0,
-    retries   = 10,
+    retries   = 3,
     block     = True
 )
 
