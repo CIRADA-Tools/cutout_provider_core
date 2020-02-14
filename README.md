@@ -39,13 +39,104 @@ Grabbing cutouts from various surveys
 ---
 
 ### How to run
+from the command line:    
+`$python3 fetch_cutouts.py`    
+with Commands:    
+  `fetch        Single cutout fetching command.   `     
+  `fetch_batch  Batch cutout fetching command.   `     
+  
+Options:    
+      -c, --coords TEXT     [required one of either -c or -n]    
+      -n, --name TEXT
+      -f, --file TEXT       batch file(s) name(s)  [required if fetch_batch]   
+      -r, --radius INTEGER  [required]     
+      -s, --surveys TEXT   
+      -o, --output TEXT   
+      -g, --groupby TEXT   
+      -cf, --config TEXT   [optional]    
+      --overwrite           overwrite existing duplicate target files (default
+                            True)   
+      --flush               flush existing target files (supersedes --overwrite)   
+      --help                Show this message and exit.   
+      
+Argument Descriptions:    
+`-c 'coords' for Source coordinates OR`    
+`-n 'name' for Source name`    
+     
+      example accepted coordinate formats:    
+      > RA,DEC or 'RA, DEC' in degrees    
+      > '00h42m30s', '+41d12m00s' or 00h42m30s,+41d12m00s    
+      > '00 42 30 +41 12 00'    
+      > '00:42.5 +41:12'    
+      if name:    
+      > The name of the object to get coordinates for, e.g. 'M42'    
+      
+`-r 'radius' is the Integer search radius around the specified source location in arcmin.`    
+      The cutouts will be of maximum width and height of 2*radius    
 
-Batch Processing from the shell:  
-1) edit `config.yml` to include the name of the batch script with positions and which surveys to query for    
-2) on the command line from the location of this README run:    
-`python3 fetch_cutouts.py batch_process config.yml`     
+`-s 'surveys' is one or several surveys comma separated without spaces between.`    
+      Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS       
+           
+      Filters for each survey may be specified in the following formats:    
+      > "WISE(w2),SDSS[g,r]"    
+      > "WISE[w1],VLASS"    
+      > WISE,VLASS    
+      
+      If no filters are specified then the default filter is used for each.    
+      If surveys argument is not specified then will fetch from ALL implemented    
+      surveys with default filters for each survey.    
+    
+`-o 'output' is the directory location to save output FITS images to.`    
+      Output will be furthered separated into subfolders for the corresponding survey.    
+      Default location is a folder named 'data_out/' in this current directory.    
 
-This will fill `data/out` with the FITS files
+`-g 'groupby' is an option to separate FITS results by "MOSAIC", "DATE-OBS", or "NONE" (default).`     
+    
+      > "MOSAIC": if the requested position and radius straddle boundaries in multiple      
+                  FITS images for a given survey a mosaicked FITS file will be generated    
+                  from all of these input images with each input image as an extension of    
+                  the corresponding mosaicked FITS. Mosaics are largely provided for visual    
+                  use only.    
+      > "DATE-OBS": For surveys VLASS, FIRST, NVSS, or PanSTARRS a Mosaicked FITS is made    
+                  (when needed) for every unique DATE-OBS.     
+      > "NONE" (default): All resulting FITS images in the requested survey are returned    
+                  without doing any mosaicking    
+    
+`-cf 'config' is to specify a YAML config file for settings, ex."config.yml".`    
+      *Note: Specified command line args will overwrite these settings.`          
+   
+`-f "file" FOR FETCH_BATCH ONLY. The CSV file(s) name. `      
+
+       CSV must at least have separate columns named "RA" and "Dec"    
+       (or any of the variants below, but there can only be one variant of    
+       RA and one of Dec per file). A column labelled "Name" or "NAME" may also be used.   
+       For a given source, coordinates will be evaluated via "RA" and "Dec" if   
+       they are non-empty. If a line does not have a valid coordinate position,   
+       but does have a "Name" column value, the service will attempt to resolve   
+       the source name.   
+           
+       Accepted variants of RA and Dec Column header names are:    
+       R.A.   
+       Right Ascension   
+       RA (J2000)   
+       R.A. (J2000)   
+       Right Ascension (J2000)   
+       RAJ2000   
+       DEC   
+       DEC.   
+       Declination   
+       DEC (J2000)   
+       DEC. (J2000)   
+       Declination (J2000)   
+       DecJ2000   
+         
+       Source names will be resolved via the Sesame Name Resolver:    
+       http://vizier.u-strasbg.fr/viz-bin/Sesame    
+        
+Sample command looks like:    
+`python3 fetch_cutouts.py fetch -n M87 -s VLASS,WISE -r 3 -g MOSAIC`    
+   
+This will fill `data_out` with the FITS files separated by Survey name directory.    
 
 **FITS Processing to JPEG**
 
