@@ -13,3 +13,5 @@ data
 __pycache__
 testbatches/*
 OutLOG.txt
+images/processed/*
+venv/*
