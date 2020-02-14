@@ -3,14 +3,12 @@
 ### Applications currently using this common Core Cutout code include:    
 - a Command Line Interface with instructions included below      
 - a public web service found at http://206.12.91.186/  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
-
-       
            
 # Cutout Gathering
 
 Grabbing cutouts from various surveys
 
-**The code currently is in a testing phase**, and at the moment grabs ~140 Best & Heckman galaxies as FITS files from all included surveys.
+**The code currently is in a developing and testing phase**
 
 ### Currently included surveys:
 
@@ -138,7 +136,30 @@ Sample command looks like:
    
 This will fill `data_out` with the FITS files separated by Survey name directory.    
 
-### Installation Notes
+### Installation Notes (this was developed on an Ubuntu 18.04 OS with Python 3.6.8) 
+
+First clone this repo and cd into it    
+then create a virtualenvironment with python virtualenv    
+> virtualenv -p python3 venv    
+
+activate it      
+> . venv/bin/activate    
+ 
+install all requirements from requirements.txt    
+
+> pip3 install django
+> pip3 install -r requirements.txt    
+
+if you get an astroquery version error you must install astroquery by           
+(from within your virtualenv still) but cd out of th repo directory:                
+$ cd ..     
+$ git clone https://github.com/astropy/astroquery.git        
+$ cd astroquery    
+$ python setup.py install 
+
+Then remove the astroquery line from requirements.txt and run this again:     
+> pip3 install -r requirements.txt 
+
 
 You'll need to install <a target=_blank href="https://montage-wrapper.readthedocs.io/en/v0.9.5/#installation">Montage</a>, among other standard fair, which can be a littly tricky. Here's the Coles Notes:
 
@@ -149,11 +170,4 @@ You'll need to install <a target=_blank href="https://montage-wrapper.readthedoc
  * To test, run `mAdd` and you should see something like,<br>```[struct stat="ERROR", msg="Usage: mAdd [-d level] [-p imgdir] [-n(o-areas)] [-a mean|median|count] [-e(xact-size)] [-s statusfile] images.tbl template.hdr out.fits"]```<br>indicating it is installed correctly.
 
 
-## NOTE: if you get pyopenssl ssl.SSLError('bad handshake....
-Check which version of requests you are using.    
-`import requests`    
-`print(requests.__version__)`    
-Try downgrading to version 2.11.1. It worked as seen from https://stackoverflow.com/questions/40741361/python-requests-gives-me-bad-handshake-error/40741362    
-
-`pip3 uninstall requests`    
-`pip3 install requests==2.11.1`     
+     
