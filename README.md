@@ -138,13 +138,6 @@ Sample command looks like:
    
 This will fill `data_out` with the FITS files separated by Survey name directory.    
 
-**FITS Processing to JPEG**
-
-`python3 process_fits.py`
-
-This takes whatever supported FITS files are in `out` and processes them into `.jpg`'s.
-_All included surveys (see above) are supported_
-
 ### Installation Notes
 
 You'll need to install <a target=_blank href="https://montage-wrapper.readthedocs.io/en/v0.9.5/#installation">Montage</a>, among other standard fair, which can be a littly tricky. Here's the Coles Notes:
