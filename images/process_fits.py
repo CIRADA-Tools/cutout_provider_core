@@ -144,8 +144,8 @@ def survey_list(files, in_dir, out_dir, process):
 
 def main():
 
-    in_dir = 'data/out'
-    out_dir = 'data/processed'
+    in_dir = 'data_out'
+    out_dir = 'processed'
 
     make_dir(out_dir)
 
