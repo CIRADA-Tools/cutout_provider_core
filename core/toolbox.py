@@ -65,7 +65,8 @@ def extractCoordfromString(position, is_name=False):
         > The name of the object to get coordinates for, e.g. 'M42'
     '''
     if is_name:
-        return SkyCoord.from_name(position)
+        resolved = SkyCoord.from_name(position)
+        return resolved
     # preformat string for consistency
     position = position.replace("'", "").replace(",", " ").replace("`", " ")
     if not ('h' in position or 'm' in position or ':' in position):

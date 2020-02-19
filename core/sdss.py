@@ -3,16 +3,16 @@ from astropy import units as u
 
 
 from .survey_abc import SurveyABC
-from .survey_filters import grizy_filters
+from .survey_filters import ugriz_filters
 class SDSS(SurveyABC):
-    def __init__(self,filter=grizy_filters.g):
+    def __init__(self,filter=ugriz_filters.g):
         super().__init__()
         self.filter = filter
         self.needs_trimming = True
 
     @staticmethod
     def get_supported_filters():
-        return grizy_filters
+        return ugriz_filters
 
     def get_filter_setting(self):
         return self.filter

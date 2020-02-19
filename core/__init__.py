@@ -1,7 +1,6 @@
 # abstract base class components
 from .survey_abc     import processing_status
-from .survey_filters import wise_filters
-from .survey_filters import grizy_filters
+from .survey_filters import grizy_filters, wise_filters, ugriz_filters
 
 # supported surveys
 from .first     import FIRST

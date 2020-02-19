@@ -23,6 +23,14 @@ class grizy_filters(Enum):
     z = 4
     y = 5
 
+class ugriz_filters(Enum):
+    u = 1
+    g = 2
+    r = 3
+    i = 4
+    z = 5
+
+
 
 #
 #   H E A D E R   F I L T E R I N G / F O R M A T I N G

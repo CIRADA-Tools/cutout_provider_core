@@ -19,8 +19,7 @@ from core.toolbox import *
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 # filters used by various surveys
-from core.survey_filters import wise_filters
-from core.survey_filters import grizy_filters
+from core.survey_filters import grizy_filters, wise_filters, ugriz_filters
 # supported suverys (nb: cf., SurveyConfig::self.supported_surveys)
 from core.nvss      import NVSS
 from core.first     import FIRST
@@ -82,7 +81,6 @@ class CLIConfig:
             return
         prefix = type(self).__name__ + (f"({sys._getframe(1).f_code.co_name})" if show_caller else "")
         prefixed_string = "\n".join([f"{prefix}: {s}" for s in string.splitlines()])
-        print(prefixed_string)
 
     def flush_old_survey_data(self):
         for survey, dir in self.out_dirs.items():

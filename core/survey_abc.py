@@ -432,7 +432,7 @@ class SurveyABC(ABC):
         return hdul
 
     def get_image(self, hdu):
-        # img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
+        #img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
         img_data = hdu.data
         # we need to center the pixel ref's so as to reduce rotations during mosaicking
         # TODO (Issue #8):
@@ -503,10 +503,13 @@ class SurveyABC(ABC):
         # self.mosaic_hdul_tiles_stack = hdul_tiles
         return hdu
 
+    # trims to cutout size around given center
     def trim_tile(self, hdu, position, size):
         if hdu is None:
             return None
-
+        # hdu.data = hdu.data[1:][1:] if cube this flattens
+        # print(hdu.shape)
+        # print(hdu.header)
         w = WCS(hdu.header)
         # trim to 2d from nd
         naxis = w.naxis
