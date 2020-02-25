@@ -26,7 +26,7 @@ class NVSS(SurveyABC):
         resolution = 2.25*u.arcsec/u.pix
         # # min allow pixel scale use this as base resolution
         min_scale = 2.25*u.arcsec/u.pix #0.001*u.arcsec/u.pix
-        # # max pixel scale without information lose as multiple of min ~15
+        # # max pixel scale without information loss as multiple of min ~15
         max_scale = 15*u.arcsec/u.pix
         # # calculate/desire pixel scale
         desired_scale = round_sig((size/max_image_pixels).to(u.arcsec/u.pix),4)

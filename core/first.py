@@ -1,5 +1,6 @@
 from astropy import units as u
 from astropy.time import Time
+import requests, json
 
 from .survey_abc import SurveyABC
 class FIRST(SurveyABC):
@@ -15,18 +16,49 @@ class FIRST(SurveyABC):
     def get_filter_setting(self):
         return None
 
-    def get_tile_urls(self,position,size):
-        url = 'https://third.ucllnl.org/cgi-bin/firstimage'
-        position = position.to_string('hmsdms', sep=' ')
+    def find_all_sources(self, position,size):
+        url = 'https://archive.stsci.edu/vlafirst/search.php'
+        # position = position.to_string('hmsdms', sep=' ')
         post_values = {
-            'RA': position,  # note that this includes DEC
-            'Equinox': 'J2000',
-            'ImageSize': size.to(u.arcmin).value,
-            'ImageType': 'FITS Image',
-            'Download': 1,
-            'FITS': 1
+            'ra': str(position.ra.to(u.deg).value),
+            'dec': str(position.dec.to(u.deg).value),
+            'equinox': 'J2000',
+            'radius': (size/2).to(u.arcmin).value,
+            'selectedColumnsCsv': 'v_ra,v_dec',
+            'coordformat': 'dec',
+            'outputformat': 'JSON',
+            'action': 'Search'
         }
-        return [self.pack(url, post_values)]
+        query = self.pack(url, post_values)
+        if self.http is None:
+            #response = urllib.request.urlopen(request)
+            matches = requests.get(query, verify=False, timeout=self.http_read_timeout)
+        else:
+            matches = self.http.request('GET',query, timeout=self.http_read_timeout)
+        return matches
+
+    def get_tile_urls(self,position,size):
+        matches = find_all_sources(position,size)
+        if matches.status_code==200:
+            all_urls = []
+            results = json.loads(matches.content)
+            url = 'https://third.ucllnl.org/cgi-bin/firstimage'
+            for coords in results:
+                print(coords)
+                post_values = {
+                    'RA': coords['RA (J2000)'],  # note that this includes DEC
+                    'DEC': coords['Dec (J2000)'],
+                    'Equinox': 'J2000',
+                    'ImageSize': size.to(u.arcmin).value,
+                    'ImageType': 'FITS Image',
+                    'Download': 1,
+                    'FITS': 1
+                }
+                all_urls.append(self.pack(url, post_values))
+            print(all_urls)
+            return all_urls
+        else:
+            return []
 
     def get_fits_header_updates(self,header, all_headers=None):
         header_updates = {
