@@ -125,9 +125,8 @@ class SurveyABC(ABC):
     def save_and_serialize(all_fits, originals_path_end="_ORIGINALS", save_orig_separately=False, save_dir="data_out/"):
         for f_dict in all_fits:
             if f_dict["out_dir"]:
-                save_at = os.path.join(f_dict["out_dir"], f_dict['filename'])
-            else:
-                save_at = os.path.join(save_dir, f_dict['filename'])
+                save_dir = f_dict["out_dir"]
+            save_at = os.path.join(save_dir, f_dict['filename'])
             if f_dict['download']:
                 try:
                     print("overwrite", f_dict['overwrite'])
@@ -166,10 +165,14 @@ class SurveyABC(ABC):
                     # sort by date-obs
                     sorted_keys = sorted((list(f_dict['originals'])), key=lambda x: f_dict['originals'][x]['obs-date'])
                     for num, url in enumerate(sorted_keys, 1):
-                        fname = str(num)+"-" + url.split('/')[-1]+'.fits'
+                        fname = str(num)+"-" + urllib.parse.unquote(url).split('/')[-1]+'.fits'
                         f_dict['originals'][url]['tile'].writeto(orig_dir+'/'+fname, overwrite=True, output_verify='silentfix+warn')
+                        f_dict['originals'][url]['filepath'] = orig_dir+'/' + fname
+                        f_dict['originals'][url]['filename'] = fname
                         del f_dict['originals'][url]['tile'] # remove fits image so json serializable
                 else:  # still remove fits imagset_out_dire so json serializable
+                    f_dict['originals'][list(f_dict['originals'])[0]]['filepath'] = save_at
+                    f_dict['originals'][list(f_dict['originals'])[0]]['filename'] = f_dict['filename']
                     del f_dict['originals'][list(f_dict['originals'])[0]]['tile']
             else:
                 print(f"Cutout at (RA, Dec) of ({f_dict['position'].ra.to(u.deg).value}, {f_dict['position'].dec.to(u.deg).value}) degrees /w size={f_dict['radius']} returned None for FITS data.",buffer=False)
