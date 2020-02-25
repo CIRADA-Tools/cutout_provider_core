@@ -1,5 +1,6 @@
 from math import log10, floor
 from astropy import units as u
+import numpy as np
 
 from .survey_abc import SurveyABC
 class NVSS(SurveyABC):
@@ -21,20 +22,18 @@ class NVSS(SurveyABC):
         # base url
         url = 'https://www.cv.nrao.edu/cgi-bin/postage.pl'
         # images can't be bigger than this
-        #max_image_pixels = 510 * u.pix
-        max_image_pixels = 511 * u.pix # max is 512x512 but down one to be safe
-        # max pixel scale without information lose
-        max_pixel_scale = 15*u.arcsec/u.pix
-        # min allow pixel scale
-        min_pixel_scale = 0.001*u.arcsec/u.pix
-
-        # calculate/desire pixel scale
-        desired_pixel_scale = round_sig((size/max_image_pixels).to(u.arcsec/u.pix),4)
-
-        # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pixel_scale at 15"/pix, so we should mosaick
-        #       if desired_pixel_scale > max_pixel_scale... if we want to keep the highest resolution.
-        #pixel_scale = max(max_pixel_scale, desired_pixel_scale)
-        pixel_scale = min(max_pixel_scale,max(desired_pixel_scale,min_pixel_scale))
+        max_image_pixels = 510 * u.pix # max is 512x512 but down two to be safe
+        resolution = 2.25*u.arcsec/u.pix
+        # # min allow pixel scale use this as base resolution
+        min_scale = 2.25*u.arcsec/u.pix #0.001*u.arcsec/u.pix
+        # # max pixel scale without information lose as multiple of min ~15
+        max_scale = 15*u.arcsec/u.pix
+        # # calculate/desire pixel scale
+        desired_scale = round_sig((size/max_image_pixels).to(u.arcsec/u.pix),4)
+        # # TODO (Issue #21): NVSS has a maxium practical size, for the most minimum pixel_scale at 15"/pix, so we should mosaick
+        # #       if desired_pixel_scale > max_pixel_scale... if we want to keep the highest resolution.
+        scale = min(max_scale,max(desired_scale,min_scale))
+        pixel_scale = np.ceil(scale/resolution)*resolution # as int multiple of resolution
 
         # convert position to url query string
         position_components = position.to_string('hmsdms', sep=' ').split(' ')
