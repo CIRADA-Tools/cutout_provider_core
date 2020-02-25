@@ -641,6 +641,8 @@ class SurveyABC(ABC):
                 tile = self.trim_tile(tile,position,size)
             cutout  = self.format_fits_hdu(tile,position,all_headers)
             fits_data['filename'] = get_mosaic_filename(position,radius,survey_name, filter=filter, group_title=group)
+            if survey_name=="VLASS" and group[0].isdigit(): # only label if not mosaicked UNLESS by date obs should all be same epoch
+                fits_data['epoch'] = self.get_epoch(tiles[0][1])
         elif len(tiles)==0:
             print(f"no {survey_name} tiles found for Position:{position.ra.to(u.deg).value}, {position.dec.to(u.deg).value}! ")
             return None
