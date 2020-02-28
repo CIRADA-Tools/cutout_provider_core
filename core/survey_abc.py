@@ -129,7 +129,6 @@ class SurveyABC(ABC):
             save_at = os.path.join(save_dir, f_dict['filename'])
             if f_dict['download']:
                 try:
-                    print("overwrite", f_dict['overwrite'])
                     f_dict['download'].writeto(save_at, overwrite=f_dict['overwrite'])
                 except Exception as e:
                     if "Verif" in str(e): #skip verify warnings from fits standards
@@ -156,8 +155,7 @@ class SurveyABC(ABC):
                         del f_dict['originals'][og]['tile']
                     fits_img.close(output_verify="silentfix")
 
-                elif len(list(f_dict['originals']))>1 and save_orig_separately==True:
-                    print("saving originals!")
+                if save_orig_separately==True: #len(list(f_dict['originals']))>1 and save_orig_separately==True:
                     orig_dir = save_at + originals_path_end
                     if os.path.exists(orig_dir):
                         shutil.rmtree(orig_dir)
@@ -170,10 +168,10 @@ class SurveyABC(ABC):
                         f_dict['originals'][url]['filepath'] = orig_dir+'/' + fname
                         f_dict['originals'][url]['filename'] = fname
                         del f_dict['originals'][url]['tile'] # remove fits image so json serializable
-                else:  # still remove fits imagset_out_dire so json serializable
-                    f_dict['originals'][list(f_dict['originals'])[0]]['filepath'] = save_at
-                    f_dict['originals'][list(f_dict['originals'])[0]]['filename'] = f_dict['filename']
-                    del f_dict['originals'][list(f_dict['originals'])[0]]['tile']
+                # else:  # still remove fits imagset_out_dire so json serializable
+                #     f_dict['originals'][list(f_dict['originals'])[0]]['filepath'] = save_at
+                #     f_dict['originals'][list(f_dict['originals'])[0]]['filename'] = f_dict['filename']
+                #     del f_dict['originals'][list(f_dict['originals'])[0]]['tile']
             else:
                 print(f"Cutout at (RA, Dec) of ({f_dict['position'].ra.to(u.deg).value}, {f_dict['position'].dec.to(u.deg).value}) degrees /w size={f_dict['radius']} returned None for FITS data.",buffer=False)
             f_dict['download_path'] = save_at
@@ -307,6 +305,7 @@ class SurveyABC(ABC):
 
         print(f"WARNING: Bailed on fetch '{url}'")
         self.processing_status = processing_status.bailed
+        raise Exception("Connection issue or Timeout retrieving FITS")
         return None
 
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
@@ -379,12 +378,14 @@ class SurveyABC(ABC):
             print(f"{type(self).__name__} EXCEPTION" + str(e))
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
         if not response:
-            raise Exception(f"No FITS found at url {url} within time constraint for {type(self).__name__} !")
+            raise Exception(f"Connection issue or No FITS found at url {url} {type(self).__name__} !")
         hdul = self.create_fits(response)
         if not hdul:
             raise Exception(f"{type(self).__name__}: error creating FITS")
         return (hdul[0], url)
 
+    # general get_tiles via urls
+    # some survey classes have custom get_tiles
     def get_tiles(self, position, size):
         self.print(f"getting tile urls for {str(position)}\n" )
         request_urls_stack = self.get_tile_urls(position,size)
@@ -392,6 +393,7 @@ class SurveyABC(ABC):
             self.processing_status = processing_status.none
             raise Exception(f"no valid {type(self).__name__} urls found for Position: {position.ra.degree}, {position.dec.degree}")
             # return None
+        # TODO: IF ONE URL GET FAILS OR TIMEOUTS THEN THIS WHOLE PROCESS STOPS WITH RAISED ERROR, consider handling individually
         else: #len(self.request_urls_stack) > 0:
             hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in request_urls_stack] if hdul_tup[0]]
             return hdul_list
