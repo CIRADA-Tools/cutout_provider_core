@@ -1,6 +1,6 @@
 import urllib
 from astropy import units as u
-from astroquery.sdss import SDSS as astroSDSS
+# from astroquery.sdss import SDSS as astroSDSS
 
 from .toolbox import get_sexadecimal_string
 from .survey_abc import SurveyABC

@@ -119,6 +119,15 @@ class SurveyABC(ABC):
         self.out_dir = None
         self.overwrite = True
 
+    @staticmethod
+    def add_CIRADA_signature(new_hdu):
+        new_hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project (www.cirada.ca)')
+        new_hdu.header['COMMENT'] = "The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
+                        "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
+                        "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
+                        "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
+                        "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation."
+
     # save a list of dicts for HDU results into a folder with originals in nearby folder
     #save_orig_separately is for webserver
     @staticmethod
@@ -147,14 +156,16 @@ class SurveyABC(ABC):
                             raise Exception(f"duplicate files not saved! {f_dict['filename']} for {f_dict['survey']}")
                     else:
                         raise Exception(f"problem creating {f_dict['filename']} for {f_dict['survey']}")
+                # do this for every mosaic CLI
                 # add original raw tiles as extensions to mosaic
                 if len(list(f_dict['originals']))>1 and save_orig_separately==False:
-                    fits_img = fits.open(f_dict['filename'], mode='append')
+                    fits_img = fits.open(save_at, mode='append')
                     for og in f_dict['originals']:
                         fits_img.append(f_dict['originals'][og]['tile'])
                         del f_dict['originals'][og]['tile']
                     fits_img.close(output_verify="silentfix")
 
+                # this always for webserver
                 if save_orig_separately==True: #len(list(f_dict['originals']))>1 and save_orig_separately==True:
                     orig_dir = save_at + originals_path_end
                     if os.path.exists(orig_dir):
@@ -168,6 +179,8 @@ class SurveyABC(ABC):
                         f_dict['originals'][url]['filepath'] = orig_dir+'/' + fname
                         f_dict['originals'][url]['filename'] = fname
                         del f_dict['originals'][url]['tile'] # remove fits image so json serializable
+                    # add thumbnail for webserver
+                    f_dict['thumbnail'] = base64.encodestring(get_thumbnail(f_dict['download'], f_dict['survey'])).decode('ascii')
                 # else:  # still remove fits imagset_out_dire so json serializable
                 #     f_dict['originals'][list(f_dict['originals'])[0]]['filepath'] = save_at
                 #     f_dict['originals'][list(f_dict['originals'])[0]]['filename'] = f_dict['filename']
@@ -175,11 +188,10 @@ class SurveyABC(ABC):
             else:
                 print(f"Cutout at (RA, Dec) of ({f_dict['position'].ra.to(u.deg).value}, {f_dict['position'].dec.to(u.deg).value}) degrees /w size={f_dict['radius']} returned None for FITS data.",buffer=False)
             f_dict['download_path'] = save_at
-            f_dict['thumbnail'] = base64.encodestring(get_thumbnail(f_dict['download'], f_dict['survey'])).decode('ascii')
+
             del f_dict['download'] # don't need FITZ image in memory because saved locally now
 
         return all_fits
-
 
     def __pop_processing_status(self):
         status = self.processing_status
@@ -503,7 +515,7 @@ class SurveyABC(ABC):
             except OSError as e:
                 self.print(f"Badly formatted FITS file: {e}:",diagnostic_msg=traceback.format_exc(),show_caller=True)
                 self.processing_status = processing_status.error
-        elif len(hdul_tiles) == 1: # this shouldn't ever happen with webserver code
+        elif len(hdul_tiles) == 1: # this shouldn't ever happen
                 hdu = hdul_tiles[0][0]
         # self.mosaic_hdul_tiles_stack = hdul_tiles
         return hdu
@@ -578,14 +590,10 @@ class SurveyABC(ABC):
                 new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
         # add custom comments
         # add more custom comments
-        new_hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project (www.cirada.ca)')
-        new_hdu.header['COMMENT'] = "The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
-                        "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
-                        "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
-                        "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
-                        "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation."
+        SurveyABC.add_CIRADA_signature(new_hdu)
         new_hdu.header['COMMENT'] = "BMAJ, BMIN, BPA, MJD-OBS, and DATE-OBS only currently represent the values" \
                                     " from one of the input files."
+
 
         # TODO (Issue #4): Is this still needed?? This is a kludge, for now, so as to make
         #       the claRAN machine learning code not bail.
@@ -657,6 +665,8 @@ class SurveyABC(ABC):
                 cutout = self.trim_tile(cutout,position,size)
             if survey_name=="VLASS": # only label if not mosaicked for now in case multiple epochs
                 fits_data['epoch'] = self.get_epoch(fits_data['filename'])
+            # add custom comments
+            SurveyABC.add_CIRADA_signature(cutout)
 
         # store original tiles
         # THIS SPECIFIC TO VLASS ONLY stokes being FILNAME09

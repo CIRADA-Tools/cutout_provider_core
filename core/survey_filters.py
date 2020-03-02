@@ -172,7 +172,9 @@ class HeaderFilter:
         self.saved_keys = list()
         self.updates = dict()
         self.header = header.copy()
-
+        # special header keys
+        self.reserved_keys = ['SIMPLE', 'BITPIX','NAXIS','NAXIS1','NAXIS2','EXTEND']
+        self.comment_block = ['COMMENT']
         # sanitize the date-obs string
         if 'DATE-OBS' in header:
             self.header['DATE-OBS'] = (sanitize_fits_date_fields(self.header['DATE-OBS']), self.header.comments['DATE-OBS'])
@@ -213,9 +215,7 @@ class HeaderFilter:
             self.update({'WCSAXES': (2, wcs_header.comments['WCSAXES'])})
             self.save_keys(keep)
 
-        # special header keys
-        self.reserved_keys = ['SIMPLE', 'BITPIX','NAXIS','NAXIS1','NAXIS2','EXTEND']
-        self.comment_block = ['COMMENT']
+
 
 
     # def __set_layout(self):
