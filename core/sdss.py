@@ -19,6 +19,13 @@ class SDSS(SurveyABC):
     def get_filter_setting(self):
         return self.filter
 
+    def add_cutout_service_comment(self, hdu):
+        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project ' \
+                                '(www.cirada.ca) using the cutout service of the Legacy Survey ' \
+                                'for dr2: (http://legacysurvey.org/dr2/description/) \
+                                ')
+
+
     # def get_tiles(self, position, size):
     #     self.print(f"getting tiles for {str(position)}\n" )
     #     url_placeholder = f"SDSS_J{get_sexadecimal_string(position)}_s{(size/2).to(u.arcmin).value}_arcmin_{self.filter.name}"

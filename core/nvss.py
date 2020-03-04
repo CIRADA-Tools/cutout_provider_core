@@ -15,6 +15,12 @@ class NVSS(SurveyABC):
     def get_filter_setting(self):
         return None
 
+    def add_cutout_service_comment(self, hdu):
+        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project '\
+                                '(www.cirada.ca) using the Postage Stamp Server '\
+                                'hosted at NRAO: (https://www.cv.nrao.edu/nvss/postage.shtml) \
+                                ')
+
     def get_tile_urls(self,position,size):
         def round_sig(x, sig=3):
             """Rounds x to nearest sigificant figure, sig > 2."""

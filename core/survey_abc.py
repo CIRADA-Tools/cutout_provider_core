@@ -119,15 +119,6 @@ class SurveyABC(ABC):
         self.out_dir = None
         self.overwrite = True
 
-    @staticmethod
-    def add_CIRADA_signature(new_hdu):
-        new_hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project (www.cirada.ca)')
-        new_hdu.header['COMMENT'] = "The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
-                        "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
-                        "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
-                        "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
-                        "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation."
-
     # save a list of dicts for HDU results into a folder with originals in nearby folder
     #save_orig_separately is for webserver
     @staticmethod
@@ -273,6 +264,19 @@ class SurveyABC(ABC):
         else:
             request = url
         return request
+
+    def add_CIRADA_signature(self, new_hdu, mosaicked=False):
+        self.add_cutout_service_comment(new_hdu)
+        if mosaicked:
+            new_hdu.header['COMMENT'] = "Astropy's python wrapper to the Montage Astronomical Image Mosaic " \
+                            "Engine was used to mosaic this image: (https://montage-wrapper.readthedocs.io/en/v0.9.5/) \
+                            "
+        new_hdu.header['COMMENT'] = "The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
+                        "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
+                        "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
+                        "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
+                        "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation. \
+                        "
 
     # get data over http post
     def send_request(self, url):
@@ -578,6 +582,7 @@ class SurveyABC(ABC):
         # add survey dependent stuff...
         hdf.update(self.get_fits_header_updates(hdf.header, all_headers))
 
+
         # set up new hdu
         ordered_keys   = hdf.saved_keys
         updated_header = hdf.header
@@ -589,8 +594,6 @@ class SurveyABC(ABC):
             else:
                 new_hdu.header[k] = (updated_header[k], updated_header.comments[k])
         # add custom comments
-        # add more custom comments
-        SurveyABC.add_CIRADA_signature(new_hdu)
         new_hdu.header['COMMENT'] = "BMAJ, BMIN, BPA, MJD-OBS, and DATE-OBS only currently represent the values" \
                                     " from one of the input files."
 
@@ -666,8 +669,10 @@ class SurveyABC(ABC):
             if survey_name=="VLASS": # only label if not mosaicked for now in case multiple epochs
                 fits_data['epoch'] = self.get_epoch(fits_data['filename'])
             # add custom comments
-            SurveyABC.add_CIRADA_signature(cutout)
-
+        self.add_CIRADA_signature(cutout, group=="MOSAIC")
+        # add comments to originals #
+        for (tile,tile_url) in tiles:
+            self.add_CIRADA_signature(tile)
         # store original tiles
         # THIS SPECIFIC TO VLASS ONLY stokes being FILNAME09
         if survey_name == "VLASS":
@@ -719,6 +724,10 @@ class SurveyABC(ABC):
     @staticmethod
     @abstractmethod
     def get_supported_filters():
+        pass
+
+    @abstractmethod
+    def add_cutout_service_comment(self, hdu):
         pass
 
     @abstractmethod

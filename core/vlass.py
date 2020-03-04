@@ -34,6 +34,19 @@ class VLASS(SurveyABC):
     def get_filter_setting(self):
         return None
 
+    def add_cutout_service_comment(self, hdu):
+        hdu.header['COMMENT'] = ("Quick Look images do not fully sample the PSF, and are cleaned to a threshold " \
+                   " of ~5 sigma (details can be found in the weblogs for individual images). " \
+                   "They are used for Quality Assurance and for transient searches, but should not " \
+                   "be used for any other purpose. In addition to imaging artifacts, source " \
+                   "positions can be off by up to 1-arcsec, and the flux density uncertainties " \
+                   "are ~10-20%. \
+                   " )
+        hdu.header['COMMENT'] = ("This cutout was provided by the CIRADA project " \
+                                "(www.cirada.ca) using the direct data service at " \
+                                "CADC: (https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/doc/data/) \
+                                " )
+
     # this will work for ANY collection from CADC
     def get_tile_urls(self,position,size):
         cadc = Cadc()
@@ -80,12 +93,6 @@ class VLASS(SurveyABC):
             'BTYPE': (header['BTYPE'], 'Stokes polarisation'),
             # TODO (Issue #6): Tiling issue and based on quick-look images -- I think...
             # 'IMFILE': (vfile, 'VLASS image file'),
-            'COMMENT': "Quick Look images do not fully sample the PSF, and are cleaned to a threshold " \
-                       " of ~5 sigma (details can be found in the weblogs for individual images). " \
-                       "They are used for Quality Assurance and for transient searches, but should not " \
-                       "be used for any other purpose. In addition to imaging artifacts, source " \
-                       "positions can be off by up to 1-arcsec, and the flux density uncertainties " \
-                       "are ~10-20%.",
         }
         ### ONLY FOR MOSAICKED. complex file name list all originals gone into mosaic
         if all_headers:
