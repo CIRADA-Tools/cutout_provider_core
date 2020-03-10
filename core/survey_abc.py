@@ -366,10 +366,12 @@ class SurveyABC(ABC):
             return None
 
         # sanitize the date-obs field
-        if 'DATE-OBS' in hdul[0].header:
-            hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
-        elif 'MJD-OBS' in hdul[0].header:
+        if 'MJD-OBS' in hdul[0].header:
+            print('MJD-OBS')
             hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
+        elif 'DATE-OBS' in hdul[0].header:
+            print('DATE-OBS')
+            hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
 
         # sanitize the rotation matrix
         # TODO (Issue #6): check for other antiquated stuff, i.e.,

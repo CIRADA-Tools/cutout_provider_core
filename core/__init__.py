@@ -9,3 +9,4 @@ from .vlass     import VLASS
 from .wise      import WISE
 from .panstarrs import PANSTARRS
 from .sdss      import SDSS
+from .gleam     import GLEAM
