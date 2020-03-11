@@ -32,7 +32,7 @@ class ugriz_filters(Enum):
 
 class gleam_frequency(Enum):
     f1 = "072-103"
-    f2 = "103-034"
+    f2 = "103-134"
     f3 = "139-170"
     f4 = "170-231"
 
