@@ -268,15 +268,15 @@ class SurveyABC(ABC):
     def add_CIRADA_signature(self, new_hdu, mosaicked=False):
         self.add_cutout_service_comment(new_hdu)
         if mosaicked:
-            new_hdu.header['COMMENT'] = "Astropy's python wrapper to the Montage Astronomical Image Mosaic " \
+            new_hdu.header.add_comment("Astropy's python wrapper to the Montage Astronomical Image Mosaic " \
                             "Engine was used to mosaic this image: (https://montage-wrapper.readthedocs.io/en/v0.9.5/) \
-                            "
-        new_hdu.header['COMMENT'] = "The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
+                            ", after=-1)
+        new_hdu.header.add_comment("The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
                         "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
                         "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
                         "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
                         "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation. \
-                        "
+                        ", after=-1)
 
     # get data over http post
     def send_request(self, url):
@@ -409,7 +409,7 @@ class SurveyABC(ABC):
         request_urls_stack = self.get_tile_urls(position,size)
         if not request_urls_stack:
             self.processing_status = processing_status.none
-            raise Exception(f"no valid {type(self).__name__} urls found for Position: {position.ra.degree}, {position.dec.degree}")
+            raise Exception(f"no valid {type(self).__name__}({self.filter.value}) urls found for Position: {position.ra.degree}, {position.dec.degree}")
             # return None
         # TODO: IF ONE URL GET FAILS OR TIMEOUTS THEN THIS WHOLE PROCESS STOPS WITH RAISED ERROR, consider handling individually
         else: #len(self.request_urls_stack) > 0:
@@ -658,6 +658,9 @@ class SurveyABC(ABC):
             fits_data['filename'] = get_mosaic_filename(position,radius,survey_name, filter=filter, group_title=group)
             if survey_name=="VLASS" and group[0].isdigit(): # only label if not mosaicked UNLESS by date obs should all be same epoch
                 fits_data['epoch'] = self.get_epoch(tiles[0][1])
+            # add comments to originals #
+            for (t,tile_url) in tiles:
+                self.add_CIRADA_signature(t)
         elif len(tiles)==0:
             print(f"no {survey_name} tiles found for Position:{position.ra.to(u.deg).value}, {position.dec.to(u.deg).value}! ")
             return None
@@ -672,9 +675,7 @@ class SurveyABC(ABC):
                 fits_data['epoch'] = self.get_epoch(fits_data['filename'])
             # add custom comments
         self.add_CIRADA_signature(cutout, group=="MOSAIC")
-        # add comments to originals #
-        for (tile,tile_url) in tiles:
-            self.add_CIRADA_signature(tile)
+
         # store original tiles
         # THIS SPECIFIC TO VLASS ONLY stokes being FILNAME09
         if survey_name == "VLASS":

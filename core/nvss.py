@@ -16,10 +16,10 @@ class NVSS(SurveyABC):
         return None
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project '\
+        hdu.header.add_comment('This cutout was provided by the CIRADA project '\
                                 '(www.cirada.ca) using the Postage Stamp Server '\
                                 'hosted at NRAO: (https://www.cv.nrao.edu/nvss/postage.shtml) \
-                                ')
+                                ', after=-1)
 
     def get_tile_urls(self,position,size):
         def round_sig(x, sig=3):

@@ -119,10 +119,10 @@ class PANSTARRS(SurveyABC):
         return grizy_filters
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project '\
+        hdu.header.add_comment('This cutout was provided by the CIRADA project '\
                                 '(www.cirada.ca) using the PS1 Image Cutout Service '\
                                 'hosted by STScI: (https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service) \
-                                ')
+                                ', after=-1)
 
     def get_skycells(self,position,size):
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"

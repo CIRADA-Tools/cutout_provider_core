@@ -23,10 +23,10 @@ class GLEAM(SurveyABC):
         return self.filter
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project ' \
+        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
                                 '(www.cirada.ca) using the GLEAM Postage Stamp Service ' \
                                 'through the GLEAM VO vlient (http://gleam-vo.icrar.org/gleam_postage/q/info) \
-                                ')
+                                ', after=-1)
 
     def get_fits_matches(self,position,size):
         deg_size = float(size.to_value(u.degree))

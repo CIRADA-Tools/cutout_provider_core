@@ -23,10 +23,10 @@ class WISE(SurveyABC):
         return self.filter
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project ' \
+        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
                                 '(www.cirada.ca) using the cutout service at the ' \
                                 'IRSA Image Server: (https://irsa.ipac.caltech.edu/ibe/cutouts.html) \
-                                ')
+                                ', after=-1)
 
     def __get_coadd_ids(self,metadata):
         if len(metadata) > 0:

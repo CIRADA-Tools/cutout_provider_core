@@ -20,10 +20,10 @@ class SDSS(SurveyABC):
         return self.filter
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project ' \
+        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
                                 '(www.cirada.ca) using the cutout service of the Legacy Survey ' \
                                 'for dr2: (http://legacysurvey.org/dr2/description/) \
-                                ')
+                                ', after=-1)
 
 
     # def get_tiles(self, position, size):

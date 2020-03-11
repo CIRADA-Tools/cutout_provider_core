@@ -17,11 +17,11 @@ class FIRST(SurveyABC):
         return None
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header['COMMENT'] = ('This cutout was provided by the CIRADA project ' \
+        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
                                 '(www.cirada.ca) using the FIRST cutout service at ' \
                                 'The LLNL Institute for Geophysics & Planetary Physics:' \
                                 '(https://third.ucllnl.org/cgi-bin/firstcutout) \
-                                ' )
+                                ', after=-1)
 
     # def find_all_sources(self, position,size):
     #     url = 'https://archive.stsci.edu/vlafirst/search.php'
