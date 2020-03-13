@@ -16,7 +16,6 @@ from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
 from .toolbox import pad_string_lines
 
-
 class PS1SkyTessellationPatterns:
     # cf., https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns
     def __init__(self):
@@ -89,9 +88,7 @@ class PS1SkyTessellationPatterns:
         return np.arctan(np.tan((dec+self.__get_tile_hieght(dec)/2.0).to(u.rad).value)*np.cos(ra.to(u.rad).value))*180.0*u.deg/np.pi
 
     def skycell(self,ra,dec):
-        projcell = self.projcfrom .survey_abc import SurveyABC
-from .survey_filters import grizy_filters
-from .toolbox import pad_string_linesell(ra,dec)
+        projcell = self.projcell(ra,dec)
         if projcell is None:
             return None
         #r = SkyCoord(self.__sanitize_ra(ra),self.__sanitize_dec(dec))
@@ -107,12 +104,11 @@ from .toolbox import pad_string_linesell(ra,dec)
             dec_i = i * d_dec + min_dec
             #print(f"{dec}: ({dec_i},{dec_i+d_dec})")
             if dec_i <= dec and dec < dec_i+d_dec:
-                 si_dec = ifrom .survey_abc import SurveyABC
-from .survey_filters import grizy_filters
-from .toolbox import pad_string_lines
+                 si_dec = i
                  break
         print(f"si_dec={si_dec}")
         return projcell
+
 
 class PANSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
