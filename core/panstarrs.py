@@ -16,6 +16,7 @@ from .survey_abc import SurveyABC
 from .survey_filters import grizy_filters
 from .toolbox import pad_string_lines
 
+
 class PS1SkyTessellationPatterns:
     # cf., https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns
     def __init__(self):
@@ -88,7 +89,9 @@ class PS1SkyTessellationPatterns:
         return np.arctan(np.tan((dec+self.__get_tile_hieght(dec)/2.0).to(u.rad).value)*np.cos(ra.to(u.rad).value))*180.0*u.deg/np.pi
 
     def skycell(self,ra,dec):
-        projcell = self.projcell(ra,dec)
+        projcell = self.projcfrom .survey_abc import SurveyABC
+from .survey_filters import grizy_filters
+from .toolbox import pad_string_linesell(ra,dec)
         if projcell is None:
             return None
         #r = SkyCoord(self.__sanitize_ra(ra),self.__sanitize_dec(dec))
@@ -104,7 +107,9 @@ class PS1SkyTessellationPatterns:
             dec_i = i * d_dec + min_dec
             #print(f"{dec}: ({dec_i},{dec_i+d_dec})")
             if dec_i <= dec and dec < dec_i+d_dec:
-                 si_dec = i
+                 si_dec = ifrom .survey_abc import SurveyABC
+from .survey_filters import grizy_filters
+from .toolbox import pad_string_lines
                  break
         print(f"si_dec={si_dec}")
         return projcell
@@ -114,17 +119,18 @@ class PANSTARRS(SurveyABC):
         super().__init__()
         self.pixel_scale = 0.25 * (u.arcsec/u.pix)
         self.filter = filter
-        self.needs_trimming = False # may not need to trim??
+        self.needs_trimming = True # may not need to trim??
 
     @staticmethod
     def get_supported_filters():
         return grizy_filters
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment(pad_string_lines('The PS1 Image Cutout Service ' \
-                    'hosted by STScI was used to provide this cutout: ' \
-                    '(https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service) \
-                    '), after=-1)
+        pass
+        # hdu.header.add_comment(pad_string_lines('The PS1 Image Cutout Service ' \
+        #             'hosted by STScI was used to provide this cutout: ' \
+        #             '(https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service) \
+        #             '), after=-1)
 
     def get_skycells(self,position,size):
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
@@ -173,7 +179,7 @@ class PANSTARRS(SurveyABC):
         urls = list()
         size_pixels = int(np.ceil((size/self.pixel_scale).to(u.pix).value))
         for skycell in self.get_skycells(position,size):
-            urls.append(f"http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
+            urls.append(f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
         return urls
 
     def get_fits_header_updates(self,header, all_headers=None):
