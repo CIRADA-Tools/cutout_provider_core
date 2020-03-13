@@ -2,6 +2,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 import requests, json
+from .toolbox import pad_string_lines
 
 from .survey_abc import SurveyABC
 class FIRST(SurveyABC):
@@ -17,11 +18,10 @@ class FIRST(SurveyABC):
         return None
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
-                                '(www.cirada.ca) using the FIRST cutout service at ' \
-                                'The LLNL Institute for Geophysics & Planetary Physics:' \
+        hdu.header.add_comment(pad_string_lines('This cutout was provided using The LLNL Institute' \
+                                'for Geophysics & Planetary Physics FIRST cutout service:' \
                                 '(https://third.ucllnl.org/cgi-bin/firstcutout) \
-                                ', after=-1)
+                                '), after=-1)
 
     # def find_all_sources(self, position,size):
     #     url = 'https://archive.stsci.edu/vlafirst/search.php'

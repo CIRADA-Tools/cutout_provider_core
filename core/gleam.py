@@ -6,12 +6,13 @@ from astropy.io.votable import parse#parse_single_table
 from .toolbox import get_sexadecimal_string
 from .survey_abc import SurveyABC
 from .survey_filters import gleam_frequency
+from .toolbox import pad_string_lines
 class GLEAM(SurveyABC):
-    def __init__(self,filter=gleam_frequency.f1):
+    def __init__(self,filter=gleam_frequency.f4):
         # GLEAM 'filter' is actually frequency
         super().__init__()
         self.filter = filter
-        self.needs_trimming = False#True
+        self.needs_trimming = True
         self.projection = "SIN"
         self.base_url = "http://gleam-vo.icrar.org"
 
@@ -23,10 +24,9 @@ class GLEAM(SurveyABC):
         return self.filter
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
-                                '(www.cirada.ca) using the GLEAM Postage Stamp Service ' \
+        hdu.header.add_comment(pad_string_lines('This cutout was provided using the GLEAM Postage Stamp Service ' \
                                 'through the GLEAM VO vlient (http://gleam-vo.icrar.org/gleam_postage/q/info) \
-                                ', after=-1)
+                                '), after=-1)
 
     def get_fits_matches(self,position,size):
         deg_size = float(size.to_value(u.degree))
@@ -39,7 +39,6 @@ class GLEAM(SurveyABC):
         query_string = urllib.parse.urlencode(query_dict)
         url = f"{self.base_url}/gleam_postage/q/siap.xml?{query_string}"
         if self.http is None:
-            #response = urllib.request.urlopen(request)
             matches = requests.get(url, verify=False, timeout=self.http_read_timeout)
         else:
             matches = self.http.request('GET',url, timeout=self.http_read_timeout)

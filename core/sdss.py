@@ -2,7 +2,7 @@ import urllib
 from astropy import units as u
 # from astroquery.sdss import SDSS as astroSDSS
 
-from .toolbox import get_sexadecimal_string
+from .toolbox import get_sexadecimal_string, pad_string_lines
 from .survey_abc import SurveyABC
 from .survey_filters import ugriz_filters
 class SDSS(SurveyABC):
@@ -20,10 +20,9 @@ class SDSS(SurveyABC):
         return self.filter
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
-                                '(www.cirada.ca) using the cutout service of the Legacy Survey ' \
+        hdu.header.add_comment(pad_string_lines('This cutout was provided using the Legacy Survey ' \
                                 'for dr2: (http://legacysurvey.org/dr2/description/) \
-                                ', after=-1)
+                                '), after=-1)
 
 
     # def get_tiles(self, position, size):

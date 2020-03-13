@@ -7,6 +7,7 @@ from astroquery.ibe import IbeClass
 
 from .survey_abc import SurveyABC
 from .survey_filters import wise_filters
+from .toolbox import pad_string_lines
 class WISE(SurveyABC):
     def __init__(self,filter=wise_filters.w1):
         super().__init__()
@@ -23,10 +24,9 @@ class WISE(SurveyABC):
         return self.filter
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment('This cutout was provided by the CIRADA project ' \
-                                '(www.cirada.ca) using the cutout service at the ' \
+        hdu.header.add_comment(pad_string_lines('This cutout data was provided by the ' \
                                 'IRSA Image Server: (https://irsa.ipac.caltech.edu/ibe/cutouts.html) \
-                                ', after=-1)
+                                '), after=-1)
 
     def __get_coadd_ids(self,metadata):
         if len(metadata) > 0:

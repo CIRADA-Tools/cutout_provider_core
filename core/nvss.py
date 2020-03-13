@@ -2,6 +2,7 @@ from math import log10, floor
 from astropy import units as u
 import numpy as np
 
+from .toolbox import pad_string_lines
 from .survey_abc import SurveyABC
 class NVSS(SurveyABC):
     def __init__(self):
@@ -16,10 +17,9 @@ class NVSS(SurveyABC):
         return None
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment('This cutout was provided by the CIRADA project '\
-                                '(www.cirada.ca) using the Postage Stamp Server '\
+        hdu.header.add_comment(pad_string_lines('This cutout was provided using the Postage Stamp Server '\
                                 'hosted at NRAO: (https://www.cv.nrao.edu/nvss/postage.shtml) \
-                                ', after=-1)
+                                '), after=-1)
 
     def get_tile_urls(self,position,size):
         def round_sig(x, sig=3):

@@ -12,6 +12,10 @@ from astropy.table import vstack
 from astropy.units import Quantity
 from astropy.coordinates import SkyCoord
 
+from .survey_abc import SurveyABC
+from .survey_filters import grizy_filters
+from .toolbox import pad_string_lines
+
 class PS1SkyTessellationPatterns:
     # cf., https://outerspace.stsci.edu/display/PANSTARRS/PS1+Sky+tessellation+patterns
     def __init__(self):
@@ -105,8 +109,6 @@ class PS1SkyTessellationPatterns:
         print(f"si_dec={si_dec}")
         return projcell
 
-from .survey_abc import SurveyABC
-from .survey_filters import grizy_filters
 class PANSTARRS(SurveyABC):
     def __init__(self,filter=grizy_filters.i):
         super().__init__()
@@ -119,10 +121,10 @@ class PANSTARRS(SurveyABC):
         return grizy_filters
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment('This cutout was provided by the CIRADA project '\
-                                '(www.cirada.ca) using the PS1 Image Cutout Service '\
-                                'hosted by STScI: (https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service) \
-                                ', after=-1)
+        hdu.header.add_comment(pad_string_lines('The PS1 Image Cutout Service ' \
+                    'hosted by STScI was used to provide this cutout: ' \
+                    '(https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service) \
+                    '), after=-1)
 
     def get_skycells(self,position,size):
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"

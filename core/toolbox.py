@@ -4,6 +4,25 @@ from astropy import units as u
 import csv, re
 import urllib.parse
 
+# for nice line breaks in header strings using Astropy
+# which removes all formatting characters beforehand
+# just pad lines with spaces until natural linebreak
+def pad_string_lines(string):
+    string = string.replace('\t', '').replace("\\","").replace('  ', ' ')
+    loc = 72
+    last = 0
+    while len(string)>loc:
+        if string[loc]!=" ":
+            br = loc
+            spaces = ""
+            while string[br]!=" " and br>last:
+                br-=1
+                spaces+=" "
+            string = string[:br] + spaces + string[br:]
+        last=loc
+        loc+=72
+    return string
+
 def get_header_value(tile, value):
     if value in tile.header:
         return tile.header[value]

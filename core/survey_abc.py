@@ -266,17 +266,21 @@ class SurveyABC(ABC):
         return request
 
     def add_CIRADA_signature(self, new_hdu, mosaicked=False):
+        new_hdu.header.set('AUTHOR', 'CIRADA CUTOUT SERVICE PSOFT.1.v2 (www.cirada.ca)', after=-1)
         self.add_cutout_service_comment(new_hdu)
         if mosaicked:
-            new_hdu.header.add_comment("Astropy's python wrapper to the Montage Astronomical Image Mosaic " \
-                            "Engine was used to mosaic this image: (https://montage-wrapper.readthedocs.io/en/v0.9.5/) \
-                            ", after=-1)
-        new_hdu.header.add_comment("The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is funded " \
-                        "by a grant from the Canada Foundation for Innovation 2017 Innovation Fund (Project 35999) " \
-                        "and by the Provinces of Ontario, British Columbia, Alberta, Manitoba and Quebec, in " \
-                        "collaboration with the National Research Council of Canada, the US National Radio Astronomy " \
-                        "Observatory and Australia's Commonwealth Scientific and Industrial Research Organisation. \
-                        ", after=-1)
+            new_hdu.header.add_comment(pad_string_lines("Astropy's python wrapper to the Montage " \
+                        "Astronomical Image Mosaic Engine was used to mosaic this image:" \
+                        " (https://montage-wrapper.readthedocs.io/en/v0.9.5/) "), after=-1)
+
+        new_hdu.header.add_comment(pad_string_lines("The Canadian Initiative for Radio Astronomy Data Analysis (CIRADA) is " \
+                        "funded by a grant from the Canada Foundation for Innovation 2017 " \
+                        "Innovation Fund (Project 35999) and by the Provinces of Ontario, " \
+                        "British Columbia, Alberta, Manitoba and Quebec, in collaboration " \
+                        "with the National Research Council of Canada, the US National Radio "\
+                        "Astronomy Observatory and Australia's Commonwealth Scientific and " \
+                        "Industrial Research Organisation. \
+                        "), after=-1)
 
     # get data over http post
     def send_request(self, url):
@@ -341,7 +345,7 @@ class SurveyABC(ABC):
             hdul = fits.open(fits_file, ignore_missing_end= True)
         except OSError as e:
             if "data is available" in str(data):
-                raise Exception(f"{type(self).__name__}: error creating FITS "+ str(data.decode()))
+                raise Exception(f"{type(self).__name__}({self.filter.name}={self.filter.value}): error creating FITS "+ str(data.decode()))
             else:
                 e_s = re.sub(r"\.$","",f"{e}")
                 #self.print("Badly formatted FITS file: {0}\n\treturning None".format(str(e)), file=sys.stderr)
@@ -367,10 +371,8 @@ class SurveyABC(ABC):
 
         # sanitize the date-obs field
         if 'MJD-OBS' in hdul[0].header:
-            print('MJD-OBS')
             hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
         elif 'DATE-OBS' in hdul[0].header:
-            print('DATE-OBS')
             hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
 
         # sanitize the rotation matrix
@@ -409,7 +411,7 @@ class SurveyABC(ABC):
         request_urls_stack = self.get_tile_urls(position,size)
         if not request_urls_stack:
             self.processing_status = processing_status.none
-            raise Exception(f"no valid {type(self).__name__}({self.filter.value}) urls found for Position: {position.ra.degree}, {position.dec.degree}")
+            raise Exception(f"no valid {type(self).__name__}({self.filter.name}:{self.filter.value}) urls found for Position: {position.ra.degree}, {position.dec.degree}")
             # return None
         # TODO: IF ONE URL GET FAILS OR TIMEOUTS THEN THIS WHOLE PROCESS STOPS WITH RAISED ERROR, consider handling individually
         else: #len(self.request_urls_stack) > 0:
