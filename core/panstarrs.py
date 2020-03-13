@@ -114,7 +114,7 @@ class PANSTARRS(SurveyABC):
         super().__init__()
         self.pixel_scale = 0.25 * (u.arcsec/u.pix)
         self.filter = filter
-        self.needs_trimming = True # may not need to trim??
+        self.needs_trimming = False # may not need to trim??
 
     @staticmethod
     def get_supported_filters():
@@ -173,7 +173,7 @@ class PANSTARRS(SurveyABC):
         urls = list()
         size_pixels = int(np.ceil((size/self.pixel_scale).to(u.pix).value))
         for skycell in self.get_skycells(position,size):
-            urls.append(f"https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
+            urls.append(f"http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?ra={position.ra.to(u.deg).value}&dec={position.dec.to(u.deg).value}&size={size_pixels}&format=fits&red={skycell['filename']}")
         return urls
 
     def get_fits_header_updates(self,header, all_headers=None):

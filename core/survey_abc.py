@@ -266,7 +266,7 @@ class SurveyABC(ABC):
         return request
 
     def add_CIRADA_signature(self, new_hdu, mosaicked=False):
-        new_hdu.header.set('AUTHOR', 'CIRADA CUTOUT SERVICE PSOFT.1.v2 (www.cirada.ca)', after=-1)
+        new_hdu.header['AUTHOR'] = 'CIRADA CUTOUT SERVICE PSOFT.1.v2 (www.cirada.ca)' #, after=-1)
         self.add_cutout_service_comment(new_hdu)
         if mosaicked:
             new_hdu.header.add_comment(pad_string_lines("Astropy's python wrapper to the Montage " \
@@ -285,7 +285,7 @@ class SurveyABC(ABC):
     # get data over http post
     def send_request(self, url):
         potential_retries = self.http_request_retries
-        print("sending request for fits")
+        print("sending request for fits", url)
         while potential_retries > 0:
             try:
                 #webserver handles own process pool

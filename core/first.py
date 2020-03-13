@@ -18,8 +18,8 @@ class FIRST(SurveyABC):
         return None
 
     def add_cutout_service_comment(self, hdu):
-        hdu.header.add_comment(pad_string_lines('This cutout was provided using The LLNL Institute' \
-                                'for Geophysics & Planetary Physics FIRST cutout service:' \
+        hdu.header.add_comment(pad_string_lines('This cutout was provided using The LLNL Institute ' \
+                                'for Geophysics & Planetary Physics FIRST cutout service: ' \
                                 '(https://third.ucllnl.org/cgi-bin/firstcutout) \
                                 '), after=-1)
 
