@@ -51,7 +51,7 @@ def get_mosaic_filename(position,radius,survey,filter=None, group_title=''):
 # replace sexigesimal location string with actual new center
 def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, filter=None, group_title=""):
     survey= survey.replace("PANSTARRS", "PanSTARRS")
-    radius = str(radius_arcmin).strip(' ')
+    radius = str(radius_arcmin).replace(" ", "")
     baseurl = urllib.parse.unquote(baseurl)
     basefile = baseurl.split('/')[-1].split('.fits')[0]
     new_coords = "J"+get_sexadecimal_string(position)
