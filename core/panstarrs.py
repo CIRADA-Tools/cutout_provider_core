@@ -122,11 +122,10 @@ class PANSTARRS(SurveyABC):
         return grizy_filters
 
     def add_cutout_service_comment(self, hdu):
-        pass
-        # hdu.header.add_comment(pad_string_lines('The PS1 Image Cutout Service ' \
-        #             'hosted by STScI was used to provide this cutout: ' \
-        #             '(https://outerspace.stsci.edu/display/PANSTARRS/PS1+Image+Cutout+Service) \
-        #             '), after=-1)
+        hdu.header.add_comment(pad_string_lines('The PS1 Image Cutout Service '\
+                    'hosted by STScI was used to provide this cutout: '\
+                    '(https://outerspace.stsci.edu/display/PANSTARRS/) \
+                    '), after=-1)
 
     def get_skycells(self,position,size):
         service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
