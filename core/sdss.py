@@ -2,7 +2,7 @@ import urllib
 from astropy import units as u
 # from astroquery.sdss import SDSS as astroSDSS
 
-from .toolbox import get_sexadecimal_string, pad_string_lines
+from .toolbox import get_sexagesimal_string, pad_string_lines
 from .survey_abc import SurveyABC
 from .survey_filters import ugriz_filters
 class SDSS(SurveyABC):
@@ -27,7 +27,7 @@ class SDSS(SurveyABC):
 
     # def get_tiles(self, position, size):
     #     self.print(f"getting tiles for {str(position)}\n" )
-    #     url_placeholder = f"SDSS_J{get_sexadecimal_string(position)}_s{(size/2).to(u.arcmin).value}_arcmin_{self.filter.name}"
+    #     url_placeholder = f"SDSS_J{get_sexagesimal_string(position)}_s{(size/2).to(u.arcmin).value}_arcmin_{self.filter.name}"
     #     try:
     #         hdul_lists = astroSDSS.get_images(coordinates=position, radius = 5.0*u.arcmin, band=self.filter.name, timeout=self.http_read_timeout, data_release=self.data_release)
     #     except Exception as e:

@@ -29,14 +29,14 @@ def get_header_value(tile, value):
     else:
         return 'unknown'
 
-def get_sexadecimal_string(position):
-    sexadecimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-    return sexadecimal
+def get_sexagesimal_string(position):
+    sexagesimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+    return sexagesimal
 
 # todo incorporate source bnames into this
 def get_mosaic_filename(position,radius,survey,filter=None, group_title=''):
     survey= survey.replace("PANSTARRS", "PanSTARRS")
-    coords = get_sexadecimal_string(position)
+    coords = get_sexagesimal_string(position)
     # note:the size as string already prints the units but remove space needed
     size   = str(radius).replace(" ", "")#re.sub(r"\.?0+$","","%f" % size)
     # if not self.name.replace("'", "").replace(" ", "").replace(",", "").replace("`", " ").replace('.','').replace('-','').replace('+','').isdigit():
@@ -54,7 +54,7 @@ def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, fil
     radius = str(radius_arcmin).replace(" ", "")
     baseurl = urllib.parse.unquote(baseurl)
     basefile = baseurl.split('/')[-1].split('.fits')[0]
-    new_coords = "J"+get_sexadecimal_string(position)
+    new_coords = "J"+get_sexagesimal_string(position)
     if group_title=='None':
         group_title = ''
     if not filter:

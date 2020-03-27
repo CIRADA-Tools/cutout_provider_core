@@ -3,7 +3,6 @@ from astropy import units as u
 from astropy.io.votable import parse#parse_single_table
 # from astroquery.sdss import SDSS as astroSDSS
 
-from .toolbox import get_sexadecimal_string
 from .survey_abc import SurveyABC
 from .survey_filters import gleam_frequency
 from .toolbox import pad_string_lines
