@@ -65,15 +65,16 @@ def asinh_soften_for_noise_RMS(image_data_2D, factor=3, interval=MinMaxInterval(
 
 def robust_stats_radio(image_data_2D):
     # Calculates robust statistics useful for images
-    # Flatten array and remove non finite values
-    image_data_1D = image_data_2D.flatten()
-    image_data_1D = image_data_1D[np.where(np.isfinite(image_data_1D))]
-
-    image_RMS    = rms_mad(image_data_1D)
-    image_MEDIAN = np.median(image_data_1D)
-    image_STD    = mad_std(image_data_1D)
-    image_MIN    = np.min(image_data_1D)
-    image_MAX    = np.max(image_data_1D)
+    # Flatten array
+    #potentially unneccessary
+    #image_data_1D = image_data_2D.flatten()
+    # remove non finite values
+    image_data_2D = image_data_2D[np.where(np.isfinite(image_data_2D))]
+    image_RMS    = rms_mad(image_data_2D)
+    image_MEDIAN = np.median(image_data_2D)
+    image_STD    = mad_std(image_data_2D)
+    image_MIN    = np.min(image_data_2D)
+    image_MAX    = np.max(image_data_2D)
     # Alternative for looking at RMS of radio data
     # Do not use at this point
     #neg_data = image_data_1D[np.where(image_data_1D <0)]
@@ -81,21 +82,22 @@ def robust_stats_radio(image_data_2D):
     #image_RMS  = biweight_scale(neg_data,M=0)
     return(image_MIN, image_MAX, image_MEDIAN, image_RMS, image_STD)
 
-def trim_axes(hdu, wcs):
-    # trim to 2d from nd to make thumbnail
-    naxis = wcs.naxis
-    # TODO: this needs to be checked for working with fits cubes (as per greg)
-    while naxis > 2:
-        w = wcs.dropaxis(2)
-        naxis -= 1
-    image_data = np.squeeze(hdu.data)
-    return image_data
+# def trim_axes(hdu, wcs):
+#     # trim to 2d from nd to make thumbnail
+#     # naxis = wcs.naxis
+#     # # TODO: this needs to be checked for working with fits cubes (as per greg)
+#     # this doesn't do anything because wcs isn't returned?......
+#     # while naxis > 2:
+#     #     w = wcs.dropaxis(2)
+#     #     naxis -= 1
+#     image_data = np.squeeze(hdu.data)
+#     return image_data
 
 # main, calls other methods to create and return thumbnail in image buffer
 def get_thumbnail(hdu, survey):
     wcs = WCS(hdu.header)
-    # # trim to 2d from nd to make thumbnail
-    image_data = trim_axes(hdu, wcs)
+    # # squeeze to 2d from nd to make thumbnail
+    image_data = np.squeeze(hdu.data) #trim_axes(hdu, wcs)
     img_buffer = asinh_plot(wcs, image_data, survey)
     return img_buffer.getvalue()
 
@@ -103,7 +105,7 @@ def get_thumbnail(hdu, survey):
 #     wcs = WCS(hdu.header)
 #     #TODO check if these stats for only 2D image or okay to put in FITS header
 #     # and update FITS header to include stats before saving image
-#     image_data_2D = trim_axes(hdu, wcs)
+#     image_data_2D = np.squeeze(hdu.data) #trim_axes(hdu, wcs)
 #     # what interval to do stats for??
 #     interval = MinMaxInterval()
 #     (image_MIN, image_MAX) = interval.get_limits(image_data_2D)
