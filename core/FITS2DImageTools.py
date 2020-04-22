@@ -66,8 +66,7 @@ def asinh_soften_for_noise_RMS(image_data_2D, factor=3, interval=MinMaxInterval(
 def robust_stats_radio(image_data_2D):
     # Calculates robust statistics useful for images
     # Flatten array
-    #potentially unneccessary
-    #image_data_1D = image_data_2D.flatten()
+    #image_data_1D = image_data_2D.flatten() #potentially unneccessary
     # remove non finite values
     image_data_2D = image_data_2D[np.where(np.isfinite(image_data_2D))]
     image_RMS    = rms_mad(image_data_2D)
