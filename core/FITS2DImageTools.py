@@ -96,7 +96,7 @@ def robust_stats_radio(image_data_2D):
 def get_thumbnail(hdu, survey):
     wcs = WCS(hdu.header)
     # # squeeze to 2d from nd to make thumbnail
-    image_data = np.squeeze(hdu.data) #trim_axes(hdu, wcs)
+    image_data = np.squeeze(hdu.data) #WILL NEED A BETTER TRIMMER FOR CUBES LIKELY trim_axes(hdu, wcs)
     img_buffer = asinh_plot(wcs, image_data, survey)
     return img_buffer.getvalue()
 
