@@ -14,6 +14,10 @@ class wise_filters(Enum):
     w2 = 2
     w3 = 3
     w4 = 4
+    # w1 = "W1 (3.4 %CE%BCm)"
+    # w2 = "W2 (4.6μm)"
+    # w3 = "W3 (12μm)"
+    # w4 = "W4 (22μm)"
 
 
 class grizy_filters(Enum):

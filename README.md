@@ -3,7 +3,7 @@
 ### Applications currently using this common Core Cutout code include:    
 - a Command Line Interface with instructions included below      
 - a public web service found at http://206.12.91.186/  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
-           
+
 # Cutout Gathering
 
 Grabbing cutouts from various surveys
@@ -42,7 +42,7 @@ from the command line:
 with Commands:    
   `fetch        Single cutout fetching command.   `     
   `fetch_batch  Batch cutout fetching command.   `     
-  
+
 Options:    
       -c, --coords TEXT     [required one of either -c or -n]    
       -n, --name TEXT
@@ -56,11 +56,11 @@ Options:
                             True)   
       --flush               flush existing target files (supersedes --overwrite)   
       --help                Show this message and exit.   
-      
+
 Argument Descriptions:    
 `-c 'coords' for Source coordinates OR`    
 `-n 'name' for Source name`    
-     
+
       example accepted coordinate formats:    
       > RA,DEC or 'RA, DEC' in degrees    
       > '00h42m30s', '+41d12m00s' or 00h42m30s,+41d12m00s    
@@ -68,28 +68,28 @@ Argument Descriptions:
       > '00:42.5 +41:12'    
       if name:    
       > The name of the object to get coordinates for, e.g. 'M42'    
-      
+
 `-r 'radius' is the Integer search radius around the specified source location in arcmin.`    
       The cutouts will be of maximum width and height of 2*radius    
 
 `-s 'surveys' is one or several surveys comma separated without spaces between.`    
       Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS       
-           
+
       Filters for each survey may be specified in the following formats:    
-      > "WISE(w2),SDSS[g,r]"    
-      > "WISE[w1],VLASS"    
+      > "WISE(W2),SDSS[g,r]"    
+      > "WISE[W1],VLASS"    
       > WISE,VLASS    
-      
+
       If no filters are specified then the default filter is used for each.    
       If surveys argument is not specified then will fetch from ALL implemented    
       surveys with default filters for each survey.    
-    
+
 `-o 'output' is the directory location to save output FITS images to.`    
       Output will be furthered separated into subfolders for the corresponding survey.    
       Default location is a folder named 'data_out/' in this current directory.    
 
 `-g 'groupby' is an option to separate FITS results by "MOSAIC", "DATE-OBS", or "NONE" (default).`     
-    
+
       > "MOSAIC": if the requested position and radius straddle boundaries in multiple      
                   FITS images for a given survey a mosaicked FITS file will be generated    
                   from all of these input images with each input image as an extension of    
@@ -99,10 +99,10 @@ Argument Descriptions:
                   (when needed) for every unique DATE-OBS.     
       > "NONE" (default): All resulting FITS images in the requested survey are returned    
                   without doing any mosaicking    
-    
+
 `-cf 'config' is to specify a YAML config file for settings, ex."config.yml".`    
       *Note: Specified command line args will overwrite these settings.`          
-   
+
 `-f "file" FOR FETCH_BATCH ONLY. The CSV file(s) name. `      
 
        CSV must at least have separate columns named "RA" and "Dec"    
@@ -112,7 +112,7 @@ Argument Descriptions:
        they are non-empty. If a line does not have a valid coordinate position,   
        but does have a "Name" column value, the service will attempt to resolve   
        the source name.   
-           
+
        Accepted variants of RA and Dec Column header names are:    
        R.A.   
        Right Ascension   
@@ -127,16 +127,16 @@ Argument Descriptions:
        DEC. (J2000)   
        Declination (J2000)   
        DecJ2000   
-         
+
        Source names will be resolved via the Sesame Name Resolver:    
        http://vizier.u-strasbg.fr/viz-bin/Sesame    
-        
+
 Sample command looks like:    
 `python3 fetch_cutouts.py fetch -n M87 -s VLASS,WISE -r 3 -g MOSAIC`    
-   
+
 This will fill `data_out` with the FITS files separated by Survey name directory.    
 
-### Installation Notes (this was developed on an Ubuntu 18.04 OS with Python 3.6.8) 
+### Installation Notes (this was developed on an Ubuntu 18.04 OS with Python 3.6.8)
 
 First clone this repo and cd into it    
 then create a virtualenvironment with python virtualenv    
@@ -144,7 +144,7 @@ then create a virtualenvironment with python virtualenv
 
 activate it      
 > . venv/bin/activate    
- 
+
 install all requirements from requirements.txt    
 
 > pip3 install django
@@ -155,10 +155,10 @@ if you get an astroquery version error you must install astroquery by
 $ cd ..     
 $ git clone https://github.com/astropy/astroquery.git        
 $ cd astroquery    
-$ python setup.py install 
+$ python setup.py install
 
 Then remove the astroquery line from requirements.txt and run this again:     
-> pip3 install -r requirements.txt 
+> pip3 install -r requirements.txt
 
 
 You'll need to install <a target=_blank href="https://montage-wrapper.readthedocs.io/en/v0.9.5/#installation">Montage</a>, among other standard fair, which can be a littly tricky. Here's the Coles Notes:
@@ -168,6 +168,3 @@ You'll need to install <a target=_blank href="https://montage-wrapper.readthedoc
  * Got into the `Montage_v5.0` and type `make` to build.
  * Move the `Montage_v5.0` to `~/.montage/Montage_v5.0`, say, and add `~/.montage/Montage_v5.0/bin` to `$PATH`.
  * To test, run `mAdd` and you should see something like,<br>```[struct stat="ERROR", msg="Usage: mAdd [-d level] [-p imgdir] [-n(o-areas)] [-a mean|median|count] [-e(xact-size)] [-s statusfile] images.tbl template.hdr out.fits"]```<br>indicating it is installed correctly.
-
-
-     

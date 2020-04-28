@@ -5,12 +5,12 @@ cutouts:
     # The cutouts will be of maximum width and height of 2*radius
     radius: 1
 
-    #custom filters in brackets 
+    #custom filters in brackets
     surveys:
         #- FIRST
         #- NVSS
         - VLASS
-        - WISE[w1]
+        - WISE[W1]
         - PanSTARRS[i]
         - SDSS[g,r,i]
 

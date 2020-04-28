@@ -266,7 +266,7 @@ class SurveyABC(ABC):
         return request
 
     def add_CIRADA_signature(self, new_hdu, mosaicked=False):
-        new_hdu.header['AUTHOR'] = 'CIRADA CUTOUT SERVICE PSOFT.1.v2 (www.cirada.ca)' #, after=-1)
+        new_hdu.header['CREATOR'] = 'CIRADA CUTOUT SERVICE PSOFT.1.v2 (www.cirada.ca)' #, after=-1)
         self.add_cutout_service_comment(new_hdu)
         if mosaicked:
             new_hdu.header.add_comment(pad_string_lines("Astropy's python wrapper to the Montage " \
@@ -369,6 +369,7 @@ class SurveyABC(ABC):
             self.processing_status = processing_status.corrupted
             return None
 
+        ## TODO check if both exist and take the "better" one if one isn't 2000-01-01
         # sanitize the date-obs field
         if 'MJD-OBS' in hdul[0].header:
             hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
