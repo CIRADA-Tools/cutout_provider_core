@@ -233,13 +233,15 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
         Implemented surveys include:
          - VLASS
          - GLEAM
-            frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz)
+            frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz default)
          - FIRST
          - NVSS
          - WISE
-            wavelengths: W1 (3.4μm),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)
+            wavelengths: W1 (3.4μm default),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)
          - PANSTARRS
+            filters: g, r, i (default), z, y
          - SDSS-I/II
+            filters: g (default), r, i
      \b
         Filters/Frequencies/Wavelengths for each survey may be specified in the following formats:
          > "WISE(w2),SDSS[g,r]"
@@ -390,16 +392,17 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
        \n
        \b
        -s 'surveys' is one or several surveys comma separated without spaces between.
-          Implemented surveys include:
            - VLASS
            - GLEAM
-              frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz)
+              frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz default)
            - FIRST
            - NVSS
            - WISE
-              wavelengths: W1 (3.4μm),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)
+              wavelengths: W1 (3.4μm default),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)
            - PANSTARRS
+              filters: g, r, i (default), z, y
            - SDSS-I/II
+              filters: g (default), r, i
        \b
           Filters/Frequencies/Wavelengths for each survey may be specified in the following formats:
            > "WISE(w2),SDSS[g,r]"
