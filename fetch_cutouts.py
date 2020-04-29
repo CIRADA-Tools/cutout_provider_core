@@ -230,13 +230,22 @@ def fetch(overwrite, flush, coords, name, radius=None, surveys=None, data_out=No
     \n
     \b
     -s 'surveys' is one or several surveys comma separated without spaces between.
-        Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
-    \b
-        Filters for each survey may be specified in the following formats:
-        > "WISE(w2),SDSS[g,r]"
-        > "WISE[w1],VLASS"
-        > WISE,VLASS
-    \b
+        Implemented surveys include:
+         - VLASS
+         - GLEAM
+            frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz)
+         - FIRST
+         - NVSS
+         - WISE
+            wavelengths: W1 (3.4μm),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)
+         - PANSTARRS
+         - SDSS-I/II
+     \b
+        Filters/Frequencies/Wavelengths for each survey may be specified in the following formats:
+         > "WISE(w2),SDSS[g,r]"
+         > "WISE[w1],VLASS"
+         > "GLEAM(f1,f3)"
+         > WISE,VLASS
         If no filters are specified then the default filter is used for each.
         If surveys argument is not specified then will fetch from ALL implemented
         surveys with default filters for each survey.
@@ -381,11 +390,21 @@ def fetch_batch( overwrite, flush, batch_files_string, radius=None, surveys=None
        \n
        \b
        -s 'surveys' is one or several surveys comma separated without spaces between.
-          Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS
+          Implemented surveys include:
+           - VLASS
+           - GLEAM
+              frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz)
+           - FIRST
+           - NVSS
+           - WISE
+              wavelengths: W1 (3.4μm),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)
+           - PANSTARRS
+           - SDSS-I/II
        \b
-          Filters for each survey may be specified in the following formats:
+          Filters/Frequencies/Wavelengths for each survey may be specified in the following formats:
            > "WISE(w2),SDSS[g,r]"
            > "WISE[w1],VLASS"
+           > "GLEAM(f1,f3)"
            > WISE,VLASS
        \b
           If no filters are specified then the default filter is used for each.
