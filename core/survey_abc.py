@@ -402,7 +402,7 @@ class SurveyABC(ABC):
             raise Exception(f"Connection issue or No FITS found at url {url} {type(self).__name__} !")
         hdul = self.create_fits(response)
         if not hdul:
-            raise Exception(f"{type(self).__name__}: error creating FITS")
+            raise Exception(f"{type(self).__name__}: error creating FITS, Third party service potentially down.")
         return (hdul[0], url)
 
     # general get_tiles via urls
