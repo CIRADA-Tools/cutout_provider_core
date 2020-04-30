@@ -166,6 +166,7 @@ class SurveyABC(ABC):
                     sorted_keys = sorted((list(f_dict['originals'])), key=lambda x: f_dict['originals'][x]['obs-date'])
                     for num, url in enumerate(sorted_keys, 1):
                         fname = str(num)+"-" + urllib.parse.unquote(url).split('/')[-1]+'.fits'
+                        print("write to", orig_dir+'/'+fname)
                         f_dict['originals'][url]['tile'].writeto(orig_dir+'/'+fname, overwrite=True, output_verify='silentfix+warn')
                         f_dict['originals'][url]['filepath'] = orig_dir+'/' + fname
                         f_dict['originals'][url]['filename'] = fname
