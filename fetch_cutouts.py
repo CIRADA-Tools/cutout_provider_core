@@ -141,7 +141,7 @@ def check_batch_csv(batch_files_string):
 #cfg is a SURVEYABC object already configured
 def process_requests(cfg):
     start = datetime.now()
-    grabbers = 60
+    grabbers = 15
     # set up i/o queues
     in_q  = queue.Queue()
     out_q = queue.Queue()
