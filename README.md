@@ -4,46 +4,84 @@
 - a Command Line Interface with instructions included below      
 - a public web service found at http://206.12.91.186/  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
 
+### Contents:
++ [Included surveys](#included-surveys)
++ [Installation](#installation)
++ [How to run](#how-to-run)
++ [Output](#output)
+
 # Cutout Gathering
 
 Grabbing cutouts from various surveys
 
-**The code currently is in a developing and testing phase**
+\***Note:** The code currently is in a developing and testing phase
 
-### Currently included surveys:
+### Included surveys
 
 | Survey | Band |
 |---|---|
+| VLASS| Radio|
+| GLEAM | Radio |
 | FIRST | Radio |
 | NVSS | Radio|
-| VLASS| Radio|
-|WISE|Infrared|
-| SDSS| Optical|
+| WISE |Infrared|
 | PanSTARRS| Optical|
-
-### Surveys to include:
-
-| Survey | Band|
-|---|---|
-|LOTSS|Radio|
-|Akari|Infrared|
-|BOSS|Optical|
-|GALEX|Ultraviolet|
-|3XMMRLQSO|X-Ray|
-|RASS|X-Ray|
-|FERMI (LAT)|Gamma-Ray|
-|HESS|Gamma-Ray|
-
+| SDSS| Optical|
 ---
 
+### Installation     
+(this was developed on an Ubuntu 18.04 OS with Python 3.6.8)
+
+First clone this repo and cd into it    
+then create a virtualenvironment with python virtualenv    
+```bash
+$ cd Cutout_Core
+$ virtualenv -p python3 venv    
+```
+
+activate it      
+```bash
+$ . venv/bin/activate    
+```
+
+install all requirements from requirements.txt    
+```bash
+$ pip3 install -r requirements.txt    
+```
+
+if you get an astroquery version error you must install astroquery by           
+(from within your virtualenv still) but cd out of th repo directory:    
+```bash
+$ cd ..     
+$ git clone https://github.com/astropy/astroquery.git        
+$ cd astroquery    
+$ python setup.py install
+```
+
+Then remove the astroquery line from requirements.txt and run this again:  
+```bash
+$ pip3 install -r requirements.txt
+```
+
+
+You'll need to install <a target=_blank href="https://montage-wrapper.readthedocs.io/en/v0.9.5/#installation">Montage</a>, among other standard fair, which can be a littly tricky. Here's the Coles Notes:
+
+ * Download `http://montage.ipac.caltech.edu/download/Montage_v5.0.tar.gz` from <a target=_blank href="http://montage.ipac.caltech.edu/docs/download2.html">`http://montage.ipac.caltech.edu/docs/download2.html`</a>.
+ * `tar xvzf Montage_v5.0.tar.gz`
+ * Got into the `Montage_v5.0` and type `make` to build.
+ * Move the `Montage_v5.0` to `~/.montage/Montage_v5.0`, say, and add `~/.montage/Montage_v5.0/bin` to `$PATH`.
+ * To test, run `mAdd` and you should see something like,<br>```[struct stat="ERROR", msg="Usage: mAdd [-d level] [-p imgdir] [-n(o-areas)] [-a mean|median|count] [-e(xact-size)] [-s statusfile] images.tbl template.hdr out.fits"]```<br>indicating it is installed correctly.
+
 ### How to run
-from the command line:    
-`$python3 fetch_cutouts.py`    
+from the command line:  
+`$python3 fetch_cutouts.py   `
+
 with Commands:    
   `fetch        Single cutout fetching command.   `     
   `fetch_batch  Batch cutout fetching command.   `     
 
-Options:    
+Options:   
+```text
       -c, --coords TEXT     [required one of either -c or -n]    
       -n, --name TEXT
       -f, --file TEXT       batch file(s) name(s)  [required if fetch_batch]   
@@ -55,7 +93,8 @@ Options:
       --overwrite           overwrite existing duplicate target files (default
                             True)   
       --flush               flush existing target files (supersedes --overwrite)   
-      --help                Show this message and exit.   
+      --help                Show this message and exit.  
+```
 
 Argument Descriptions:    
 `-c 'coords' for Source coordinates OR`    
@@ -72,18 +111,28 @@ Argument Descriptions:
 `-r 'radius' is the Integer search radius around the specified source location in arcmin.`    
       The cutouts will be of maximum width and height of 2*radius    
 
-`-s 'surveys' is one or several surveys comma separated without spaces between.`    
-      Implemented surveys include: FIRST,VLASS,WISE,SDSS,PANSTARRS,NVSS       
-
-      Filters for each survey may be specified in the following formats:    
-      > "WISE(W2),SDSS[g,r]"    
-      > "WISE[W1],VLASS"    
-      > WISE,VLASS    
-
-      If no filters are specified then the default filter is used for each.    
-      If surveys argument is not specified then will fetch from ALL implemented    
-      surveys with default filters for each survey.    
-
+`-s 'surveys' is one or several surveys comma separated without spaces between.`       
+```text
+      Implemented surveys include:    
+         - VLASS   
+         - GLEAM    
+            frequencies: f1 (072-103 MHz), f2 (103-034 MHz), f3 (139-170 MHz), f4 (170-231 MHz default)    
+         - FIRST    
+         - NVSS    
+         - WISE    
+            wavelengths: W1 (3.4μm default),  W2 (4.6μm),  W3 (12μm),  W4 (22μm)    
+         - PANSTARRS    
+            filters: g, r, i (default), z, y    
+         - SDSS-I/II    
+            filters: g (default), r, i    
+            
+        Filters/Frequencies/Wavelengths for each survey may be specified in the following formats:        
+         > "WISE(w2),SDSS[g,r]"    
+         > "WISE[w1],VLASS"    
+         > "GLEAM(f1,f3)"    
+         > WISE,VLASS    
+ ```
+ 
 `-o 'output' is the directory location to save output FITS images to.`    
       Output will be furthered separated into subfolders for the corresponding survey.    
       Default location is a folder named 'data_out/' in this current directory.    
@@ -134,37 +183,8 @@ Argument Descriptions:
 Sample command looks like:    
 `python3 fetch_cutouts.py fetch -n M87 -s VLASS,WISE -r 3 -g MOSAIC`    
 
+### Output
 This will fill `data_out` with the FITS files separated by Survey name directory.    
-
-### Installation Notes (this was developed on an Ubuntu 18.04 OS with Python 3.6.8)
-
-First clone this repo and cd into it    
-then create a virtualenvironment with python virtualenv    
-> virtualenv -p python3 venv    
-
-activate it      
-> . venv/bin/activate    
-
-install all requirements from requirements.txt    
-
-> pip3 install django
-> pip3 install -r requirements.txt    
-
-if you get an astroquery version error you must install astroquery by           
-(from within your virtualenv still) but cd out of th repo directory:                
-$ cd ..     
-$ git clone https://github.com/astropy/astroquery.git        
-$ cd astroquery    
-$ python setup.py install
-
-Then remove the astroquery line from requirements.txt and run this again:     
-> pip3 install -r requirements.txt
+Success or failure results will be written to `OUTlog.txt`
 
 
-You'll need to install <a target=_blank href="https://montage-wrapper.readthedocs.io/en/v0.9.5/#installation">Montage</a>, among other standard fair, which can be a littly tricky. Here's the Coles Notes:
-
- * Download `http://montage.ipac.caltech.edu/download/Montage_v5.0.tar.gz` from <a target=_blank href="http://montage.ipac.caltech.edu/docs/download2.html">`http://montage.ipac.caltech.edu/docs/download2.html`</a>.
- * `tar xvzf Montage_v5.0.tar.gz`
- * Got into the `Montage_v5.0` and type `make` to build.
- * Move the `Montage_v5.0` to `~/.montage/Montage_v5.0`, say, and add `~/.montage/Montage_v5.0/bin` to `$PATH`.
- * To test, run `mAdd` and you should see something like,<br>```[struct stat="ERROR", msg="Usage: mAdd [-d level] [-p imgdir] [-n(o-areas)] [-a mean|median|count] [-e(xact-size)] [-s statusfile] images.tbl template.hdr out.fits"]```<br>indicating it is installed correctly.
