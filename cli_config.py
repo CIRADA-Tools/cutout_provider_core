@@ -48,7 +48,7 @@ class CLIConfig:
             WISE.__name__,
             PANSTARRS.__name__,
             SDSS.__name__,
-            BEAM.__name__,
+            GLEAM.__name__,
         )
         self.group_by = group_by
         self.survey_names = []
