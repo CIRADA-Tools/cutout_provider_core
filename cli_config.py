@@ -27,7 +27,7 @@ from core.wise      import WISE
 from core.sdss      import SDSS
 from core.vlass     import VLASS
 from core.panstarrs import PANSTARRS
-
+from core.gleam     import GLEAM
 
 # THIS IS ONLY USED FOR THE COMMAND LINE INTERFACE CAN BE REMOVED FROM CORE
 #
