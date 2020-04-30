@@ -159,9 +159,12 @@ class SurveyABC(ABC):
                 # this always for webserver
                 if save_orig_separately==True: #len(list(f_dict['originals']))>1 and save_orig_separately==True:
                     orig_dir = save_at + originals_path_end
-                    if os.path.exists(orig_dir):
-                        shutil.rmtree(orig_dir)
-                    os.makedirs(orig_dir)
+                    if not os.path.exists(orig_dir):
+                        os.makedirs(orig_dir)
+
+                    #if os.path.exists(orig_dir):
+                    #    shutil.rmtree(orig_dir)
+                    #os.makedirs(orig_dir)
                     # sort by date-obs
                     sorted_keys = sorted((list(f_dict['originals'])), key=lambda x: f_dict['originals'][x]['obs-date'])
                     for num, url in enumerate(sorted_keys, 1):
