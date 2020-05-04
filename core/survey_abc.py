@@ -112,8 +112,8 @@ class SurveyABC(ABC):
         # http request settings
         self.print_to_stdout = True
         self.http_request_retries = 5
-        self.http_wait_retry_s = 5
-        self.http_read_timeout = 40
+        self.http_wait_retry_s = 2
+        self.http_read_timeout = 15
         # data out settings
         self.tmp_dir = "/tmp"
         self.out_dir = None

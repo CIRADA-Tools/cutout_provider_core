@@ -29,9 +29,16 @@ def get_header_value(tile, value):
     else:
         return 'unknown'
 
+def truncate_string_two_decimals(string):
+    for to_fix in re.findall("\.[0-9]{3,5}", string):
+        string = re.sub(to_fix, to_fix[:3], string)
+    return string
+
+
 def get_sexagesimal_string(position):
-    sexagesimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
-    return sexagesimal
+    #sexagesimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
+    sexagesimal = "J" + re.sub(r'[h,m,s,d,\s]', '', position.to_string(style='hmsdms')) # remove letters
+    return truncate_string_two_decimals(sexagesimal)
 
 # todo incorporate source bnames into this
 def get_mosaic_filename(position,radius,survey,filter=None, group_title=''):
@@ -45,7 +52,7 @@ def get_mosaic_filename(position,radius,survey,filter=None, group_title=''):
         filter=''
     if group_title=='MOSAIC':
         group_title = ''
-    return f"{survey}_{str(group_title)}_J{coords}_s{size}_{filter}_mosaicked.fits"
+    return f"{survey}_{str(group_title)}_{coords}_s{size}_{filter}_mosaicked.fits"
 
 # filename for download when NOT mosaiced and preserve as much info as possible
 # replace sexigesimal location string with actual new center
@@ -54,7 +61,7 @@ def get_non_mosaic_filename(position, radius_arcmin, survey, baseurl, index, fil
     radius = str(radius_arcmin).replace(" ", "")
     baseurl = urllib.parse.unquote(baseurl)
     basefile = baseurl.split('/')[-1].split('.fits')[0]
-    new_coords = "J"+get_sexagesimal_string(position)
+    new_coords = get_sexagesimal_string(position)
     if group_title=='None':
         group_title = ''
     if not filter:
