@@ -87,7 +87,7 @@ def extractCoordfromString(position, is_name=False):
         resolved = SkyCoord.from_name(position)
         return resolved
     # preformat string for consistency
-    position = position.replace("'", "").replace(",", " ").replace("`", " ")
+    position = position.replace("'", "").replace(",", " ").replace("`", " ").replace('"','')
     if not ('h' in position or 'm' in position or ':' in position):
         # RA, DEC in degrees
         pos_list = [float(s) for s in re.findall(r'-?\d+\.?\d*', position)]
