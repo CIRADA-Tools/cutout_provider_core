@@ -6,9 +6,6 @@ import tempfile
 import shutil
 import datetime, timestring
 
-# *** IO_WRAPPER ***
-# TODO (Issue #11): ...
-# Notes: https://stackoverflow.com/questions/1218933/can-i-redirect-the-stdout-in-python-into-some-sort-of-string-buffer/33979942#33979942
 from io import TextIOWrapper, BytesIO
 import io, os, shutil, tempfile, sys, base64, shutil, json
 import urllib.request
@@ -331,8 +328,6 @@ class SurveyABC(ABC):
     def standardize_fits_header_DATE_and_DATE_OBS_fields(self, date_obs_value):
         # standardize formating to 'yyyy-mm-ddTHH:MM:SS[.sss]': cf., 'https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict.html'.
         return re.sub(r"^(\d\d\d\d)(\d\d)(\d\d)$",r"\1-\2-\3T00:00:00.000",sanitize_fits_date_fields(date_obs_value))
-        # TODO (Issue #6): consider replacing above with and replacing sanitize_fits_date_fields in this code with this (standardize_fits_header_DATE_and_DATE_OBS_fields)
-        #return sanitize_fits_date_fields(date_obs_value)
 
     # tries to create a fits file from bytes.
     # on fail it returns None
@@ -370,25 +365,13 @@ class SurveyABC(ABC):
             return None
 
         ## TODO check if both exist and take the "better" one if one isn't 2000-01-01
-        # sanitize the date-obs field
-        if 'MJD-OBS' in hdul[0].header:
-            hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
-        elif 'DATE-OBS' in hdul[0].header:
+        # sanitize the date-obs field????
+        if 'DATE-OBS' in hdul[0].header:
             hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
+        elif 'MJD-OBS' in hdul[0].header:
+            hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
 
-        # sanitize the rotation matrix
-        # TODO (Issue #6): check for other antiquated stuff, i.e.,
-        # http://tdc-www.harvard.edu/software/wcstools/cphead.wcs.html
-        # rotation_matrix_map = {
-        #     'PC001001': 'PC1_1',
-        #     'PC001002': 'PC1_2',
-        #     'PC002001': 'PC2_1',
-        #     'PC002002': 'PC2_2'
-        # }
-        # for key in rotation_matrix_map.keys():
-        #     if key in hdul[0].header:
-        #         hdul[0].header.insert(key,(rotation_matrix_map[key],hdul[0].header[key]),after=True)
-        #         hdul[0].header.remove(key)
+
         return hdul
 
     def get_fits(self, url):
@@ -414,7 +397,6 @@ class SurveyABC(ABC):
             self.processing_status = processing_status.none
             raise Exception(f"no valid {type(self).__name__}({self.filter.name}:{self.filter.value}) urls found for Position: {position.ra.degree}, {position.dec.degree}")
             # return None
-        # TODO: IF ONE URL GET FAILS OR TIMEOUTS THEN THIS WHOLE PROCESS STOPS WITH RAISED ERROR, consider handling individually
         else: #len(self.request_urls_stack) > 0:
             hdul_list = [hdul_tup for hdul_tup in [self.get_fits(url) for url in request_urls_stack] if hdul_tup[0]]
             return hdul_list
@@ -602,23 +584,7 @@ class SurveyABC(ABC):
         new_hdu.header['COMMENT'] = "BMAJ, BMIN, BPA, MJD-OBS, and DATE-OBS only currently represent the values" \
                                     " from one of the input files."
 
-
-        # TODO (Issue #4): Is this still needed?? This is a kludge, for now, so as to make
-        #       the claRAN machine learning code not bail.
-        # for field in ['LATPOLE','LONPOLE']:
-        #     if field in new_hdu.header:
-        #         del new_hdu.header[field]
         return new_hdu
-
-    # def __pop_request_urls_stack(self):
-    #     request_urls_stack = self.request_urls_stack
-    #     self.request_urls_stack = list()
-    #     return request_urls_stack
-
-    # def __pop_mosaic_hdul_tiles_stack(self):
-    #     mosaic_hdul_tiles_stack = self.mosaic_hdul_tiles_stack
-    #     self.mosaic_hdul_tiles_stack = list()
-    #     return mosaic_hdul_tiles_stack
 
     def group_tiles(self, tile_tups, rule):
         # rule has to be a valid fits HEADER value (such as DATE-OBS) OR of our defined groups "Mosaic" or "None"
