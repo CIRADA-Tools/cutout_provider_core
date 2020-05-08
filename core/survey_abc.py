@@ -145,7 +145,7 @@ class SurveyABC(ABC):
                     else:
                         raise Exception(f"problem creating {f_dict['filename']} for {f_dict['survey']}")
                 # do this for every mosaic CLI
-                # add original raw tiles as extensions to mosaic
+                # add original raw tiles as extensions to mosaic as default
                 if len(list(f_dict['originals']))>1 and save_orig_separately==False:
                     fits_img = fits.open(save_at, mode='append')
                     for og in f_dict['originals']:
@@ -154,6 +154,7 @@ class SurveyABC(ABC):
                     fits_img.close(output_verify="silentfix")
 
                 # this always for webserver
+                # by default save single mosiac then originals separately
                 if save_orig_separately==True: #len(list(f_dict['originals']))>1 and save_orig_separately==True:
                     orig_dir = save_at + originals_path_end
                     if os.path.exists(orig_dir):
@@ -418,7 +419,10 @@ class SurveyABC(ABC):
         try:
             for i, c in enumerate(cutouts):
                 with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
-                    tmp.write(bytes(c))
+                    img = fits.PrimaryHDU(c.data, header=c.header)
+                    img.writeto(tmp)
+                    #tmp.write(bytes(img))
+                    # should technically save originals here for webserver?
 
             montage.mosaic(input_dir, output_dir, subset_fast =True)
 
@@ -439,37 +443,37 @@ class SurveyABC(ABC):
         hdul[0].header = wcs_header
         return hdul
 
-    def get_image(self, hdu):
-        #img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
-        img_data = hdu.data
-        # we need to center the pixel ref's so as to reduce rotations during mosaicking
-        # TODO (Issue #8):
-        #      OK, so the scripette below removes the rotation,
-        #         PC1_1   =     0.99982071950643 / Coordinate transformation matrix element
-        #         PC1_2   =   -0.018934857951454 / Coordinate transformation matrix element
-        #         PC2_1   =    0.018934857951454 / Coordinate transformation matrix element
-        #         PC2_2   =     0.99982071950643 / Coordinate transformation matrix element
-        #      but leaves a slight skew [1],
-        #         PC1_2   = -2.4492935982947E-16 / Coordinate transformation matrix element
-        #         PC2_1   =  2.4492935982947E-16 / Coordinate transformation matrix element
-        #      for the PanSTARRS case (Ra=181.416667 deg, Dec=49.177778 deg, size=3').
-        #      Investigate...
-        #      --
-        #      [1] Similar skewing was observed to be introduced for the WISE case (Ra=164.811020,
-        #          dec=5.292027, size=3'), which did not have small rotation issues. This should,
-        #          therefore, have very little impact on the other -- non-PanSTARRS --  mosaicking
-        #          cases.
-
-        # commenting these lines fixed Mosaick issue in webserver
-        # hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
-        #     'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
-        #     'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
-        # }).get_header()
-        img = fits.PrimaryHDU(img_data, header=hdu.header)
-        mem_file = io.BytesIO()
-        img.writeto(mem_file)
-        mem_file.seek(0)
-        return mem_file.getvalue()
+    # def get_image(self, hdu):
+    #     #img_data = np.squeeze(hdu[0].data) # commenting this out doesn't change anything for Falon's code???
+    #     img_data = hdu.data
+    #     # we need to center the pixel ref's so as to reduce rotations during mosaicking
+    #     # TODO (Issue #8):
+    #     #      OK, so the scripette below removes the rotation,
+    #     #         PC1_1   =     0.99982071950643 / Coordinate transformation matrix element
+    #     #         PC1_2   =   -0.018934857951454 / Coordinate transformation matrix element
+    #     #         PC2_1   =    0.018934857951454 / Coordinate transformation matrix element
+    #     #         PC2_2   =     0.99982071950643 / Coordinate transformation matrix element
+    #     #      but leaves a slight skew [1],
+    #     #         PC1_2   = -2.4492935982947E-16 / Coordinate transformation matrix element
+    #     #         PC2_1   =  2.4492935982947E-16 / Coordinate transformation matrix element
+    #     #      for the PanSTARRS case (Ra=181.416667 deg, Dec=49.177778 deg, size=3').
+    #     #      Investigate...
+    #     #      --
+    #     #      [1] Similar skewing was observed to be introduced for the WISE case (Ra=164.811020,
+    #     #          dec=5.292027, size=3'), which did not have small rotation issues. This should,
+    #     #          therefore, have very little impact on the other -- non-PanSTARRS --  mosaicking
+    #     #          cases.
+    #
+    #     # commenting these lines fixed Mosaick issue in webserver
+    #     # hdu[0].header = HeaderFilter(hdu[0].header,is_add_wcs=True).update({
+    #     #     'CRPIX1': (np.round(len(hdu[0].data[0])/2.0,1), 'Axis 1 reference pixel'),
+    #     #     'CRPIX2': (np.round(len(hdu[0].data)/2.0,1), 'Axis 2 reference pixel')
+    #     # }).get_header()
+    #     img = fits.PrimaryHDU(img_data, header=hdu.header)
+    #     mem_file = io.BytesIO()
+    #     img.writeto(mem_file)
+    #     mem_file.seek(0)
+    #     return mem_file.getvalue()
 
     def paste_tiles(self, hdul_tiles, position):
         if hdul_tiles is None:
@@ -478,11 +482,10 @@ class SurveyABC(ABC):
         hdu = None
         if len(hdul_tiles) > 1:
             try:
-                imgs = [img for img in [self.get_image(tile) for (tile,url) in hdul_tiles]]
-                # TODO (Issue #6): Need to handle multiple COADDID's...
-                header_template = hdul_tiles[0][0].header
+                imgs = [tile for (tile,url) in hdul_tiles]
+                header_template = imgs[0].header.copy()
                 hdu = self.mosaic(imgs)[0]
-                # TODO: This requires vetting
+                
                 new_keys = set([k for k in hdu.header.keys()]+['PC1_1','PC1_2','PC2_1','PC2_2'])
                 old_keys = set([k for k in header_template.keys()])
                 for key in new_keys:
