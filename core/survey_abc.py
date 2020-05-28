@@ -421,21 +421,17 @@ class SurveyABC(ABC):
                 with open('{directory}/{name}.fits'.format(directory=input_dir, name=i), 'wb') as tmp:
                     img = fits.PrimaryHDU(c.data, header=c.header)
                     img.writeto(tmp)
-                    #tmp.write(bytes(img))
-                    # should technically save originals here for webserver?
+                    # could technically save originals here for webserver instead of later
 
             montage.mosaic(input_dir, output_dir, subset_fast =True)
-
             with open('{outdir}/mosaic.fits'.format(outdir=output_dir), 'rb') as f:
                 merged = f.read()
         finally:
             shutil.rmtree(output_dir)
             shutil.rmtree(input_dir)
             shutil.rmtree(td)
-
         fits_file = io.BytesIO(merged)
         hdul = fits.open(fits_file)
-
         # TODO (Issue #8): Still require investigation...
         #      but much better -- I think.
         #wcs_header = HeaderFilter(hdul[0].header,is_add_wcs=True).get_header()
@@ -485,7 +481,7 @@ class SurveyABC(ABC):
                 imgs = [tile for (tile,url) in hdul_tiles]
                 header_template = imgs[0].header.copy()
                 hdu = self.mosaic(imgs)[0]
-                
+
                 new_keys = set([k for k in hdu.header.keys()]+['PC1_1','PC1_2','PC2_1','PC2_2'])
                 old_keys = set([k for k in header_template.keys()])
                 for key in new_keys:
