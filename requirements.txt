@@ -1,5 +1,4 @@
 astropy==4.0
-astroquery==0.4.1.dev5884
 beautifulsoup4==4.8.2
 certifi==2019.11.28
 cffi==1.14.0
