@@ -2,6 +2,7 @@
 from .survey_abc     import processing_status
 from .survey_filters import grizy_filters, wise_filters, ugriz_filters
 from .FITS2DImageTools import *
+from .statistics import *
 
 # supported surveys
 from .first     import FIRST
