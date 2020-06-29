@@ -6,6 +6,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.stats import mad_std
 from astropy.visualization import imshow_norm, ZScaleInterval, MinMaxInterval, AsinhStretch, ManualInterval, ImageNormalize
+from .statistics import rms_mad, error_median, robust_stats_radio
 
 
 def asinh_plot(wcs, image_data, survey, showgrid=False):
@@ -47,15 +48,10 @@ def CIRADA_image_plot(wcs, image_data,cbar_label, cmap,showgrid=False,
     plt.close(fig)
     return output
 
-def rms_mad(data):
-  # Calculates the standard deviation of data using
-  # the median absolute deviation, but forcing the median to be 0
-  # i.e., Calculates an RMS
-  return 1.482602218505602*np.median(np.absolute(data))
 
 def asinh_soften_for_noise_RMS(image_data_2D, factor=3, interval=MinMaxInterval()):
     (image_MIN, image_MAX, image_MEDIAN,
-     image_RMS, image_STD) = robust_stats_radio(image_data_2D)
+     image_RMS, image_STD, image_MEAN) = robust_stats_radio(image_data_2D)
     (image_MIN, image_MAX) = interval.get_limits(image_data_2D)
     if factor*image_RMS >= image_MIN:
         parameter = (factor*image_RMS-image_MIN)/(image_MAX-image_MIN)
@@ -63,23 +59,14 @@ def asinh_soften_for_noise_RMS(image_data_2D, factor=3, interval=MinMaxInterval(
         parameter = 0.1 # Default for asinh
     return parameter
 
-def robust_stats_radio(image_data_2D):
-    # Calculates robust statistics useful for images
-    # Flatten array
-    #image_data_1D = image_data_2D.flatten() #potentially unneccessary
-    # remove non finite values
-    image_data_2D = image_data_2D[np.where(np.isfinite(image_data_2D))]
-    image_RMS    = rms_mad(image_data_2D)
-    image_MEDIAN = np.median(image_data_2D)
-    image_STD    = mad_std(image_data_2D)
-    image_MIN    = np.min(image_data_2D)
-    image_MAX    = np.max(image_data_2D)
-    # Alternative for looking at RMS of radio data
-    # Do not use at this point
-    #neg_data = image_data_1D[np.where(image_data_1D <0)]
-    #neg_data =np.concatenate((neg_data,-neg_data), axis=None)
-    #image_RMS  = biweight_scale(neg_data,M=0)
-    return(image_MIN, image_MAX, image_MEDIAN, image_RMS, image_STD)
+# main, calls other methods to create and return thumbnail in image buffer
+def get_thumbnail(hdu, survey):
+    wcs = WCS(hdu.header)
+    # # squeeze to 2d from nd to make thumbnail
+    image_data = np.squeeze(hdu.data) #WILL NEED A BETTER TRIMMER FOR CUBES LIKELY trim_axes(hdu, wcs)
+    img_buffer = asinh_plot(wcs, image_data, survey)
+    return img_buffer.getvalue()
+
 
 # def trim_axes(hdu, wcs):
 #     # trim to 2d from nd to make thumbnail
@@ -91,25 +78,3 @@ def robust_stats_radio(image_data_2D):
 #     #     naxis -= 1
 #     image_data = np.squeeze(hdu.data)
 #     return image_data
-
-# main, calls other methods to create and return thumbnail in image buffer
-def get_thumbnail(hdu, survey):
-    wcs = WCS(hdu.header)
-    # # squeeze to 2d from nd to make thumbnail
-    image_data = np.squeeze(hdu.data) #WILL NEED A BETTER TRIMMER FOR CUBES LIKELY trim_axes(hdu, wcs)
-    img_buffer = asinh_plot(wcs, image_data, survey)
-    return img_buffer.getvalue()
-
-# def get_image_stats(hdu):
-#     wcs = WCS(hdu.header)
-#     #TODO check if these stats for only 2D image or okay to put in FITS header
-#     # and update FITS header to include stats before saving image
-#     image_data_2D = np.squeeze(hdu.data) #trim_axes(hdu, wcs)
-#     # what interval to do stats for??
-#     interval = MinMaxInterval()
-#     (image_MIN, image_MAX) = interval.get_limits(image_data_2D)
-#
-#     (image_MIN, image_MAX, image_MEDIAN,
-#      image_RMS, image_STD) = robust_stats_radio(image_data_2D)
-#      return {"image_MIN":image_MIN, "image_MAX":image_MAX, "image_MEDIAN":image_MEDIAN,
-#       "image_RMS":image_RMS, "image_STD":image_STD}
