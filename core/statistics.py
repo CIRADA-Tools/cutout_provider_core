@@ -8,9 +8,12 @@ from astropy.stats import mad_std
 from astropy.visualization import imshow_norm, ZScaleInterval, MinMaxInterval, AsinhStretch, ManualInterval, ImageNormalize
 
 
+
+
 def mse(errs):
     # mean_square_error
     return sum([e**2 for e in errs])/len(errs)
+
 #using list of Fluxs
 # Flux Excess normalized variance
 # NormalizedExcessVariance ref: https://arxiv.org/pdf/astro-ph/0307420.pdf before eq 10
