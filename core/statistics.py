@@ -17,6 +17,13 @@ def variance_weighted_mean(items, item_variances):
     # variance_weighted_mean = 1.389068165073782
     return sum([a/(max(e,0.000001)**2) for a,e in zip(items, item_variances)])/sum([1/(max(e,0.000001)**2) for e in item_variances])
 
+def error_variance_weighted_mean(variances):
+    # test:
+    # variances = [0.0025, 0.0225, 0.01, 0.0625, 0.5625, 0.0006]
+    # error variance weighted mean = 0.0005822213011960972
+    #if variance is 0 make it 0.000001 no divide by zero!
+    return np.sqrt(1/sum([1/(max(e,0.000001)**2) for e in variances]))
+
 def overall_variability_t_stat(Fluxs, errs):
     # still deciding how to do this
     pass
@@ -45,6 +52,7 @@ def modulation_index(Fluxs, errs):
 def mse(errs):
     # mean_square_error
     return sum([e**2 for e in errs])/len(errs)
+
 #using list of Fluxs
 # Flux Excess normalized variance
 # NormalizedExcessVariance ref: https://arxiv.org/pdf/astro-ph/0307420.pdf before eq 10
@@ -65,14 +73,6 @@ def error_flux_nxs(flux_nxs, Fluxs, errs):
     else:
         f_rms_var = np.sqrt(flux_nxs) # fractional root mean square (rms) variability amplitude
         return np.sqrt(f_mse/len(Fluxs))*(2*f_rms_var/mean_flux) # (eq B1 2nd case)
-
-
-def error_variance_weighted_mean(variances):
-    # test:
-    # variances = [0.0025, 0.0225, 0.01, 0.0625, 0.5625, 0.0006]
-    # error variance weighted mean = 0.0005822213011960972
-    #if variance is 0 make it 0.000001 no divide by zero!
-    return np.sqrt(1/sum([1/(max(e,0.000001)**2) for e in variances]))
 
 def rms_mad(data):
   # Calculates the standard deviation of data using
