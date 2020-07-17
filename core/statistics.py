@@ -16,7 +16,7 @@ def variance_weighted_mean(items, item_variances):
     # item_variances = [0.0025, 0.0225, 0.01, 0.0625, 0.5625, 0.0006]
     # variance_weighted_mean = 1.389068165073782
     return sum([a/(max(e,0.000001)**2) for a,e in zip(items, item_variances)])/sum([1/(max(e,0.000001)**2) for e in item_variances])
-
+    
 def error_variance_weighted_mean(variances):
     # test:
     # variances = [0.0025, 0.0225, 0.01, 0.0625, 0.5625, 0.0006]
@@ -64,14 +64,14 @@ def flux_nxs(Fluxs, errs):
 
 # ref: https://arxiv.org/pdf/astro-ph/0307420.pdf before eq 11 but use eq. (B1) for cases! and
 # use the first case for S^2 < 3 * mean(sigma_err^2) and the second for S^2 >= 3 * mean(sigma_err^2)
-def error_flux_nxs(flux_nxs, Fluxs, errs):
+def error_flux_nxs(nxs, Fluxs, errs):
     f_mse = mse(errs)
     mean_flux = np.mean(Fluxs)
-    sample_variance = flux_nxs*(mean_flux**2) + f_mse
+    sample_variance = nxs*(mean_flux**2) + f_mse
     if (sample_variance < (3*f_mse)):
         return np.sqrt(2/len(Fluxs)) * (f_mse/(mean_flux**2)) # (eq B1 first case)
     else:
-        f_rms_var = np.sqrt(flux_nxs) # fractional root mean square (rms) variability amplitude
+        f_rms_var = np.sqrt(nxs) # fractional root mean square (rms) variability amplitude
         return np.sqrt(f_mse/len(Fluxs))*(2*f_rms_var/mean_flux) # (eq B1 2nd case)
 
 def rms_mad(data):
@@ -86,16 +86,17 @@ def error_median(all_data):
 
 def robust_stats_radio(image_data_2D):
     # Calculates robust statistics useful for images
+    # returns in mJy/beam
     # Flatten array
     #image_data_1D = image_data_2D.flatten() #potentially unneccessary
     # remove non finite values
     image_data_2D = image_data_2D[np.where(np.isfinite(image_data_2D))]
-    image_RMS     = rms_mad(image_data_2D)
-    image_MEDIAN  = np.median(image_data_2D)
-    image_STD     = mad_std(image_data_2D)
-    image_MIN     = np.min(image_data_2D)
-    image_MAX     = np.max(image_data_2D)
-    image_MEAN    = np.mean(image_data_2D)
+    image_RMS     = rms_mad(image_data_2D)*1000 # mJy/beam
+    image_MEDIAN  = np.median(image_data_2D)*1000
+    image_STD     = mad_std(image_data_2D)*1000
+    image_MIN     = np.min(image_data_2D)*1000
+    image_MAX     = np.max(image_data_2D)*1000
+    image_MEAN    = np.mean(image_data_2D)*1000
     # Alternative for looking at RMS of radio data
     # Do not use at this point
     #neg_data = image_data_1D[np.where(image_data_1D <0)]
