@@ -16,7 +16,7 @@ def variance_weighted_mean(items, item_variances):
     # item_variances = [0.0025, 0.0225, 0.01, 0.0625, 0.5625, 0.0006]
     # variance_weighted_mean = 1.389068165073782
     return sum([a/(max(e,0.000001)**2) for a,e in zip(items, item_variances)])/sum([1/(max(e,0.000001)**2) for e in item_variances])
-    
+
 def error_variance_weighted_mean(variances):
     # test:
     # variances = [0.0025, 0.0225, 0.01, 0.0625, 0.5625, 0.0006]
@@ -26,7 +26,7 @@ def error_variance_weighted_mean(variances):
 
 def overall_variability_t_stat(Fluxs, errs):
     # still deciding how to do this
-    pass
+    return None
 
 def overall_modulation_index(Fluxs, errs):
     fnsx = flux_nxs(Fluxs, errs)
