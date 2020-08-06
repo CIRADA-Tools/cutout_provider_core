@@ -143,7 +143,7 @@ class SurveyABC(ABC):
                         if next>=10:
                             raise Exception(f"duplicate files not saved! {f_dict['filename']} for {f_dict['survey']}")
                     else:
-                        raise Exception(f"problem creating {f_dict['filename']} for {f_dict['survey']}")
+                        raise Exception(f"problem saving {f_dict['filename']} for {f_dict['survey']}, {str(e)}")
                 # do this for every mosaic CLI
                 # add original raw tiles as extensions to mosaic as default
                 if len(list(f_dict['originals']))>1 and save_orig_separately==False:
