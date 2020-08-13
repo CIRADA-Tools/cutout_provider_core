@@ -143,7 +143,7 @@ class SurveyABC(ABC):
                         if next>=10:
                             raise Exception(f"duplicate files not saved! {f_dict['filename']} for {f_dict['survey']}")
                     else:
-                        raise Exception(f"problem saving {f_dict['filename']} for {f_dict['survey']}, {str(e)}")
+                        raise Exception(f"problem creating {f_dict['filename']} for {f_dict['survey']}")
                 # do this for every mosaic CLI
                 # add original raw tiles as extensions to mosaic as default
                 if len(list(f_dict['originals']))>1 and save_orig_separately==False:
@@ -379,6 +379,11 @@ class SurveyABC(ABC):
         self.print(f"Fetching: {url}")
         try:
             response = self.send_request(url)
+        if "NoContent" in str(response):
+            raise Exception(f"No Content found! \n Try another position or increasing the radius")
+        elif len(response)<=500:
+            print(response)
+            raise Exception(f"Error retrieving Fits: {response}")
         except Exception as e:
             print(f"{type(self).__name__} EXCEPTION" + str(e))
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
