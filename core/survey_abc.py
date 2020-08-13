@@ -379,8 +379,8 @@ class SurveyABC(ABC):
         self.print(f"Fetching: {url}")
         try:
             response = self.send_request(url)
-        if "NoContent" in str(response):
-            raise Exception(f"No Content found! \n Try another position or increasing the radius")
+        if ("NoContent" in str(response)):
+            raise Exception("No Content found! \n Try another position or increasing the radius")
         elif len(response)<=500:
             print(response)
             raise Exception(f"Error retrieving Fits: {response}")
