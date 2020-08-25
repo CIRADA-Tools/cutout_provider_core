@@ -74,7 +74,6 @@ class VLASS(SurveyABC):
                 epoch = VLASS.get_epoch(url)
                 if epoch==self.filter.value:
                     final_urls.append(url)
-                total-=1
             urls = final_urls
         if len(urls) == 0:
             self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
