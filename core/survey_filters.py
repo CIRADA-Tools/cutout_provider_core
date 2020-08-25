@@ -40,7 +40,10 @@ class gleam_frequency(Enum):
     f3 = "139-170"
     f4 = "170-231"
 
-
+class vlass_epoch(Enum):
+    e11 = "1.1"
+    e12 = "1.2"
+    e21 = "2.1"
 
 #
 #   H E A D E R   F I L T E R I N G / F O R M A T I N G

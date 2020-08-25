@@ -371,8 +371,6 @@ class SurveyABC(ABC):
             hdul[0].header['DATE-OBS'] = sanitize_fits_date_fields(hdul[0].header['DATE-OBS'])
         elif 'MJD-OBS' in hdul[0].header:
             hdul[0].header['DATE-OBS'] = Time(hdul[0].header['MJD-OBS'],format='mjd').isot
-
-
         return hdul
 
     def get_fits(self, url):
@@ -380,7 +378,7 @@ class SurveyABC(ABC):
         try:
             response = self.send_request(url)
             if "NoContent" in str(response):
-                raise Exception("No Content found! \n Try another position or increasing the radius")
+                raise Exception(f"No Content found! \n Try another position or increasing the radius")
             elif len(response)<=500:
                 print(response)
                 raise Exception(f"Error retrieving Fits: {response}")

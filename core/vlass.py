@@ -14,16 +14,18 @@ from astropy import units as u
 from astroquery.cadc import Cadc
 from .survey_abc import SurveyABC
 from .toolbox import pad_string_lines
+from .survey_filters import vlass_epoch
 
 
 class VLASS(SurveyABC):
-    def __init__(self):
+    def __init__(self, filter=None):
         super().__init__()
         self.needs_trimming = False
+        self.filter = filter
 
     @staticmethod
     def get_supported_filters():
-        return []
+        return vlass_epoch
 
     @staticmethod
     def get_epoch(fileOrURL):
@@ -33,7 +35,7 @@ class VLASS(SurveyABC):
         return fileOrURL.split('.ql')[0][-3:]
 
     def get_filter_setting(self):
-        return None
+        return self.filter
 
     def add_cutout_service_comment(self, hdu):
         hdu.header.add_comment(pad_string_lines("Quick Look images do not fully sample the PSF, and are cleaned to a " \
@@ -59,15 +61,24 @@ class VLASS(SurveyABC):
         )
         ### If adding any filters in then this is where would do it!!!#####
         #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
-        if len(urls) == 0:
-            self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
-            return list()
+
         # if len(results) == 0:
         #     return list()
         # print("or this one?")
         # urls = cadc.get_image_list(results, position, radius)
         # if len(urls)==0:
         #     self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
+        if self.filter:
+            final_urls = []
+            for url in urls:
+                epoch = VLASS.get_epoch(url)
+                if epoch==self.filter.value:
+                    final_urls.append(url)
+                total-=1
+            urls = final_urls
+        if len(urls) == 0:
+            self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
+            return list()
         return urls
 
     def get_fits_header_updates(self,header, all_headers=None):
