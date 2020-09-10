@@ -332,13 +332,14 @@ class SurveyABC(ABC):
 
     # tries to create a fits file from bytes.
     # on fail it returns None
-    def create_fits(self, data):
+    def create_fits(self, data, rms=False):
         # a pretend file in memory
         fits_file = io.BytesIO(data)
         fits_file.seek(0)
         # open fits hdul
         try:
             hdul = fits.open(fits_file, ignore_missing_end= True)
+            print("HDUL OPEN FINE")
         except OSError as e:
             if "data is available" in str(data):
                 raise Exception(f"{type(self).__name__}({self.filter.name}={self.filter.value}): error creating FITS "+ str(data.decode()))
@@ -348,7 +349,7 @@ class SurveyABC(ABC):
                 self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...", is_traceback=True)
                 self.processing_status = processing_status.corrupted
                 return None
-
+        print("HDUL AFTER:", hdul)
         # get/check header field
         header = hdul[0].header
         if ('NAXIS'  in header and header['NAXIS']  <  2) or \
@@ -357,14 +358,16 @@ class SurveyABC(ABC):
             self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...",header)
             self.processing_status = processing_status.corrupted
             return None
-
+        print("getting here??")
         # get/check data field
         data = hdul[0].data
-        if data.min() == 0 and data.max() == 0:
+        print("stats", data.min(), data.max())
+        if data.min() == 0 and data.max() == 0: # and not rms:
+            raise Exception(f"Fits file contains no data: skipping...rms={rms}")
             self.print("WARNING: Fits file contains no data: skipping...",header)
             self.processing_status = processing_status.corrupted
             return None
-
+        print("getting here??")
         ## TODO check if both exist and take the "better" one if one isn't 2000-01-01
         # sanitize the date-obs field????
         if 'DATE-OBS' in hdul[0].header:
@@ -387,7 +390,11 @@ class SurveyABC(ABC):
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
         if not response:
             raise Exception(f"Connection issue or No FITS found at url {url} {type(self).__name__} !")
-        hdul = self.create_fits(response)
+
+        rms = False
+        if ".rms." in url:
+            rms = True
+        hdul = self.create_fits(response, rms)
         if not hdul:
             raise Exception(f"{type(self).__name__}: error creating FITS, Third party service potentially down.")
         return (hdul[0], url)
