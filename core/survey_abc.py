@@ -362,7 +362,8 @@ class SurveyABC(ABC):
         # get/check data field
         data = hdul[0].data
         print("stats", data.min(), data.max())
-        if data.min() == 0 and data.max() == 0: # and not rms:
+        if data.min() == 0 and data.max() == 0 and not rms:
+            print(f"Fits file contains no data: skipping...rms={rms}\n\n\n\n.......................................................")
             raise Exception(f"Fits file contains no data: skipping...rms={rms}")
             self.print("WARNING: Fits file contains no data: skipping...",header)
             self.processing_status = processing_status.corrupted
