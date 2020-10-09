@@ -25,12 +25,15 @@ def error_variance_weighted_mean(variances):
     return np.sqrt(1/sum([1/(max(e,0.000001)**2) for e in variances]))
 
 def overall_variability_t_stat(Fluxs, errs):
-    # still deciding how to do this
-    return None
+    # still deciding how to do this STOPGAP SOLUTION
+    wm_flux = variance_weighted_mean(Fluxs, errs)
+    chi_sq = np.sum(((np.array(Fluxs)-wm_flux)/np.array(errs))**2)
+    return chi_sq
 
 def overall_modulation_index(Fluxs, errs):
     fnsx = flux_nxs(Fluxs, errs)
     if fnsx<0:
+        print("stats error!! fnsx<0 ", str(e))
         return -1.0
     f_var = np.sqrt(fnsx)
     return np.abs(2*(f_var-1)/(f_var+1))
@@ -40,14 +43,22 @@ def overall_modulation_index(Fluxs, errs):
 def variability_t_stat(Fluxs, errs):
     if len(Fluxs)>2:
         return overall_variability_t_stat(Fluxs, errs)
-    return np.abs((Fluxs[1]-Fluxs[0])/np.sqrt(errs[0]*2 + errs[1]*2))
+    try:
+        return np.abs((Fluxs[1]-Fluxs[0])/np.sqrt(errs[0]*2 + errs[1]*2))
+    except Exception as e:
+        print("stats error!! variability_t_stat ", str(e))
+        return -1
 
 # called with 2 or more fluxs
 # ref eq.(2) from https://arxiv.org/pdf/1601.01693.pdf
 def modulation_index(Fluxs, errs):
     if len(Fluxs)>2:
         return overall_modulation_index(Fluxs, errs)
-    return np.abs((Fluxs[1]-Fluxs[0])/variance_weighted_mean(Fluxs, errs))
+    try:
+        return np.abs((Fluxs[1]-Fluxs[0])/variance_weighted_mean(Fluxs, errs))
+    except Exception as e:
+        print("stats error!! modulation index ", str(e))
+        return -1
 
 def mse(errs):
     # mean_square_error
@@ -57,14 +68,20 @@ def mse(errs):
 # Flux Excess normalized variance
 # NormalizedExcessVariance ref: https://arxiv.org/pdf/astro-ph/0307420.pdf before eq 10
 def flux_nxs(Fluxs, errs):
-    mean_flux = np.mean(Fluxs)
-    sample_variance = sum([(x-mean_flux)**2 for x in Fluxs])/(len(Fluxs)-1)
-    xs = sample_variance - mse(errs)
-    return xs/(mean_flux**2)
+    try:
+        mean_flux = np.mean(Fluxs)
+        sample_variance = sum([(x-mean_flux)**2 for x in Fluxs])/(len(Fluxs)-1)
+        xs = sample_variance - mse(errs)
+        return xs/(mean_flux**2)
+    except Exception as e:
+        print(str(e))
+        return -1 # return dummy variable
 
 # ref: https://arxiv.org/pdf/astro-ph/0307420.pdf before eq 11 but use eq. (B1) for cases! and
 # use the first case for S^2 < 3 * mean(sigma_err^2) and the second for S^2 >= 3 * mean(sigma_err^2)
 def error_flux_nxs(nxs, Fluxs, errs):
+    if nxs == -1: # if nxs raised error then store -1 here too
+        return -1
     f_mse = mse(errs)
     mean_flux = np.mean(Fluxs)
     sample_variance = nxs*(mean_flux**2) + f_mse
