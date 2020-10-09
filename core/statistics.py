@@ -1,5 +1,6 @@
 import io
 import numpy as np
+from scipy import stats
 from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -24,11 +25,13 @@ def error_variance_weighted_mean(variances):
     #if variance is 0 make it 0.000001 no divide by zero!
     return np.sqrt(1/sum([1/(max(e,0.000001)**2) for e in variances]))
 
-def overall_variability_t_stat(Fluxs, errs):
+def probability_stat(Fluxs, errs):
     # still deciding how to do this STOPGAP SOLUTION
     wm_flux = variance_weighted_mean(Fluxs, errs)
     chi_sq = np.sum(((np.array(Fluxs)-wm_flux)/np.array(errs))**2)
-    return chi_sq
+    dof = len(Fluxs) - 1
+    prob_constant = scipy.stats.chi2.sf(chi_sq, dof)
+    return prob_constant
 
 def overall_modulation_index(Fluxs, errs):
     fnsx = flux_nxs(Fluxs, errs)
@@ -38,11 +41,11 @@ def overall_modulation_index(Fluxs, errs):
     f_var = np.sqrt(fnsx)
     return np.abs(2*(f_var-1)/(f_var+1))
 
-# called with 2 or more fluxs
+# called with 2 fluxs ONLY for pairwise
 # ref eq.(1) from https://arxiv.org/pdf/1601.01693.pdf
 def variability_t_stat(Fluxs, errs):
     if len(Fluxs)>2:
-        return overall_variability_t_stat(Fluxs, errs)
+        return -1#overall_variability_t_stat(Fluxs, errs)
     try:
         return np.abs((Fluxs[1]-Fluxs[0])/np.sqrt(errs[0]*2 + errs[1]*2))
     except Exception as e:
