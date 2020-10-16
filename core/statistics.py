@@ -30,13 +30,13 @@ def probability_stat(Fluxs, errs):
     wm_flux = variance_weighted_mean(Fluxs, errs)
     chi_sq = np.sum(((np.array(Fluxs)-wm_flux)/np.array(errs))**2)
     dof = len(Fluxs) - 1
-    prob_constant = scipy.stats.chi2.sf(chi_sq, dof)
+    prob_constant = stats.chi2.sf(chi_sq, dof)
     return prob_constant
 
 def overall_modulation_index(Fluxs, errs):
     fnsx = flux_nxs(Fluxs, errs)
     if fnsx<0:
-        print("stats error!! fnsx<0 ", str(e))
+        print("stats error!! fnsx<0 ")
         return -1.0
     f_var = np.sqrt(fnsx)
     return np.abs(2*(f_var-1)/(f_var+1))
