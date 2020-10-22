@@ -339,7 +339,7 @@ class SurveyABC(ABC):
         # open fits hdul
         try:
             hdul = fits.open(fits_file, ignore_missing_end= True)
-            print("HDUL OPEN FINE")
+            # print("HDUL OPEN FINE")
         except OSError as e:
             if "data is available" in str(data):
                 raise Exception(f"{type(self).__name__}({self.filter.name}={self.filter.value}): error creating FITS "+ str(data.decode()))
@@ -349,7 +349,7 @@ class SurveyABC(ABC):
                 self.print(f"OSError: {e_s}: Badly formatted FITS file: Cutout not found: Skipping...", is_traceback=True)
                 self.processing_status = processing_status.corrupted
                 return None
-        print("HDUL AFTER:", hdul)
+        # print("HDUL AFTER:", hdul)
         # get/check header field
         header = hdul[0].header
         if ('NAXIS'  in header and header['NAXIS']  <  2) or \
@@ -358,17 +358,14 @@ class SurveyABC(ABC):
             self.print(f"WARINING: Ill-defined 'NAXIS/i': {'NAXIS=%d => no cutout found:' % header['NAXIS'] if 'NAXIS' in header else ''} skipping...",header)
             self.processing_status = processing_status.corrupted
             return None
-        print("getting here??")
         # get/check data field
         data = hdul[0].data
-        print("stats", data.min(), data.max())
         if data.min() == 0 and data.max() == 0 and not rms:
             print(f"Fits file contains no data: skipping...rms={rms}\n\n\n\n.......................................................")
             raise Exception(f"Fits file contains no data: skipping...rms={rms}")
             self.print("WARNING: Fits file contains no data: skipping...",header)
             self.processing_status = processing_status.corrupted
             return None
-        print("getting here??")
         ## TODO check if both exist and take the "better" one if one isn't 2000-01-01
         # sanitize the date-obs field????
         if 'DATE-OBS' in hdul[0].header:
