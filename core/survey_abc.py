@@ -283,7 +283,7 @@ class SurveyABC(ABC):
     # get data over http post
     def send_request(self, url):
         potential_retries = self.http_request_retries
-        print("sending request for fits", url)
+        #print("sending request for fits", url)
         while potential_retries > 0:
             try:
                 #webserver handles own process pool
