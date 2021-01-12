@@ -144,7 +144,7 @@ def readCoordsFromFile(csv_dictreader, max_batch=105):
     for h in headers:
         # REMOVE SPACES, ALL CAPS, REMOVE BRACKETS, remove decimals, REMOVE 'J2000'
         trimmed = re.sub(r" ?[.()\ \[\]]", "", h.upper().replace('J2000',''))
-        print(trimmed)
+        #print(trimmed)
         if "NAME" in trimmed and not name_h:
             name_h = h
         elif trimmed in potential_RA and not ra_h:
