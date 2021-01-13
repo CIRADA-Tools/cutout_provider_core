@@ -39,6 +39,7 @@ class CLIConfig:
         # self.relative_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
         #self.local_dirs = LocalCutoutDirs() #ONLY USED FOR HEIRARCHY
         # defaults
+        self.MAX_BATCH_SIZE = 1000
         self.overwrite = False
         self.survey_filter_sets = {} #None # this is to keep track of requested survey filters
         self.supported_surveys = (
@@ -132,7 +133,7 @@ class CLIConfig:
         for coords_csv_file in csv_files:
             with open(relative_path+coords_csv_file, newline='') as csvfile:
                 reader = csv.DictReader(csvfile)
-                locations, errors = readCoordsFromFile(reader)
+                locations, errors = readCoordsFromFile(reader, max_batch=self.MAX_BATCH_SIZE)
                 coords.extend(locations)
         self.targets = [dict(item, size=self.size_arcmin) for item in coords]
 
