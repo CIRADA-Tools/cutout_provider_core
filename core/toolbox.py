@@ -151,7 +151,8 @@ def readCoordsFromFile(csv_dictreader, max_batch=105):
             ra_h = h
         elif trimmed in potential_DEC and not dec_h:
             dec_h = h
-    if ra_h==None or dec_h==None and name_h==None:
+    if (ra_h==None or dec_h==None) and name_h==None:
+        print(ra_h, dec_h, name_h)
         raise Exception('invalid headers for coordinates or name in .CSV!')
 
     succ_count = 0
