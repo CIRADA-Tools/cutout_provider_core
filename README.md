@@ -183,6 +183,12 @@ Argument Descriptions:
 Sample command looks like:    
 `python3 fetch_cutouts.py fetch -n M87 -s VLASS,WISE -r 3 -g MOSAIC`    
 
+### Local settings    
+Batch limit maximum is currently set to 1000. Please update for personal needs and system capability.    
+This is set as     
+      `self.MAX_BATCH_SIZE = 1000`     
+in the file cli_config.py for the class CLIConfig    
+
 ### Output
 This will fill `data_out` with the FITS files separated by Survey name directory.    
 Success or failure results will be written to `OUTlog.txt`
