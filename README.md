@@ -2,7 +2,7 @@
 
 ### Applications currently using this common Core Cutout code include:    
 - a Command Line Interface with instructions included below      
-- a public web service found at http://206.12.91.186/  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
+- a public web service found at http://cutouts.cirada.ca  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
 
 ### Contents:
 + [Included surveys](#included-surveys)
