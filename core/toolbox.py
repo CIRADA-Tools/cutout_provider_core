@@ -144,14 +144,15 @@ def readCoordsFromFile(csv_dictreader, max_batch=105):
     for h in headers:
         # REMOVE SPACES, ALL CAPS, REMOVE BRACKETS, remove decimals, REMOVE 'J2000'
         trimmed = re.sub(r" ?[.()\ \[\]]", "", h.upper().replace('J2000',''))
-        print(trimmed)
+        #print(trimmed)
         if "NAME" in trimmed and not name_h:
             name_h = h
         elif trimmed in potential_RA and not ra_h:
             ra_h = h
         elif trimmed in potential_DEC and not dec_h:
             dec_h = h
-    if ra_h==None or dec_h==None and name_h==None:
+    if (ra_h==None or dec_h==None) and name_h==None:
+        print(ra_h, dec_h, name_h)
         raise Exception('invalid headers for coordinates or name in .CSV!')
 
     succ_count = 0

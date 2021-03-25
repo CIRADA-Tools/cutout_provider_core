@@ -379,9 +379,11 @@ class SurveyABC(ABC):
         try:
             response = self.send_request(url)
             if "NoContent" in str(response):
-                raise Exception(f"No Content found! \n Try another position or increasing the radius")
+                raise Exception(f"No Content found! </br> Try another position or increasing the radius")
             elif len(response)<=500:
                 print(response)
+                if "502 Bad Gateway" in str(response):
+                    raise Exception(f"Error retrieving Fits: No images found")
                 raise Exception(f"Error retrieving Fits: {response}")
         except Exception as e:
             print(f"{type(self).__name__} EXCEPTION" + str(e))

@@ -2,7 +2,7 @@
 
 ### Applications currently using this common Core Cutout code include:    
 - a Command Line Interface with instructions included below      
-- a public web service found at http://206.12.91.186/  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
+- a public web service found at http://cutouts.cirada.ca  with project code hosted at http://orbit.dunlap.utoronto.ca/falon3/cirada_cutouts
 
 ### Contents:
 + [Included surveys](#included-surveys)
@@ -182,6 +182,12 @@ Argument Descriptions:
 
 Sample command looks like:    
 `python3 fetch_cutouts.py fetch -n M87 -s VLASS,WISE -r 3 -g MOSAIC`    
+
+### Local settings    
+Batch limit maximum is currently set to 1000. Please update for personal needs and system capability.    
+This is set as     
+      `self.MAX_BATCH_SIZE = 1000`     
+in the file cli_config.py for the class CLIConfig    
 
 ### Output
 This will fill `data_out` with the FITS files separated by Survey name directory.    

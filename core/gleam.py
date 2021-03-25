@@ -48,8 +48,15 @@ class GLEAM(SurveyABC):
     def get_tile_urls(self,position,size):
         #GLEAMCUTOUT?
         matches = self.get_fits_matches(position,size)
-        if matches.status_code==200:
-            all_urls = []
+        good=False
+        try: # different response object for cutout server and CLI
+            if matches.status_code==200: # webserver
+                good =True
+        except:
+            if matches.status==200: # CLI
+                good =True
+        all_urls = []
+        if good:
             try:
                 if self.http is None:
                     response_data = bytearray(matches.content)
