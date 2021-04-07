@@ -159,15 +159,16 @@ def process_requests(cfg):
     # in principle these could be chained furprint(str(e), "killing thread")
     # targets -> hdus -> save to file -> process to jpg -> save to file
     for _ in range(grabbers):
-        thread = WorkerThread(get_cutout, in_q, out_q).start()
+        thread = WorkerThread(get_cutout, in_q, out_q)
         in_q.put(PoisonPill())
         threads.append(thread)
-
+        thread.start()
 
     # save all from out queue as added there
-    thread = WorkerThread(save_cutout, out_q).start()
+    thread = WorkerThread(save_cutout, out_q)#.start()
     threads.append(thread)
     set_sig_handler(threads) # install ctrl-c handler
+    thread.start()
     in_q.join()
 
     out_q.put(PoisonPill()) # add killmessage to end of queue
