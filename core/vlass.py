@@ -73,22 +73,17 @@ class VLASS(SurveyABC):
         #     get_url_list= True
         # )
 
-        #change to
-        # Observation.obsID = VLASS2.1.T08t18.J112603-083000
-        all_rows = cadc.exec_sync(f"Plane.publisherID, Observation.requirements_flag FROM caom2.Plane AS Plane JOIN caom2.Observation AS Observation \
+        all_rows = cadc.exec_sync(f"Select Plane.publisherID, Observation.requirements_flag FROM caom2.Plane AS Plane JOIN caom2.Observation AS Observation \
                                     ON Plane.obsID = Observation.obsID WHERE  ( Observation.collection = 'VLASS' \
-                                    AND INTERSECTS( CIRCLE('ICRS', {position.ra.value}, {position.dec.value},  {radius.value}), \
-	                                      Plane.position_bounds ) = 1 \
-                                          AND  ( Plane.quality_flag IS NULL OR Plane.quality_flag != 'junk' \
-                                          OR Plane.quality_flag != 'junk') AND Observation.requirements_flag != 'fail' )")
+                                    AND INTERSECTS( CIRCLE('ICRS', {position.ra.value}, {position.dec.value},  {radius.value}), Plane.position_bounds ) = 1) \
+                                    AND ( Observation.requirements_flag IS NULL OR Observation.requirements_flag != 'fail') ")
 
         if len(all_rows)>0:
-            for row in all_rows:
-                ql_urls = self.cadc.get_data_urls(all_rows)
-                if ql_urls:
-                    for url in ql_urls:
-                        cutout_url = VLASS.get_cutout_url(url[0], position, radius)
-                        urls.append(cutout_url)
+            ql_urls = cadc.get_data_urls(all_rows)
+            if ql_urls:
+                for url in ql_urls:
+                    cutout_url = VLASS.get_cutout_url(url, position, radius)
+                    urls.append(cutout_url)
         ### If adding any filters in then this is where would do it!!!#####
         #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
 
