@@ -34,6 +34,18 @@ class VLASS(SurveyABC):
         # or filename e.g. VLASS__1.1.ql.T11t01.J000000+000000.10.2048.v1.I.iter1.image.pbcor.tt0.subim_s3.0arcmin.fits
         return fileOrURL.split('.ql')[0][-3:]
 
+    @staticmethod
+    # based on larger QL url
+    def get_cutout_url(ql_url,coords, radius):
+        standard_front = 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?ID=ad%3AVLASS%2F'
+        # '?RUNID' messes everything up, don't need it
+        encoded_ql = urllib.parse.quote(ql_url.split("/")[-1])
+        #encoded_ql= urllib.parse.quote(ql_url.split("/")[-1])
+        encoded_ql = encoded_ql.replace('%3F','&').replace('?','&')
+        #safe_coords = SkyCoord(ra=self.component.RA, dec=self.component.DEC, unit='deg')
+        cutout_end = f"&CIRCLE={coords.ra.value}+{coords.dec.value}+{radius.value}"
+        return standard_front+encoded_ql+cutout_end
+
     def get_filter_setting(self):
         return self.filter
 
@@ -53,12 +65,25 @@ class VLASS(SurveyABC):
     def get_tile_urls(self,position,size):
         cadc = Cadc()
         radius = (size/2.0).to(u.deg)
-        urls = cadc.get_images(
-            coordinates = position,
-            radius      = radius,
-            collection  = 'VLASS',
-            get_url_list= True
-        )
+        urls = []
+        # urls = cadc.get_images(
+        #     coordinates = position,
+        #     radius      = radius,
+        #     collection  = 'VLASS',
+        #     get_url_list= True
+        # )
+
+        all_rows = cadc.exec_sync(f"Select Plane.publisherID, Observation.requirements_flag FROM caom2.Plane AS Plane JOIN caom2.Observation AS Observation \
+                                    ON Plane.obsID = Observation.obsID WHERE  ( Observation.collection = 'VLASS' \
+                                    AND INTERSECTS( CIRCLE('ICRS', {position.ra.value}, {position.dec.value},  {radius.value}), Plane.position_bounds ) = 1) \
+                                    AND ( Observation.requirements_flag IS NULL OR Observation.requirements_flag != 'fail') ")
+
+        if len(all_rows)>0:
+            ql_urls = cadc.get_data_urls(all_rows)
+            if ql_urls:
+                for url in ql_urls:
+                    cutout_url = VLASS.get_cutout_url(url, position, radius)
+                    urls.append(cutout_url)
         ### If adding any filters in then this is where would do it!!!#####
         #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
 
