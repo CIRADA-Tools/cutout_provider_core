@@ -6,10 +6,9 @@ import urllib.parse
 
 # for padding RA area with dec skew
 def ra_increment(increment, Dec1, Dec2=None):
-    if Dec2:
-        Dec = max(abs(Dec1),abs(Dec2))
-    else:
-        Dec = abs(Dec1)
+    if not Dec2:
+        Dec2= min(abs(Dec1+increment),90)
+    Dec = max(abs(Dec1),abs(Dec2))
     return increment/math.cos(Dec*math.pi/180)
 
 # for nice line breaks in header strings using Astropy
