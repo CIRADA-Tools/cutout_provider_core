@@ -7,7 +7,7 @@ import urllib.parse
 # for padding RA area with dec skew
 def ra_increment(increment, Dec1, Dec2=None):
     if not Dec2:
-        Dec2= min(abs(Dec1+increment),90)
+        Dec2= min(abs(Dec1)+increment,90)
     Dec = max(abs(Dec1),abs(Dec2))
     return increment/math.cos(Dec*math.pi/180)
 
@@ -26,7 +26,6 @@ def get_quadrangle_from_point(ra, dec, search_radius):
     return (ra_min, ra_max, dec_min, dec_max)
 
 def get_quadrangle_from_quad(ra_min,ra_max,dec_min, dec_max, error_radius):
-    # ra_inc = ra_increment(settings.BOUNDARY_ERROR, dec)
     dec_min = max(dec_min-error_radius,-90)
     dec_max = min(dec_max + error_radius,90)
     if ra_max < 360.0 and ra_min > 0.0:
