@@ -6,11 +6,39 @@ import urllib.parse
 
 # for padding RA area with dec skew
 def ra_increment(increment, Dec1, Dec2=None):
-    if Dec2:
-        Dec = max(abs(Dec1),abs(Dec2))
-    else:
-        Dec = abs(Dec1)
+    if not Dec2:
+        Dec2= min(abs(Dec1)+increment,90)
+    Dec = max(abs(Dec1),abs(Dec2))
     return increment/math.cos(Dec*math.pi/180)
+
+def get_quadrangle_from_point(ra, dec, search_radius):
+    dec_min = max(dec - search_radius,-90)
+    dec_max = min(dec + search_radius,90)
+    ra_scale_factor = ra_increment(search_radius, dec_min, dec_max)
+    if abs(ra_scale_factor) >= 180:
+        ra_max=360.0
+        ra_min=0.0
+    else:
+        ra_max = (ra + ra_scale_factor)%360
+        if ra_max==0: #very unlikely exactly 360.0 and becomes 0... but check anyway
+            ra_max = 360.0
+        ra_min = ra - ra_scale_factor
+    return (ra_min, ra_max, dec_min, dec_max)
+
+def get_quadrangle_from_quad(ra_min,ra_max,dec_min, dec_max, error_radius):
+    dec_min = max(dec_min-error_radius,-90)
+    dec_max = min(dec_max + error_radius,90)
+    if ra_max < 360.0 and ra_min > 0.0:
+        ra_scale_factor = ra_increment(error_radius, dec_min, dec_max)
+        if abs(ra_scale_factor) >= 180:
+            ra_max=360.0
+            ra_min=0.0
+        else:
+            ra_max = (ra_max + ra_scale_factor)%360
+            if ra_max==0: #very unlikely exactly 360.0 and becomes 0... but check anyway
+                ra_max = 360.0
+            ra_min = ra_min - ra_scale_factor
+    return (ra_min, ra_max, dec_min, dec_max)
 
 # for nice line breaks in header strings using Astropy
 # which removes all formatting characters beforehand
