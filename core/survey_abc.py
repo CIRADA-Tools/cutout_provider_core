@@ -385,6 +385,8 @@ class SurveyABC(ABC):
                 if "502 Bad Gateway" in str(response):
                     raise Exception(f"Error retrieving Fits: No images found")
                 raise Exception(f"Error retrieving Fits: {response}")
+            elif "No resource" in str(response):
+                raise Exception(f"No resource found! </br> Try another position or increasing the radius")
         except Exception as e:
             print(f"{type(self).__name__} EXCEPTION" + str(e))
             raise Exception(f"{type(self).__name__} EXCEPTION: " + str(e))
