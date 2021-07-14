@@ -1,7 +1,9 @@
 import io
 import numpy as np
 from astropy import units as u
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.stats import mad_std
@@ -46,6 +48,7 @@ def CIRADA_image_plot(wcs, image_data,cbar_label, cmap,showgrid=False,
     output = io.BytesIO()
     plt.savefig(output, bbox_inches="tight")
     plt.close(fig)
+    # output.seek(0)
     return output
 
 
