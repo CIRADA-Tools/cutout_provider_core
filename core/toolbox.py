@@ -1,5 +1,7 @@
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+from PyAstronomy import pyasl
+
 
 import csv, re, math
 import urllib.parse
@@ -65,16 +67,27 @@ def get_header_value(tile, value):
     else:
         return 'unknown'
 
+#this does'nt work for test case '050000.000'!
 def truncate_string_two_decimals(string):
     for to_fix in re.findall("\.[0-9]{3,5}", string):
         string = re.sub(to_fix, to_fix[:3], string)
     return string
 
-
+# old way (updated July 21)
 def get_sexagesimal_string(position):
     #sexagesimal = "%02d%02d%02.0f" % position.ra.hms+re.sub(r"([+-])\d",r"\1","%+d%02d%02d%02.0f" % position.dec.signed_dms)
     sexagesimal = "J" + re.sub(r'[h,m,s,d,\s]', '', position.to_string(style='hmsdms')) # remove letters
     return truncate_string_two_decimals(sexagesimal)
+
+def get_sexagesimal_string(position):
+    sexa = pyasl.coordsDegToSexa(position.ra.value, position.dec.value).replace(" ", "")
+    sexcoords = sexa.split('+')
+    sign = '+'
+    if len(sexcoords)==1:
+        sexcoords = sexa.split('-')
+        sign='-'
+    truncated = sexcoords[0][:9]+sign+sexcoords[1][:8] # agreed upon cirada sig dig for name: J033200.00+050000.0
+    return "J" + truncated
 
 # todo incorporate source bnames into this
 def get_mosaic_filename(position,radius,survey,filter=None, group_title=''):
