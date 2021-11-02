@@ -503,13 +503,13 @@ class SurveyABC(ABC):
                     if key != 'COMMENT':
                         header_template[key] = hdu.header[key]
                 # we need to have the header properly centered for trimming
-                header_template = HeaderFilter(header_template,is_add_wcs=True).update({
-                    'CRVAL1': (position.ra.to(u.deg).value, 'RA at reference pixel'),
-                    'CRVAL2': (position.dec.to(u.deg).value, 'Dec at reference pixel')
-                }).update({
-                    'CRPIX1': (np.round(len(hdu.data[0])/2.0,1), 'Axis 1 reference pixel'),
-                    'CRPIX2': (np.round(len(hdu.data)/2.0,1), 'Axis 2 reference pixel')
-                }).get_header()
+                # header_template = HeaderFilter(header_template,is_add_wcs=True).update({
+                #     'CRVAL1': (position.ra.to(u.deg).value, 'RA at reference pixel'),
+                #     'CRVAL2': (position.dec.to(u.deg).value, 'Dec at reference pixel')
+                # }).update({
+                #     'CRPIX1': (np.round(len(hdu.data[0])/2.0,1), 'Axis 1 reference pixel'),
+                #     'CRPIX2': (np.round(len(hdu.data)/2.0,1), 'Axis 2 reference pixel')
+                # }).get_header()
                 hdu.header = header_template
             except montage.status.MontageError as e:
                 self.print(f"Mosaicking Failed: {e}:",diagnostic_msg=traceback.format_exc(),show_caller=True)
@@ -556,17 +556,17 @@ class SurveyABC(ABC):
         # set (ra,dec) tile center ... rounded to 5dp -- more than good enough
         ra  = np.round(position.ra.to(u.deg).value,7)
         dec = np.round(position.dec.to(u.deg).value,7)
-        hdf.update({
-            'CRVAL1': (ra, 'RA at reference pixel'),
-            'CRVAL2': (dec, 'Dec at reference pixel')
-        })
+        # hdf.update({
+        #     'CRVAL1': (ra, 'RA at reference pixel'),
+        #     'CRVAL2': (dec, 'Dec at reference pixel')
+        # })
         # set pixel reference position to center of tile
         x_pixels = len(data[0])
         y_pixels = len(data)
-        hdf.update({
-            'CRPIX1': (np.round(x_pixels/2.0, 1), 'Axis 1 reference pixel'),
-            'CRPIX2': (np.round(y_pixels/2.0, 1), 'Axis 2 reference pixel')
-        })
+        # hdf.update({
+        #     'CRPIX1': (np.round(x_pixels/2.0, 1), 'Axis 1 reference pixel'),
+        #     'CRPIX2': (np.round(y_pixels/2.0, 1), 'Axis 2 reference pixel')
+        # })
         # set survey name
         survey = type(self).__name__
         hdf.update({
