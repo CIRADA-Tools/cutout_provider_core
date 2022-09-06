@@ -37,7 +37,8 @@ class VLASS(SurveyABC):
     @staticmethod
     # based on larger QL url
     def get_cutout_url(ql_url,coords, radius):
-        standard_front = 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?ID=ad%3AVLASS%2F'
+        #standard_front = 'https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?ID=ad%3AVLASS%2F'
+        standard_front = 'https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/sync?ID=ad%3AVLASS%2F'
         # '?RUNID' messes everything up, don't need it
         encoded_ql = urllib.parse.quote(ql_url.split("/")[-1])
         #encoded_ql= urllib.parse.quote(ql_url.split("/")[-1])
