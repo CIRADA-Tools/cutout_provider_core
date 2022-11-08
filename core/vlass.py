@@ -79,19 +79,19 @@ class VLASS(SurveyABC):
                                     AND INTERSECTS( CIRCLE('ICRS', {position.ra.value}, {position.dec.value},  {radius.value}), Plane.position_bounds ) = 1) \
                                     AND ( Observation.requirements_flag IS NULL OR Observation.requirements_flag != 'fail') ")
 
-        if len(all_rows)>0:
-            ql_urls = cadc.get_data_urls(all_rows)
-            if ql_urls:
-                for url in ql_urls:
-                    cutout_url = VLASS.get_cutout_url(url, position, radius)
-                    urls.append(cutout_url)
+        #if len(all_rows)>0:
+        #    ql_urls = cadc.get_data_urls(all_rows)
+        #    if ql_urls:
+        #        for url in ql_urls:
+        #            cutout_url = VLASS.get_cutout_url(url, position, radius)
+        #            urls.append(cutout_url)
         ### If adding any filters in then this is where would do it!!!#####
         #### e.g. filtered_results = results[results['time_exposure'] > 120.0] #####
 
-        # if len(results) == 0:
-        #     return list()
+        if len(all_rows) == 0:
+             return list()
         # print("or this one?")
-        # urls = cadc.get_image_list(results, position, radius)
+        urls = cadc.get_image_list(results, position, radius)
         # if len(urls)==0:
         #     self.print("Cannot find {position.to_string('hmsdms')}, perhaps this hasn't been covered by VLASS.")
         if self.filter:
